@@ -25,13 +25,13 @@ execute_process(
 add_definitions(-DGIT_COMMIT_HASH="${GIT_COMMIT_HASH}")
 
 add_definitions(-DPROD_AGW_PUBLIC_KEY="$ENV{PROD_AGW_PUBLIC_KEY}")
-add_definitions(-DPROD_S3_ENDPOINT="$ENV{PROD_S3_ENDPOINT}")
+add_definitions(-DPROD_PROXY_STORAGE_KEY="$ENV{PROD_PROXY_STORAGE_KEY}")
 
 add_definitions(-DDEV_AGW_PUBLIC_KEY="$ENV{DEV_AGW_PUBLIC_KEY}")
 add_definitions(-DDEV_AGW_ENDPOINT="$ENV{DEV_AGW_ENDPOINT}")
-add_definitions(-DDEV_S3_ENDPOINT="$ENV{DEV_S3_ENDPOINT}")
 
-if(WIN32 OR (APPLE AND NOT IOS) OR (LINUX AND NOT ANDROID))
+#Macos Network Extension doesn't need Widgets
+if(WIN32 OR (APPLE AND NOT IOS) OR (LINUX AND NOT ANDROID) OR (NOT MACOS_NE))
     set(PACKAGES ${PACKAGES} Widgets)
 endif()
 
@@ -44,14 +44,15 @@ set(LIBS ${LIBS}
     Qt6::Core5Compat Qt6::Concurrent
 )
 
-if(WIN32 OR (APPLE AND NOT IOS) OR (LINUX AND NOT ANDROID))
+#Macos Network Extension doesn't need Widgets
+if(WIN32 OR (APPLE AND NOT IOS) OR (LINUX AND NOT ANDROID) OR (APPLE NOT MACOS_NE))
     set(LIBS ${LIBS} Qt6::Widgets)
 endif()
 
 qt_standard_project_setup()
 qt_add_executable(${PROJECT} MANUAL_FINALIZATION)
 
-if(WIN32 OR (APPLE AND NOT IOS) OR (LINUX AND NOT ANDROID))
+if(WIN32 OR (APPLE AND NOT IOS) OR (LINUX AND NOT ANDROID) OR (APPLE NOT MACOS_NE))
     qt_add_repc_replicas(${PROJECT} ${CMAKE_CURRENT_LIST_DIR}/../ipc/ipc_interface.rep)
     qt_add_repc_replicas(${PROJECT} ${CMAKE_CURRENT_LIST_DIR}/../ipc/ipc_process_interface.rep)
     qt_add_repc_replicas(${PROJECT} ${CMAKE_CURRENT_LIST_DIR}/../ipc/ipc_process_tun2socks.rep)
@@ -87,6 +88,17 @@ string(REPLACE ";" "" QM_FILE_LIST ${QM_FILE_LIST})
 configure_file(${CMAKE_CURRENT_LIST_DIR}/translations/translations.qrc.in ${CMAKE_CURRENT_BINARY_DIR}/translations.qrc)
 qt6_add_resources(QRC ${I18NQRC} ${CMAKE_CURRENT_BINARY_DIR}/translations.qrc)
 # -- i18n end
+
+if(IOS)
+    execute_process(COMMAND bash ${CMAKE_CURRENT_LIST_DIR}/ios/scripts/openvpn.sh args
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
+endif()
+
+# Build openvpn adapter for MacOS Network Extension
+if(MACOS_NE)
+    execute_process(COMMAND bash ${CMAKE_CURRENT_LIST_DIR}/macos/scripts/openvpn.sh args
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
+endif()
 
 set(IS_CI ${CI})
 if(IS_CI)
@@ -133,7 +145,6 @@ set(HEADERS ${HEADERS}
     ${CMAKE_CURRENT_LIST_DIR}/core/serialization/transfer.h
     ${CMAKE_CURRENT_LIST_DIR}/core/enums/apiEnums.h
     ${CMAKE_CURRENT_LIST_DIR}/../common/logger/logger.h
-    ${CMAKE_CURRENT_LIST_DIR}/utils/qmlUtils.h
 )
 
 # Mozilla headres
@@ -149,7 +160,7 @@ include_directories(mozilla)
 include_directories(mozilla/shared)
 include_directories(mozilla/models)
 
-if(NOT IOS)
+if((NOT IOS) OR (NOT MACOS_NE))
     set(HEADERS ${HEADERS}
         ${CMAKE_CURRENT_LIST_DIR}/platforms/ios/QRCodeReaderBase.h
     )
@@ -185,7 +196,6 @@ set(SOURCES ${SOURCES}
     ${CMAKE_CURRENT_LIST_DIR}/core/serialization/vmess.cpp
     ${CMAKE_CURRENT_LIST_DIR}/core/serialization/vmess_new.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../common/logger/logger.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/utils/qmlUtils.cpp
 )
 
 # Mozilla sources
@@ -200,7 +210,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_definitions(${PROJECT} PRIVATE "MZ_DEBUG")
 endif()
 
-if(NOT IOS)
+if((NOT IOS) OR (NOT MACOS_NE))
     set(SOURCES ${SOURCES}
         ${CMAKE_CURRENT_LIST_DIR}/platforms/ios/QRCodeReaderBase.cpp
     )
@@ -308,7 +318,8 @@ if(LINUX AND NOT ANDROID)
     link_directories(${CMAKE_CURRENT_LIST_DIR}/platforms/linux)
 endif()
 
-if(WIN32 OR (APPLE AND NOT IOS) OR (LINUX AND NOT ANDROID))
+# Macos Network Extension doesn't need
+if(WIN32 OR (APPLE AND NOT IOS) OR (LINUX AND NOT ANDROID) OR (APPLE NOT MACOS_NE))
     message("Client desktop build")
     add_compile_definitions(AMNEZIA_DESKTOP)
 
@@ -344,9 +355,11 @@ endif()
 if(IOS)
     include(cmake/ios.cmake)
     include(cmake/ios-arch-fixup.cmake)
-elseif(APPLE AND NOT IOS)
+elseif(APPLE AND NOT IOS AND NOT MACOS_NE)
     include(cmake/osxtools.cmake)
     include(cmake/macos.cmake)
+    elseif(APPLE AND NOT IOS AND MACOS_NE)
+        include(cmake/macos_ne.cmake)
 endif()
 
 target_link_libraries(${PROJECT} PRIVATE ${LIBS})
