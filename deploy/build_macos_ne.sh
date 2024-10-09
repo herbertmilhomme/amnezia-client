@@ -35,34 +35,25 @@ INSTALLER_DATA_DIR=$BUILD_DIR/installer/packages/$APP_DOMAIN/data
 INSTALLER_BUNDLE_DIR=$BUILD_DIR/installer/$APP_FILENAME
 DMG_FILENAME=$PROJECT_DIR/${APP_NAME}.dmg
 
-# Search Qt
-if [ -z "${QT_VERSION+x}" ]; then
-QT_VERSION=6.8.0;
-QIF_VERSION=4.7
-QT_BIN_DIR=$HOME/Qt/$QT_VERSION/macos/bin
-QIF_BIN_DIR=$QT_BIN_DIR/../../../Tools/QtInstallerFramework/$QIF_VERSION/bin
+# Check if QIF_VERSION is properly set, otherwise set a default
+if [ -z "${QIF_VERSION+x}" ]; then
+  echo "QIF_VERSION is not set, using default 4.6"
+  QIF_VERSION=4.6
 fi
 
-echo "Using Qt in $QT_BIN_DIR"
-echo "Using QIF in $QIF_BIN_DIR"
+QIF_BIN_DIR="$QT_BIN_DIR/../../../Tools/QtInstallerFramework/$QIF_VERSION/bin"
 
-# Setup environment paths
-export QT_BIN_DIR=$HOME/Qt/$QT_VERSION/macos/bin
-export QT_MACOS_ROOT_DIR=$HOME/Qt/$QT_VERSION/macos
-export QT_MACOS_BIN=$QT_BIN_DIR
-export PATH=$PATH:~/go/bin
+# Checking environment
+$QT_BIN_DIR/qt-cmake --version || { echo "Error: qt-cmake not found in $QT_BIN_DIR"; exit 1; }
+cmake --version || { echo "Error: cmake not found"; exit 1; }
+clang -v || { echo "Error: clang not found"; exit 1; }
 
-# Checking env
-$QT_BIN_DIR/qt-cmake --version
-cmake --version
-clang -v
-
-# Build App
+# Build the app
 echo "Building App..."
 mkdir -p build-macos
 cd build-macos
 
-$QT_MACOS_BIN/qt-cmake .. -GXcode -DQT_HOST_PATH=$QT_MACOS_ROOT_DIR -DMACOS_NE=TRUE
+$QT_BIN_DIR/qt-cmake .. -GXcode -DQT_HOST_PATH=$QT_MACOS_ROOT_DIR -DMACOS_NE=TRUE
 cmake --build . --config release --target all
 
 # Build and run tests here
@@ -80,6 +71,7 @@ cp -av $BUILD_DIR/service/server/$APP_NAME-service $BUNDLE_DIR/Contents/macOS
 cp -Rv $PROJECT_DIR/deploy/data/macos/* $BUNDLE_DIR/Contents/macOS
 rm -f $BUNDLE_DIR/Contents/macOS/post_install.sh $BUNDLE_DIR/Contents/macOS/post_uninstall.sh
 
+# Signing and notarizing the app
 if [ "${MAC_CERT_PW+x}" ]; then
 
   CERTIFICATE_P12=$DEPLOY_DIR/PrivacyTechAppleCertDeveloperId.p12
@@ -151,7 +143,6 @@ if [ "${MAC_CERT_PW+x}" ]; then
 fi
 
 echo "Building DMG installer..."
-# Allow Terminal to make changes in Privacy & Security > App Management
 hdiutil create -size 256mb -volname AmneziaVPN -srcfolder $BUILD_DIR/installer/$APP_NAME.app -ov -format UDZO $DMG_FILENAME
 
 if [ "${MAC_CERT_PW+x}" ]; then
