@@ -164,7 +164,17 @@ include_directories(mozilla)
 include_directories(mozilla/shared)
 include_directories(mozilla/models)
 
-if((NOT IOS) OR (NOT MACOS_NE))
+if(MACOS_NE)
+    message("MACOS_NE is ON")
+    add_definitions(-DQ_OS_IOS)
+    add_definitions(-DMACOS_NE)
+    message("Add macros for MacOS Network Extension")
+else()
+    message("MACOS_NE is OFF")
+endif()
+
+if(NOT IOS AND NOT MACOS_NE)
+    message(" Add header for non-IOS and non-MACOS_NE")
     set(HEADERS ${HEADERS}
         ${CMAKE_CURRENT_LIST_DIR}/platforms/ios/QRCodeReaderBase.h
     )
@@ -321,12 +331,11 @@ if(LINUX AND NOT ANDROID)
     set(LIBS ${LIBS} -static-libstdc++ -static-libgcc -ldl)
     link_directories(${CMAKE_CURRENT_LIST_DIR}/platforms/linux)
 endif()
-message("In here")
+
 # Macos Network Extension doesn't need
 if(WIN32 OR (APPLE AND NOT IOS AND NOT MACOS_NE) OR (LINUX AND NOT ANDROID))
-    message("-----> Client desktop build")
+    message("Client desktop build")
     add_compile_definitions(AMNEZIA_DESKTOP)
-    message("-----> Add AMNEZIA_DESKTOP")
     set(HEADERS ${HEADERS}
         ${CMAKE_CURRENT_LIST_DIR}/core/ipcclient.h
         ${CMAKE_CURRENT_LIST_DIR}/core/privileged_process.h
@@ -408,11 +417,12 @@ if(MACOS_NE)
         "$<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks"
 
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "/Users/macbook/Qt/6.8.0/macos/lib/QtConcurrent.framework"
+        "${QT_HOST_PATH}/lib/QtConcurrent.framework"
         "$<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks/QtConcurrent.framework"
 
-        COMMENT "Copying QtConcurrent.framework to the bundle's Frameworks directory"
+        COMMENT "Copying QtConcurrent.framework from QT_HOST_PATH to the bundle's Frameworks directory"
     )
+
 
     # MacOS specific application deployment
     add_custom_command(TARGET ${PROJECT} POST_BUILD
