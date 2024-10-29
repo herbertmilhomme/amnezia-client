@@ -52,6 +52,7 @@ endif()
 qt_standard_project_setup()
 qt_add_executable(${PROJECT} MANUAL_FINALIZATION)
 
+# TODO error in there
 if(WIN32 OR (APPLE AND NOT IOS AND NOT MACOS_NE) OR (LINUX AND NOT ANDROID))
     message("Run this block when MACOS_NE is not defined or set to FALSE")
     qt_add_repc_replicas(${PROJECT} ${CMAKE_CURRENT_LIST_DIR}/../ipc/ipc_interface.rep)
@@ -172,12 +173,14 @@ else()
     message("MACOS_NE is OFF")
 endif()
 
+
 if(NOT IOS AND NOT MACOS_NE)
     message(" Add header for non-IOS and non-MACOS_NE")
     set(HEADERS ${HEADERS}
         ${CMAKE_CURRENT_LIST_DIR}/platforms/ios/QRCodeReaderBase.h
     )
 endif()
+
 
 if(NOT ANDROID)
     set(HEADERS ${HEADERS}
@@ -324,6 +327,7 @@ if(APPLE)
     set(CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ${BUILD_VPN_DEVELOPMENT_TEAM})
     set(CMAKE_XCODE_ATTRIBUTE_GROUP_ID_IOS ${BUILD_IOS_GROUP_IDENTIFIER})
 
+    set(MACOSX_DEPLOYMENT_TARGET "12.0")
 endif()
 
 if(LINUX AND NOT ANDROID)
@@ -333,8 +337,9 @@ endif()
 
 # Macos Network Extension doesn't need
 if(WIN32 OR (APPLE AND NOT IOS AND NOT MACOS_NE) OR (LINUX AND NOT ANDROID))
-    message("Client desktop build")
+    message("-----> Client desktop build")
     add_compile_definitions(AMNEZIA_DESKTOP)
+    message("-----> Add AMNEZIA_DESKTOP")
     set(HEADERS ${HEADERS}
         ${CMAKE_CURRENT_LIST_DIR}/core/ipcclient.h
         ${CMAKE_CURRENT_LIST_DIR}/core/privileged_process.h
@@ -368,6 +373,7 @@ if(IOS)
     include(cmake/ios.cmake)
     include(cmake/ios-arch-fixup.cmake)
 elseif(APPLE AND NOT IOS AND NOT DEFINED MACOS_NE)
+    # include(cmake/osxtools.cmake)
     include(cmake/macos.cmake)
     elseif(APPLE AND NOT IOS AND MACOS_NE)
         include(cmake/macos_ne.cmake)
@@ -409,18 +415,22 @@ endif()
 
 target_sources(${PROJECT} PRIVATE ${SOURCES} ${HEADERS} ${RESOURCES} ${QRC} ${I18NQRC})
 if(MACOS_NE)
-    # MacOS specific bundle operations
+    message("Copy MacOS Network Extension files")
+    message("QT_HOST_PATH: $ENV{QT_MACOS_ROOT_DIR}")
+
     add_custom_command(TARGET ${PROJECT} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory
-        "$<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks"
-
+                "$<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks"
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${QT_HOST_PATH}/lib/QtConcurrent.framework"
-        "$<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks/QtConcurrent.framework"
-
-        COMMENT "Copying QtConcurrent.framework from QT_HOST_PATH to the bundle's Frameworks directory"
+                "$ENV{QT_MACOS_ROOT_DIR}/lib/QtConcurrent.framework"
+                "$<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks/QtConcurrent.framework"
+        
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${CMAKE_SOURCE_DIR}/client/3rd/OpenVPNAdapter/build/Release-macos/OpenVPNAdapter.framework"
+                "$<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks/OpenVPNAdapter.framework"
+        
+        COMMENT "Copying QtConcurrent.framework from QT_MACOS_ROOT_DIR to the bundle's Frameworks directory"
     )
-
 
     # MacOS specific application deployment
     add_custom_command(TARGET ${PROJECT} POST_BUILD

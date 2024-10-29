@@ -4,11 +4,6 @@ set(CLIENT_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
 
 add_executable(networkextension)
 
-configure_file(
-    ${CMAKE_CURRENT_LIST_DIR}/Info.plist.in
-    ${CMAKE_CURRENT_BINARY_DIR}/Info.plist
-)
-
 if(MACOS_NE)
     message("MACOS_NE is ON")
     add_definitions(-DQ_OS_IOS)
@@ -16,13 +11,14 @@ if(MACOS_NE)
 else()
     message("MACOS_NE is OFF")
 endif()
-
+message("executable_path is: @executable_path/../../Frameworks")
 set_target_properties(networkextension PROPERTIES
     XCODE_PRODUCT_TYPE com.apple.product-type.app-extension
     BUNDLE_EXTENSION appex
 
     MACOSX_BUNDLE_SHORT_VERSION_STRING "${APPLE_PROJECT_VERSION}"
-
+    MACOSX_BUNDLE_INFO_STRING "AmneziaVPNNetworkExtension"
+    MACOSX_BUNDLE_BUNDLE_NAME "AmneziaVPNNetworkExtension"
     XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "${BUILD_IOS_APP_IDENTIFIER}.network-extension"
     XCODE_ATTRIBUTE_PRODUCT_BUNDLE_NAME "${BUILD_IOS_APP_IDENTIFIER}.network-extension"
     XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/AmneziaVPNNetworkExtension.entitlements
@@ -32,9 +28,6 @@ set_target_properties(networkextension PROPERTIES
 
     XCODE_ATTRIBUTE_APPLICATION_EXTENSION_API_ONLY "YES"
     XCODE_ATTRIBUTE_ENABLE_BITCODE "NO"
-    XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
-
-    XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/../../Frameworks"
 
     XCODE_ATTRIBUTE_CODE_SIGN_STYLE Automatic
     #XCODE_ATTRIBUTE_CODE_SIGN_STYLE Manual
@@ -46,7 +39,7 @@ set_target_properties(networkextension PROPERTIES
     #XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER "Mac AppStore AmneziaVPN.network-extension"
     #XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER[variant=Debug] "Mac AppStore AmneziaVPN.network-extension"
 
-    XCODE_ATTRIBUTE_INFOPLIST_FILE "${CMAKE_CURRENT_BINARY_DIR}/Info.plist"
+    XCODE_ATTRIBUTE_INFOPLIST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in
     XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/../../../../Frameworks @loader_path/../../../../Frameworks"
 )
 
@@ -92,16 +85,24 @@ find_library(FW_LIBRESOLV libresolv.9.tbd)
 # Set the root directory
 set(CLIENT_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
 
-# Embedding the framework using CLIENT_ROOT_DIR
+set(CMAKE_FRAMEWORK_PATH ${CLIENT_ROOT_DIR}/3rd/OpenVPNAdapter/build/Release-macos)
+message("CMAKE_FRAMEWORK_PATH is: ${CMAKE_FRAMEWORK_PATH}")
+# framework OpenVPNAdapter
 set_property(TARGET networkextension PROPERTY XCODE_EMBED_FRAMEWORKS
-    "${CLIENT_ROOT_DIR}/3rd/OpenVPNAdapter/build/Release-macos/OpenVPNAdapter.framework"
+    ${CMAKE_FRAMEWORK_PATH}/OpenVPNAdapter.framework
 )
 
-# Setting the framework search paths using CLIENT_ROOT_DIR
-set(CMAKE_XCODE_ATTRIBUTE_FRAMEWORK_SEARCH_PATHS "${CLIENT_ROOT_DIR}/3rd/OpenVPNAdapter/build/Release-macos")
+target_link_libraries(networkextension PRIVATE
+    ${CMAKE_FRAMEWORK_PATH}/OpenVPNAdapter.framework
+)
 
-# Linking the framework using CLIENT_ROOT_DIR
-target_link_libraries("networkextension" PRIVATE "${CLIENT_ROOT_DIR}/3rd/OpenVPNAdapter/build/Release-macos/OpenVPNAdapter.framework")
+target_include_directories(networkextension PRIVATE
+    ${CLIENT_ROOT_DIR}/3rd/OpenVPNAdapter/build/Release-macos/OpenVPNAdapter.framework/Headers
+)
+
+target_link_libraries(networkextension PRIVATE 
+    "-framework OpenVPNAdapter"
+)
 
 target_link_libraries(networkextension PRIVATE ${FW_LIBRESOLV})
 
@@ -173,6 +174,6 @@ target_link_libraries(networkextension PRIVATE ${CLIENT_ROOT_DIR}/3rd-prebuilt/3
 
 message(${CLIENT_ROOT_DIR})
 message(${CLIENT_ROOT_DIR}/3rd-prebuilt/3rd-prebuilt/xray/HevSocks5Tunnel.xcframework/macos-arm64_x86_64/libhev-socks5-tunnel.a)
-target_link_libraries("networkextension" PRIVATE "${CLIENT_ROOT_DIR}/3rd-prebuilt/3rd-prebuilt/xray/HevSocks5Tunnel.xcframework/macos-arm64_x86_64/libhev-socks5-tunnel.a")
+target_link_libraries(networkextension PRIVATE ${CLIENT_ROOT_DIR}/3rd-prebuilt/3rd-prebuilt/xray/HevSocks5Tunnel.xcframework/macos-arm64_x86_64/libhev-socks5-tunnel.a)
 
 target_include_directories(networkextension PRIVATE ${CLIENT_ROOT_DIR}/3rd-prebuilt/3rd-prebuilt/xray/HevSocks5Tunnel.xcframework/macos-arm64_x86_64/Headers)
