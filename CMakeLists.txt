@@ -37,7 +37,6 @@ endif()
 
 add_subdirectory(client)
 
-# Mac OSX with Network Extension don't need service
 if(NOT IOS AND NOT ANDROID AND NOT MACOS_NE)
     add_subdirectory(service)
 
