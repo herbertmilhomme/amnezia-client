@@ -416,20 +416,20 @@ endif()
 target_sources(${PROJECT} PRIVATE ${SOURCES} ${HEADERS} ${RESOURCES} ${QRC} ${I18NQRC})
 if(MACOS_NE)
     message("Copy MacOS Network Extension files")
-    message("QT_HOST_PATH: $ENV{QT_MACOS_ROOT_DIR}")
 
     add_custom_command(TARGET ${PROJECT} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory
-                "$<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks"
+                $<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-                "$ENV{QT_MACOS_ROOT_DIR}/lib/QtConcurrent.framework"
-                "$<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks/QtConcurrent.framework"
+                $ENV{QT_MACOS_ROOT_DIR}/lib/QtConcurrent.framework
+                $<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks/QtConcurrent.framework
         
+        COMMAND ${CMAKE_COMMAND} -E echo "Copying OpenVPNAdapter.framework..."
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-                "${CMAKE_SOURCE_DIR}/client/3rd/OpenVPNAdapter/build/Release-macos/OpenVPNAdapter.framework"
-                "$<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks/OpenVPNAdapter.framework"
+                ${CMAKE_SOURCE_DIR}/client/3rd/OpenVPNAdapter/build/Release-macos/OpenVPNAdapter.framework
+                $<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks/OpenVPNAdapter.framework
         
-        COMMENT "Copying QtConcurrent.framework from QT_MACOS_ROOT_DIR to the bundle's Frameworks directory"
+        COMMAND ${CMAKE_COMMAND} -E echo "OpenVPNAdapter.framework copied successfully."
     )
 
     # MacOS specific application deployment
