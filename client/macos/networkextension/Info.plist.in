@@ -8,7 +8,7 @@
 	<string>AmneziaVPNNetworkExtension</string>
 
 	<key>CFBundleIdentifier</key>
-	<string>${BUILD_IOS_APP_IDENTIFIER}.network-extension</string>
+	<string>org.amnezia.AmneziaVPN.network-extension</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
