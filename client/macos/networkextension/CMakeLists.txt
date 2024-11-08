@@ -86,23 +86,23 @@ find_library(FW_LIBRESOLV libresolv.9.tbd)
 set(CLIENT_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
 
 set(CMAKE_FRAMEWORK_PATH ${CLIENT_ROOT_DIR}/3rd/OpenVPNAdapter/build/Release-macos)
-message("CMAKE_FRAMEWORK_PATH is: ${CMAKE_FRAMEWORK_PATH}")
-# framework OpenVPNAdapter
-set_property(TARGET networkextension PROPERTY XCODE_EMBED_FRAMEWORKS
-    ${CMAKE_FRAMEWORK_PATH}/OpenVPNAdapter.framework
-)
+# message("CMAKE_FRAMEWORK_PATH is: ${CMAKE_FRAMEWORK_PATH}")
+# # framework OpenVPNAdapter
+# # set_property(TARGET networkextension PROPERTY XCODE_EMBED_FRAMEWORKS
+# #     ${CMAKE_FRAMEWORK_PATH}/OpenVPNAdapter.framework
+# # )
 
-target_link_libraries(networkextension PRIVATE
-    ${CMAKE_FRAMEWORK_PATH}/OpenVPNAdapter.framework
-)
+# target_link_libraries(networkextension PRIVATE
+#     ${CMAKE_FRAMEWORK_PATH}/OpenVPNAdapter.framework
+# )
 
-target_include_directories(networkextension PRIVATE
-    ${CLIENT_ROOT_DIR}/3rd/OpenVPNAdapter/build/Release-macos/OpenVPNAdapter.framework/Headers
-)
+# target_include_directories(networkextension PRIVATE
+#     ${CLIENT_ROOT_DIR}/3rd/OpenVPNAdapter/build/Release-macos/OpenVPNAdapter.framework/Headers
+# )
 
-target_link_libraries(networkextension PRIVATE 
-    "-framework OpenVPNAdapter"
-)
+# target_link_libraries(networkextension PRIVATE 
+#     "-framework OpenVPNAdapter"
+# )
 
 target_link_libraries(networkextension PRIVATE ${FW_LIBRESOLV})
 

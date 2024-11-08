@@ -137,3 +137,11 @@ message("QtCore_location")
 message(${QtCore_location})
 
 get_filename_component(QT_BIN_DIR_DETECTED "${QtCore_location}/../../../../../bin" ABSOLUTE)
+
+set_property(TARGET ${PROJECT} PROPERTY XCODE_EMBED_FRAMEWORKS
+    "${CMAKE_CURRENT_SOURCE_DIR}/3rd/OpenVPNAdapter/build/Release-macos/OpenVPNAdapter.framework"
+)
+
+set(CMAKE_XCODE_ATTRIBUTE_FRAMEWORK_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/3rd/OpenVPNAdapter/build/Release-macos)
+target_link_libraries("networkextension" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/3rd/OpenVPNAdapter/build/Release-macos/OpenVPNAdapter.framework")
+
