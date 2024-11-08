@@ -426,8 +426,8 @@ if(MACOS_NE)
         
         COMMAND ${CMAKE_COMMAND} -E echo "Copying OpenVPNAdapter.framework..."
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-                ${CMAKE_SOURCE_DIR}/client/3rd/OpenVPNAdapter/build/Release-macos/OpenVPNAdapter.framework
-                $<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks/OpenVPNAdapter.framework
+                ${CMAKE_SOURCE_DIR}/client/3rd/OpenVPNAdapter/build/Release-macos/OpenVPNAdapter.framework/Versions/A
+                $<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks/OpenVPNAdapter.framework/Versions/A
         
         COMMAND ${CMAKE_COMMAND} -E echo "OpenVPNAdapter.framework copied successfully."
     )
