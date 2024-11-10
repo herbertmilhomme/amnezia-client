@@ -337,9 +337,7 @@ endif()
 
 # Macos Network Extension doesn't need
 if(WIN32 OR (APPLE AND NOT IOS AND NOT MACOS_NE) OR (LINUX AND NOT ANDROID))
-    message("-----> Client desktop build")
     add_compile_definitions(AMNEZIA_DESKTOP)
-    message("-----> Add AMNEZIA_DESKTOP")
     set(HEADERS ${HEADERS}
         ${CMAKE_CURRENT_LIST_DIR}/core/ipcclient.h
         ${CMAKE_CURRENT_LIST_DIR}/core/privileged_process.h
