@@ -38,8 +38,8 @@
 	<true/>
 	<key>com.apple.security.network.server</key>
 	<true/>
-	<key>com.apple.security.networkextension</key>
-	<true/>
+	<!-- <key>com.apple.security.networkextension</key>
+	<true/> -->
 	<key>com.apple.security.personal-information.addressbook</key>
 	<true/>
 	<key>com.apple.security.personal-information.calendars</key>
@@ -52,7 +52,7 @@
 	<array>
 		<string>$(AppIdentifierPrefix)org.amnezia.AmneziaVPN.network-extension</string>
 	</array>
-	<key>com.apple.security.network.extension</key>
-	<true/>
+	<!-- <key>com.apple.security.network.extension</key>
+	<true/> -->
 </dict>
 </plist>
