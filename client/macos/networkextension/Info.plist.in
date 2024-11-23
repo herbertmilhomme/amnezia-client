@@ -14,7 +14,7 @@
 	<key>CFBundleName</key>
 	<string>AmneziaVPNNetworkExtension</string>
 	<key>CFBundlePackageType</key>
-	<string>BNDL</string>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
 	<string>${APPLE_PROJECT_VERSION}</string>
 	<key>CFBundleVersion</key>
