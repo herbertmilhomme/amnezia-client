@@ -299,7 +299,7 @@ jobs:
     runs-on: macos-latest
 
     env:
-      QT_VERSION: 6.4.3
+      QT_VERSION: 6.8.0
       QIF_VERSION: 4.6
       QT_MIRROR: https://mirrors.ocf.berkeley.edu/qt/
       PROD_AGW_PUBLIC_KEY: ${{ secrets.PROD_AGW_PUBLIC_KEY }}
@@ -309,7 +309,7 @@ jobs:
     - name: 'Setup Xcode'
       uses: maxim-lobanov/setup-xcode@v1
       with:
-        xcode-version: '14.3.1'
+        xcode-version: '16.1.0'
 
     - name: 'Install desktop Qt'
       uses: jurplel/install-qt-action@v3
@@ -317,7 +317,7 @@ jobs:
         version: ${{ env.QT_VERSION }}
         host: 'mac'
         target: 'desktop'
-        modules: 'qtremoteobjects qt5compat qtshadertools qtmultimedia'
+        modules: 'qtremoteobjects qt5compat qtshadertools qtmultimedia qtimageformats'
         arch: 'clang_64'
         dir: ${{ runner.temp }}
         set-env: 'true'
@@ -345,19 +345,27 @@ jobs:
     - name: 'Set execute permissions for deploy script'
       run: chmod +x deploy/build_macos_ne.sh
 
-    # - name: 'Build and deploy macOS NE'
-    #   run: |
-    #     export QT_BIN_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/macos/bin"
-    #     export QIF_BIN_DIR="${{ runner.temp }}/Qt/Tools/QtInstallerFramework/${{ env.QIF_VERSION }}/bin"
-    #     export QT_MACOS_ROOT_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/macos"
-    #     bash deploy/build_macos_ne.sh
-    #   env:
-    #     APPSTORE_CONNECT_KEY_ID: ${{ secrets.APPSTORE_CONNECT_KEY_ID }}
-    #     APPSTORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
-    #     APPSTORE_CONNECT_PRIVATE_KEY: ${{ secrets.APPSTORE_CONNECT_PRIVATE_KEY }}
-    #     MAC_TRUST_CERT_BASE64: ${{ secrets.IOS_TRUST_CERT_BASE64 }}
-    #     MAC_SIGNING_CERT_BASE64: ${{ secrets.IOS_SIGNING_CERT_BASE64 }}
-    #     MAC_SIGNING_CERT_PASSWORD: ${{ secrets.IOS_SIGNING_CERT_PASSWORD }}
+    - name: 'Build and deploy macOS NE'
+      run: |
+        export QT_BIN_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/macos/bin" 
+        export QT_MACOS_ROOT_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/macos" 
+        bash deploy/build_macos_ne.sh
+      env:
+        MAC_TRUST_CERT_BASE64: ${{ secrets.MAC_TRUST_CERT_BASE64 }}
+        MAC_SIGNING_CERT_BASE64: ${{ secrets.MAC_SIGNING_CERT_BASE64 }}
+        MAC_SIGNING_CERT_PASSWORD: ${{ secrets.MAC_SIGNING_CERT_PASSWORD }}
+        APPSTORE_CONNECT_MAC_PROVISIONING_BASE64: ${{ secrets.APPSTORE_CONNECT_MAC_PROVISIONING }}
+        APPSTORE_CONNECT_MAC_NE_PROVISIONING_BASE64: ${{ secrets.APPSTORE_CONNECT_MAC_NE_PROVISIONING }}
+        APPSTORE_CONNECT_KEY_ID: ${{ secrets.APPSTORE_CONNECT_KEY_ID }}
+        APPSTORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
+        APPSTORE_CONNECT_PRIVATE_KEY: ${{ secrets.APPSTORE_CONNECT_PRIVATE_KEY }}
+    - name: 'Upload macOS .dmg and dSYMs to artifacts'
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos dmg & dsyms
+        path: |
+          ${{ github.workspace }}/AmneziaVPN.dmg
+        retention-days: 7
 # ------------------------------------------------------
 
   Build-Android:
