@@ -139,10 +139,10 @@ jobs:
 # ------------------------------------------------------
 
   Build-iOS:
-    runs-on: macos-13
+    runs-on: macos-latest
 
     env:
-      QT_VERSION: 6.6.2
+      QT_VERSION: 6.8.0
       CC: cc
       CXX: c++
       PROD_AGW_PUBLIC_KEY: ${{ secrets.PROD_AGW_PUBLIC_KEY }}
@@ -152,7 +152,7 @@ jobs:
     - name: 'Setup xcode'
       uses: maxim-lobanov/setup-xcode@v1
       with:
-        xcode-version: '15.2'
+        xcode-version: '15.4.0'
 
     - name: 'Install desktop Qt'
       uses: jurplel/install-qt-action@v3
