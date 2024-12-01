@@ -251,6 +251,19 @@ void IosController::checkStatus()
     sendVpnExtensionMessage(message, [&](NSDictionary* response){
         uint64_t txBytes = [response[@"tx_bytes"] intValue];
         uint64_t rxBytes = [response[@"rx_bytes"] intValue];
+        
+        uint64_t last_handshake_time_sec = 0;
+        if (response[@"last_handshake_time_sec"] && ![response[@"last_handshake_time_sec"] isKindOfClass:[NSNull class]]) {
+            last_handshake_time_sec = [response[@"last_handshake_time_sec"] intValue];
+        } else {
+            qDebug() << "Key last_handshake_time_sec is missing or null";
+        }
+        
+        if (last_handshake_time_sec < 0) {
+            disconnectVpn();
+            qDebug() << "Invalid handshake time, disconnecting VPN.";
+        }
+        
         emit bytesChanged(rxBytes - m_rxBytes, txBytes - m_txBytes);
         m_rxBytes = rxBytes;
         m_txBytes = txBytes;
