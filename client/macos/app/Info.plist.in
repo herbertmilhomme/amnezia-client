@@ -31,30 +31,10 @@
 
 	<key>LSMinimumSystemVersion</key>
 	<string>${MACOSX_DEPLOYMENT_TARGET}</string>
-        
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
-	<key>UILaunchStoryboardName</key>
-	<string>AmneziaVPNLaunchScreen</string>
-	<key>UIRequiredDeviceCapabilities</key>
-	<array/>
-	<key>UIRequiresFullScreen</key>
-	<true/>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationPortrait</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array/>
-	<key>UIUserInterfaceStyle</key>
-	<string>Light</string>
 	<key>com.wireguard.ios.app_group_id</key>
 	<string>group.org.amnezia.AmneziaVPN</string>
-	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Amnezia VPN needs access to the camera for reading QR-codes.</string>
 	<key>NSAppTransportSecurity</key>
@@ -65,8 +45,6 @@
 		<true/>
 	</dict>
 	<key>CFBundleIcons</key>
-        <dict/>
-        <key>CFBundleIcons~ipad</key>
         <dict/>
 	<key>UTImportedTypeDeclarations</key>
 	<array>
