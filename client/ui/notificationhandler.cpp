@@ -14,7 +14,7 @@
 
 // static
 NotificationHandler* NotificationHandler::create(QObject* parent) {
-#if defined(Q_OS_IOS)
+#if defined(Q_OS_IOS) || defined(MACOS_NE)
     return new IOSNotificationHandler(parent);
 #else
 

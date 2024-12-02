@@ -4,7 +4,7 @@
 #include "core/enums/apiEnums.h"
 #include "core/networkUtilities.h"
 
-#ifdef Q_OS_IOS
+#if defined(Q_OS_IOS) || defined(MACOS_NE)
     #include <AmneziaVPN-Swift.h>
 #endif
 
@@ -760,7 +760,7 @@ void ServersModel::removeApiConfig(const int serverIndex)
 {
     auto serverConfig = getServerConfig(serverIndex);
 
-#ifdef Q_OS_IOS
+#if defined(Q_OS_IOS) || defined(MACOS_NE)
     QString vpncName = QString("%1 (%2) %3")
                                .arg(serverConfig[config_key::description].toString())
                                .arg(serverConfig[config_key::hostName].toString())

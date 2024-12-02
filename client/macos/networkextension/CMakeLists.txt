@@ -6,7 +6,7 @@ add_executable(networkextension)
 
 if(MACOS_NE)
     message("MACOS_NE is ON")
-    add_definitions(-DQ_OS_IOS)
+    add_definitions(-DQ_OS_MAC)
     add_definitions(-DMACOS_NE)
 else()
     message("MACOS_NE is OFF")
@@ -29,12 +29,12 @@ set_target_properties(networkextension PROPERTIES
     XCODE_ATTRIBUTE_APPLICATION_EXTENSION_API_ONLY "YES"
     XCODE_ATTRIBUTE_ENABLE_BITCODE "NO"
 
-    # XCODE_ATTRIBUTE_CODE_SIGN_STYLE Automatic
-    XCODE_ATTRIBUTE_CODE_SIGN_STYLE Manual
-    XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER "Mac AppStore network-extension"
-    XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER[variant=Debug] "amnezia.AmneziaVPN.network-extensionManual"
-    XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Distribution: Privacy Technologies OU (X7UJ388FXK)"
-    XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY[variant=Debug] "Apple Development: TRAN VIET ANH (Y372SYT4WL)"
+    XCODE_ATTRIBUTE_CODE_SIGN_STYLE Automatic
+    # XCODE_ATTRIBUTE_CODE_SIGN_STYLE Manual
+    # XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER "Mac AppStore network-extension"
+    # XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER[variant=Debug] "amnezia.AmneziaVPN.network-extensionManual"
+    # XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Distribution: Privacy Technologies OU (X7UJ388FXK)"
+    # XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY[variant=Debug] "Apple Development: TRAN VIET ANH (Y372SYT4WL)"
 
 
     XCODE_ATTRIBUTE_INFOPLIST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in

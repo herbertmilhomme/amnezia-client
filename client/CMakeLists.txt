@@ -165,7 +165,7 @@ include_directories(mozilla/models)
 
 if(MACOS_NE)
     message("MACOS_NE is ON")
-    add_definitions(-DQ_OS_IOS)
+    add_definitions(-DQ_OS_MAC)
     add_definitions(-DMACOS_NE)
     message("Add macros for MacOS Network Extension")
 else()

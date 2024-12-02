@@ -10,7 +10,7 @@
     #include "platforms/android/android_controller.h"
 #endif
 
-#ifdef Q_OS_IOS
+#if defined(Q_OS_IOS) || defined(MACOS_NE)
     #include <AmneziaVPN-Swift.h>
 #endif
 
@@ -76,7 +76,7 @@ bool SettingsController::isLoggingEnabled()
 void SettingsController::toggleLogging(bool enable)
 {
     m_settings->setSaveLogs(enable);
-#ifdef Q_OS_IOS
+#if defined(Q_OS_IOS)
     AmneziaVPN::toggleLogging(enable);
 #endif
     if (enable == true) {
@@ -131,8 +131,12 @@ void SettingsController::backupAppConfig(const QString &fileName)
 
 void SettingsController::restoreAppConfig(const QString &fileName)
 {
-    QByteArray data;
-    SystemController::readFile(fileName, data);
+    QFile file(fileName);
+
+    file.open(QIODevice::ReadOnly);
+
+    QByteArray data = file.readAll();
+
     restoreAppConfigFromData(data);
 }
 
@@ -169,7 +173,7 @@ void SettingsController::clearSettings()
 
     emit changeSettingsFinished(tr("All settings have been reset to default values"));
 
-#ifdef Q_OS_IOS
+#if defined(Q_OS_IOS) || defined(MACOS_NE)
     AmneziaVPN::clearSettings();
 #endif
 }
@@ -320,15 +324,4 @@ bool SettingsController::isOnTv()
 #else
     return false;
 #endif
-}
-
-bool SettingsController::isHomeAdLabelVisible()
-{
-    return m_settings->isHomeAdLabelVisible();
-}
-
-void SettingsController::disableHomeAdLabel()
-{
-    m_settings->disableHomeAdLabel();
-    emit isHomeAdLabelVisibleChanged(false);
 }

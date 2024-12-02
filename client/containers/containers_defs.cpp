@@ -275,7 +275,7 @@ bool ContainerProps::isSupportedByCurrentPlatform(DockerContainer c)
 #ifdef Q_OS_WINDOWS
     return true;
 
-#elif defined(Q_OS_IOS)
+#elif defined(Q_OS_IOS) || defined(MACOS_NE)
     switch (c) {
     case DockerContainer::WireGuard: return true;
     case DockerContainer::OpenVpn: return true;

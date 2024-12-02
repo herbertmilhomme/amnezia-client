@@ -25,7 +25,7 @@
 
 #include "protocols/qml_register_protocols.h"
 
-#if defined(Q_OS_IOS)
+#if defined(Q_OS_IOS) || defined(MACOS_NE)
     #include "platforms/ios/ios_controller.h"
     #include <AmneziaVPN-Swift.h>
 #endif
@@ -121,7 +121,7 @@ void AmneziaApplication::init()
     m_engine->addImageProvider(QLatin1String("installedAppImage"), new InstalledAppsImageProvider);
 #endif
 
-#ifdef Q_OS_IOS
+#if defined(Q_OS_IOS) || defined(MACOS_NE)
     IosController::Instance()->initialize();
     connect(IosController::Instance(), &IosController::importConfigFromOutside, this, [this](QString data) {
         emit m_pageController->goToPageHome();
@@ -281,7 +281,7 @@ bool AmneziaApplication::parseCommands()
     return true;
 }
 
-#if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
+#if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS) && !defined(MACOS_NE)
 void AmneziaApplication::startLocalServer() {
     const QString serverName("AmneziaVPNInstance");
     QLocalServer::removeServer(serverName);

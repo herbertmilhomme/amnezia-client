@@ -6,7 +6,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QThread>
-#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
+#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS) || defined(MACOS_NE)
     #include <QGuiApplication>
 #else
     #include <QApplication>
@@ -51,7 +51,7 @@
 
 #define amnApp (static_cast<AmneziaApplication *>(QCoreApplication::instance()))
 
-#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
+#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS) || defined(MACOS_NE)
     #define AMNEZIA_BASE_CLASS QGuiApplication
 #else
     #define AMNEZIA_BASE_CLASS QApplication
@@ -71,7 +71,7 @@ public:
     void updateTranslator(const QLocale &locale);
     bool parseCommands();
 
-#if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
+#if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS) && !defined(MACOS_NE)
     void startLocalServer();
 #endif
 

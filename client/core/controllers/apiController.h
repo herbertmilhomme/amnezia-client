@@ -5,7 +5,7 @@
 
 #include "configurators/openvpn_configurator.h"
 
-#ifdef Q_OS_IOS
+#if defined(Q_OS_IOS) || defined(MACOS_NE)
     #include "platforms/ios/ios_controller.h"
 #endif
 

@@ -2,7 +2,7 @@
 #include "utils/converter.h"
 #include "core/errorstrings.h"
 
-#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
+#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS) || defined(MACOS_NE)
     #include <QGuiApplication>
 #else
     #include <QApplication>
@@ -11,7 +11,7 @@
 #ifdef Q_OS_ANDROID
     #include "platforms/android/android_controller.h"
 #endif
-#if defined Q_OS_MAC
+#if defined Q_OS_MAC && !defined(MACOS_NE)
     #include "ui/macos_util.h"
 #endif
 
@@ -24,7 +24,7 @@ PageController::PageController(const QSharedPointer<ServersModel> &serversModel,
     AndroidController::instance()->setNavigationBarColor(initialPageNavigationBarColor);
 #endif
 
-#if defined Q_OS_MACX and !defined MACOS_NE
+#if defined Q_OS_MAC and !defined MACOS_NE
     connect(this, &PageController::raiseMainWindow, []() { setDockIconVisible(true); });
     connect(this, &PageController::hideMainWindow, []() { setDockIconVisible(false); });
 #endif
