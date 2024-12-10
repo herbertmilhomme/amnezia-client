@@ -9,8 +9,8 @@
 #include "logger.h"
 #include "router.h"
 
-#include "../core/networkUtilities.h"
 #include "../client/protocols/protocols_defs.h"
+#include "../core/networkUtilities.h"
 #ifdef Q_OS_WIN
     #include "../client/platforms/windows/daemon/windowsdaemon.h"
     #include "../client/platforms/windows/daemon/windowsfirewall.h"
@@ -60,12 +60,15 @@ int IpcServer::createPrivilegedProcess()
         }
     });
 
-    QObject::connect(pd.serverNode.data(), &QRemoteObjectHost::error, this,
-                     [pd](QRemoteObjectNode::ErrorCode errorCode) { qDebug() << "QRemoteObjectHost::error" << errorCode; });
+    QObject::connect(pd.serverNode.data(), &QRemoteObjectHost::error, this, [pd](QRemoteObjectNode::ErrorCode errorCode) {
+        qDebug() << "QRemoteObjectHost::error" << errorCode;
+    });
 
-    QObject::connect(pd.serverNode.data(), &QRemoteObjectHost::destroyed, this, [pd]() { qDebug() << "QRemoteObjectHost::destroyed"; });
+    QObject::connect(pd.serverNode.data(), &QRemoteObjectHost::destroyed, this,
+                     [pd]() { qDebug() << "QRemoteObjectHost::destroyed"; });
 
-    //    connect(pd.ipcProcess.data(), &IpcServerProcess::finished, this, [this, pid=m_localpid](int exitCode, QProcess::ExitStatus exitStatus){
+    //    connect(pd.ipcProcess.data(), &IpcServerProcess::finished, this, [this, pid=m_localpid](int exitCode,
+    //    QProcess::ExitStatus exitStatus){
     //        qDebug() << "IpcServerProcess finished" << exitCode << exitStatus;
     ////        if (m_processes.contains(pid)) {
     ////            m_processes[pid].ipcProcess.reset();
@@ -386,17 +389,14 @@ int IpcServer::installApp(const QString &path)
     // On Windows, simply run the .exe file with administrator privileges
     QProcess process;
     process.setProgram("powershell.exe");
-    process.setArguments(QStringList() 
-        << "Start-Process"
-        << path
-        << "-Verb" 
-        << "RunAs"
-        << "-Wait");
-    
+    process.setArguments(QStringList() << "Start-Process" << path << "-Verb"
+                                       << "RunAs"
+                                       << "-Wait");
+
     qDebug() << "Launching installer with elevated privileges...";
     process.start();
     process.waitForFinished();
-    
+
     if (process.exitCode() != 0) {
         qDebug() << "Installation error:" << process.readAllStandardError();
     }
@@ -404,57 +404,47 @@ int IpcServer::installApp(const QString &path)
 
 #elif defined(Q_OS_MACOS)
     // DRAFT
-    
+
     QProcess process;
     QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
     QString mountPoint = tempDir + "/AmneziaVPN_mount";
-    
+
     // Create mount point
     QDir dir(mountPoint);
     if (!dir.exists()) {
         dir.mkpath(".");
     }
-    
+
     // Mount DMG image
     qDebug() << "Mounting DMG image...";
-    process.start("hdiutil", QStringList() 
-        << "attach" 
-        << path
-        << "-mountpoint" 
-        << mountPoint
-        << "-nobrowse");
+    process.start("hdiutil", QStringList() << "attach" << path << "-mountpoint" << mountPoint << "-nobrowse");
     process.waitForFinished();
-    
+
     if (process.exitCode() != 0) {
         qDebug() << "Failed to mount DMG:" << process.readAllStandardError();
         return process.exitCode();
     }
-    
+
     // Look for .app bundle in mounted image
     QDirIterator it(mountPoint, QStringList() << "*.app", QDir::Dirs);
     if (!it.hasNext()) {
         qDebug() << "No .app bundle found in DMG";
         return -1;
     }
-    
+
     QString appPath = it.next();
     QString targetPath = "/Applications/" + QFileInfo(appPath).fileName();
-    
+
     // Copy application to /Applications
     qDebug() << "Copying app to Applications folder...";
-    process.start("cp", QStringList() 
-        << "-R"
-        << appPath 
-        << targetPath);
+    process.start("cp", QStringList() << "-R" << appPath << targetPath);
     process.waitForFinished();
-    
+
     // Unmount DMG
     qDebug() << "Unmounting DMG...";
-    process.start("hdiutil", QStringList() 
-        << "detach" 
-        << mountPoint);
+    process.start("hdiutil", QStringList() << "detach" << mountPoint);
     process.waitForFinished();
-    
+
     if (process.exitCode() != 0) {
         qDebug() << "Installation error:" << process.readAllStandardError();
     }
@@ -464,17 +454,17 @@ int IpcServer::installApp(const QString &path)
     QProcess process;
     QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
     QString extractDir = tempDir + "/amnezia_update";
-    
+
     qDebug() << "Installing app from:" << path;
     qDebug() << "Using temp directory:" << extractDir;
-    
+
     // Create extraction directory if it doesn't exist
     QDir dir(extractDir);
     if (!dir.exists()) {
         dir.mkpath(".");
         qDebug() << "Created extraction directory";
     }
-    
+
     // First, extract the zip archive
     qDebug() << "Extracting ZIP archive...";
     process.start("unzip", QStringList() << path << "-d" << extractDir);
@@ -484,7 +474,7 @@ int IpcServer::installApp(const QString &path)
         return process.exitCode();
     }
     qDebug() << "ZIP archive extracted successfully";
-    
+
     // Look for tar file in extracted files
     qDebug() << "Looking for TAR file...";
     QDirIterator tarIt(extractDir, QStringList() << "*.tar", QDir::Files);
@@ -492,12 +482,12 @@ int IpcServer::installApp(const QString &path)
         qDebug() << "TAR file not found in the extracted archive";
         return -1;
     }
-    
+
     // Extract found tar archive
     QString tarPath = tarIt.next();
     qDebug() << "Found TAR file:" << tarPath;
     qDebug() << "Extracting TAR archive...";
-    
+
     process.start("tar", QStringList() << "-xf" << tarPath << "-C" << extractDir);
     process.waitForFinished();
     if (process.exitCode() != 0) {
@@ -505,11 +495,11 @@ int IpcServer::installApp(const QString &path)
         return process.exitCode();
     }
     qDebug() << "TAR archive extracted successfully";
-    
+
     // Remove tar file as it's no longer needed
     QFile::remove(tarPath);
     qDebug() << "Removed temporary TAR file";
-    
+
     // Find executable file and run it
     qDebug() << "Looking for executable file...";
     QDirIterator it(extractDir, QDir::Files | QDir::Executable, QDirIterator::Subdirectories);
@@ -524,7 +514,7 @@ int IpcServer::installApp(const QString &path)
         qDebug() << "Installer finished with exit code:" << process.exitCode();
         return process.exitCode();
     }
-    
+
     qDebug() << "No executable file found";
     return -1; // Executable not found
 #endif

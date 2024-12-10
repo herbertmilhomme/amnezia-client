@@ -9,7 +9,8 @@
 #include "core/errorstrings.h"
 #include "version.h"
 
-namespace {
+namespace
+{
 #ifdef Q_OS_MACOS
     const QString installerPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/AmneziaVPN.dmg";
 #elif defined Q_OS_WINDOWS
@@ -19,7 +20,8 @@ namespace {
 #endif
 }
 
-UpdateController::UpdateController(const std::shared_ptr<Settings> &settings, QObject *parent) : QObject(parent), m_settings(settings)
+UpdateController::UpdateController(const std::shared_ptr<Settings> &settings, QObject *parent)
+    : QObject(parent), m_settings(settings)
 {
 }
 
@@ -62,19 +64,19 @@ void UpdateController::checkForUpdates()
 
                 for (auto asset : assets) {
                     QJsonObject assetObject = asset.toObject();
-                    #ifdef Q_OS_WINDOWS
+#ifdef Q_OS_WINDOWS
                     if (assetObject.value("name").toString().endsWith(".exe")) {
                         m_downloadUrl = assetObject.value("browser_download_url").toString();
                     }
-                    #elif defined(Q_OS_MACOS)
+#elif defined(Q_OS_MACOS)
                     if (assetObject.value("name").toString().endsWith(".dmg")) {
                         m_downloadUrl = assetObject.value("browser_download_url").toString();
                     }
-                    #elif defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
+#elif defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
                     if (assetObject.value("name").toString().contains(".tar.zip")) {
                         m_downloadUrl = assetObject.value("browser_download_url").toString();
                     }
-                    #endif
+#endif
                 }
 
                 emit updateFound();
@@ -141,5 +143,4 @@ void UpdateController::runInstaller()
 
         reply->deleteLater();
     });
-
 }

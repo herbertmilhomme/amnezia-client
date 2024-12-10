@@ -1,11 +1,11 @@
 #ifndef IPCSERVER_H
 #define IPCSERVER_H
 
+#include "../client/daemon/interfaceconfig.h"
+#include <QJsonObject>
 #include <QLocalServer>
 #include <QObject>
 #include <QRemoteObjectNode>
-#include <QJsonObject>
-#include "../client/daemon/interfaceconfig.h"
 
 #include "ipc.h"
 #include "ipcserverprocess.h"
@@ -37,15 +37,17 @@ public:
     virtual bool enablePeerTraffic(const QJsonObject &configStr) override;
     virtual bool enableKillSwitch(const QJsonObject &excludeAddr, int vpnAdapterIndex) override;
     virtual bool disableKillSwitch() override;
-    virtual bool updateResolvers(const QString& ifname, const QList<QHostAddress>& resolvers) override;
+    virtual bool updateResolvers(const QString &ifname, const QList<QHostAddress> &resolvers) override;
     virtual int mountDmg(const QString &path, bool mount) override;
     virtual int installApp(const QString &path) override;
 
 private:
     int m_localpid = 0;
 
-    struct ProcessDescriptor {
-        ProcessDescriptor (QObject *parent = nullptr) {
+    struct ProcessDescriptor
+    {
+        ProcessDescriptor(QObject *parent = nullptr)
+        {
             serverNode = QSharedPointer<QRemoteObjectHost>(new QRemoteObjectHost(parent));
             ipcProcess = QSharedPointer<IpcServerProcess>(new IpcServerProcess(parent));
             tun2socksProcess = QSharedPointer<IpcProcessTun2Socks>(new IpcProcessTun2Socks(parent));
