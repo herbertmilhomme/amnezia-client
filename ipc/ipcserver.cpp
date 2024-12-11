@@ -383,133 +383,67 @@ int IpcServer::mountDmg(const QString &path, bool mount)
 
 int IpcServer::installApp(const QString &path)
 {
-    qDebug() << "Installing app from:" << path;
+    Logger logger("IpcServer");
+    logger.info() << "Installing app from:" << path;
 
 #ifdef Q_OS_WINDOWS
     QProcess process;
-    QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
-    QString extractDir = tempDir + "/amnezia_update";
-
-    // Create extraction directory if it doesn't exist
-    QDir dir(extractDir);
-    if (!dir.exists()) {
-        dir.mkpath(".");
-        qDebug() << "Created extraction directory";
-    }
-
-    // Extract ZIP archive
-    qDebug() << "Extracting ZIP archive...";
+    logger.info() << "Launching installer with elevated privileges...";
     process.start("powershell.exe",
-                  QStringList() << "Expand-Archive"
-                                << "-Path" << path << "-DestinationPath" << extractDir << "-Force");
-    process.waitForFinished();
-
-    if (process.exitCode() != 0) {
-        qDebug() << "ZIP extraction error:" << process.readAllStandardError();
-        return process.exitCode();
-    }
-    qDebug() << "ZIP archive extracted successfully";
-
-    // Find .exe file in extracted directory
-    QDirIterator it(extractDir, QStringList() << "*.exe", QDir::Files, QDirIterator::Subdirectories);
-    if (!it.hasNext()) {
-        qDebug() << "No .exe file found in the extracted archive";
-        return -1;
-    }
-
-    QString installerPath = it.next();
-    qDebug() << "Found installer:" << installerPath;
-
-    // Run installer with elevated privileges
-    qDebug() << "Launching installer with elevated privileges...";
-    process.start("powershell.exe",
-                  QStringList() << "Start-Process" << installerPath << "-Verb"
+                  QStringList() << "Start-Process" << path << "-Verb"
                                 << "RunAs"
                                 << "-Wait");
     process.waitForFinished();
 
     if (process.exitCode() != 0) {
-        qDebug() << "Installation error:" << process.readAllStandardError();
+        logger.error() << "Installation error:" << process.readAllStandardError();
     }
     return process.exitCode();
 
 #elif defined(Q_OS_MACOS)
     QProcess process;
     QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
-    QString extractDir = tempDir + "/amnezia_update";
-
-    // Create extraction directory
-    QDir dir(extractDir);
-    if (!dir.exists()) {
-        dir.mkpath(".");
-        qDebug() << "Created extraction directory";
-    }
-
-    // Extract ZIP archive using unzip command
-    qDebug() << "Extracting ZIP archive...";
-    process.start("unzip", QStringList() << path << "-d" << extractDir);
-    process.waitForFinished();
-
-    if (process.exitCode() != 0) {
-        qDebug() << "ZIP extraction error:" << process.readAllStandardError();
-        return process.exitCode();
-    }
-    qDebug() << "ZIP archive extracted successfully";
-
-    // Find .dmg file in extracted directory
-    QDirIterator it(extractDir, QStringList() << "*.dmg", QDir::Files, QDirIterator::Subdirectories);
-    if (!it.hasNext()) {
-        qDebug() << "No .dmg file found in the extracted archive";
-        return -1;
-    }
-
-    QString dmgPath = it.next();
-    qDebug() << "Found DMG file:" << dmgPath;
     QString mountPoint = tempDir + "/AmneziaVPN_mount";
 
     // Create mount point
-    dir = QDir(mountPoint);
+    QDir dir(mountPoint);
     if (!dir.exists()) {
         dir.mkpath(".");
     }
 
     // Mount DMG image
-    qDebug() << "Mounting DMG image...";
-    process.start("hdiutil", QStringList() << "attach" << dmgPath << "-mountpoint" << mountPoint << "-nobrowse");
+    logger.info() << "Mounting DMG image...";
+    process.start("hdiutil", QStringList() << "attach" << path << "-mountpoint" << mountPoint << "-nobrowse");
     process.waitForFinished();
 
     if (process.exitCode() != 0) {
-        qDebug() << "Failed to mount DMG:" << process.readAllStandardError();
+        logger.error() << "Failed to mount DMG:" << process.readAllStandardError();
         return process.exitCode();
     }
 
     // Look for .app bundle in mounted image
-    QDirIterator appIt(mountPoint, QStringList() << "*.app", QDir::Dirs);
-    if (!appIt.hasNext()) {
-        qDebug() << "No .app bundle found in DMG";
+    QDirIterator it(mountPoint, QStringList() << "*.app", QDir::Dirs);
+    if (!it.hasNext()) {
+        logger.error() << "No .app bundle found in DMG";
         return -1;
     }
 
-    QString appPath = appIt.next();
+    QString appPath = it.next();
     QString targetPath = "/Applications/" + QFileInfo(appPath).fileName();
 
     // Copy application to /Applications
-    qDebug() << "Copying app to Applications folder...";
+    logger.info() << "Copying app to Applications folder...";
     process.start("cp", QStringList() << "-R" << appPath << targetPath);
     process.waitForFinished();
 
     // Unmount DMG
-    qDebug() << "Unmounting DMG...";
+    logger.info() << "Unmounting DMG...";
     process.start("hdiutil", QStringList() << "detach" << mountPoint);
     process.waitForFinished();
 
     if (process.exitCode() != 0) {
-        qDebug() << "Installation error:" << process.readAllStandardError();
+        logger.error() << "Installation error:" << process.readAllStandardError();
     }
-
-    // Clean up
-    QDir(extractDir).removeRecursively();
-
     return process.exitCode();
 
 #elif defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
@@ -517,67 +451,64 @@ int IpcServer::installApp(const QString &path)
     QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
     QString extractDir = tempDir + "/amnezia_update";
 
-    qDebug() << "Installing app from:" << path;
-    qDebug() << "Using temp directory:" << extractDir;
+    logger.info() << "Using temp directory:" << extractDir;
 
     // Create extraction directory if it doesn't exist
     QDir dir(extractDir);
     if (!dir.exists()) {
         dir.mkpath(".");
-        qDebug() << "Created extraction directory";
+        logger.info() << "Created extraction directory";
     }
 
     // First, extract the zip archive
-    qDebug() << "Extracting ZIP archive...";
+    logger.info() << "Extracting ZIP archive...";
     process.start("unzip", QStringList() << path << "-d" << extractDir);
     process.waitForFinished();
     if (process.exitCode() != 0) {
-        qDebug() << "ZIP extraction error:" << process.readAllStandardError();
+        logger.error() << "ZIP extraction error:" << process.readAllStandardError();
         return process.exitCode();
     }
-    qDebug() << "ZIP archive extracted successfully";
+    logger.info() << "ZIP archive extracted successfully";
 
     // Look for tar file in extracted files
-    qDebug() << "Looking for TAR file...";
+    logger.info() << "Looking for TAR file...";
     QDirIterator tarIt(extractDir, QStringList() << "*.tar", QDir::Files);
     if (!tarIt.hasNext()) {
-        qDebug() << "TAR file not found in the extracted archive";
+        logger.error() << "TAR file not found in the extracted archive";
         return -1;
     }
 
     // Extract found tar archive
     QString tarPath = tarIt.next();
-    qDebug() << "Found TAR file:" << tarPath;
-    qDebug() << "Extracting TAR archive...";
+    logger.info() << "Found TAR file:" << tarPath;
+    logger.info() << "Extracting TAR archive...";
 
     process.start("tar", QStringList() << "-xf" << tarPath << "-C" << extractDir);
     process.waitForFinished();
     if (process.exitCode() != 0) {
-        qDebug() << "TAR extraction error:" << process.readAllStandardError();
+        logger.error() << "TAR extraction error:" << process.readAllStandardError();
         return process.exitCode();
     }
-    qDebug() << "TAR archive extracted successfully";
+    logger.info() << "TAR archive extracted successfully";
 
     // Remove tar file as it's no longer needed
     QFile::remove(tarPath);
-    qDebug() << "Removed temporary TAR file";
+    logger.info() << "Removed temporary TAR file";
 
     // Find executable file and run it
-    qDebug() << "Looking for executable file...";
+    logger.info() << "Looking for executable file...";
     QDirIterator it(extractDir, QDir::Files | QDir::Executable, QDirIterator::Subdirectories);
     if (it.hasNext()) {
         QString execPath = it.next();
-        qDebug() << "Found executable:" << execPath;
-        qDebug() << "Launching installer...";
+        logger.info() << "Found executable:" << execPath;
+        logger.info() << "Launching installer...";
         process.start("sudo", QStringList() << execPath);
         process.waitForFinished();
-        qDebug() << "Installer stdout:" << process.readAllStandardOutput();
-        qDebug() << "Installer stderr:" << process.readAllStandardError();
-        qDebug() << "Installer finished with exit code:" << process.exitCode();
+        logger.info() << "Installer finished with exit code:" << process.exitCode();
         return process.exitCode();
     }
 
-    qDebug() << "No executable file found";
+    logger.error() << "No executable file found";
     return -1; // Executable not found
 #endif
     return 0;
