@@ -393,6 +393,8 @@ int IpcServer::installApp(const QString &path)
                   QStringList() << "Start-Process" << path << "-Verb"
                                 << "RunAs"
                                 << "-Wait");
+    logger.info() << "Installer stdout:" << process.readAllStandardOutput();
+    logger.info() << "Installer stderr:" << process.readAllStandardError();
     process.waitForFinished();
 
     if (process.exitCode() != 0) {
