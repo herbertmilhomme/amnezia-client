@@ -386,15 +386,46 @@ int IpcServer::installApp(const QString &path)
     qDebug() << "Installing app from:" << path;
 
 #ifdef Q_OS_WINDOWS
-    // On Windows, simply run the .exe file with administrator privileges
     QProcess process;
-    process.setProgram("powershell.exe");
-    process.setArguments(QStringList() << "Start-Process" << path << "-Verb"
-                                       << "RunAs"
-                                       << "-Wait");
+    QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    QString extractDir = tempDir + "/amnezia_update";
 
+    // Create extraction directory if it doesn't exist
+    QDir dir(extractDir);
+    if (!dir.exists()) {
+        dir.mkpath(".");
+        qDebug() << "Created extraction directory";
+    }
+
+    // Extract ZIP archive
+    qDebug() << "Extracting ZIP archive...";
+    process.start("powershell.exe",
+                  QStringList() << "Expand-Archive"
+                                << "-Path" << path << "-DestinationPath" << extractDir << "-Force");
+    process.waitForFinished();
+
+    if (process.exitCode() != 0) {
+        qDebug() << "ZIP extraction error:" << process.readAllStandardError();
+        return process.exitCode();
+    }
+    qDebug() << "ZIP archive extracted successfully";
+
+    // Find .exe file in extracted directory
+    QDirIterator it(extractDir, QStringList() << "*.exe", QDir::Files, QDirIterator::Subdirectories);
+    if (!it.hasNext()) {
+        qDebug() << "No .exe file found in the extracted archive";
+        return -1;
+    }
+
+    QString installerPath = it.next();
+    qDebug() << "Found installer:" << installerPath;
+
+    // Run installer with elevated privileges
     qDebug() << "Launching installer with elevated privileges...";
-    process.start();
+    process.start("powershell.exe",
+                  QStringList() << "Start-Process" << installerPath << "-Verb"
+                                << "RunAs"
+                                << "-Wait");
     process.waitForFinished();
 
     if (process.exitCode() != 0) {
@@ -403,21 +434,48 @@ int IpcServer::installApp(const QString &path)
     return process.exitCode();
 
 #elif defined(Q_OS_MACOS)
-    // DRAFT
-
     QProcess process;
     QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    QString extractDir = tempDir + "/amnezia_update";
+
+    // Create extraction directory
+    QDir dir(extractDir);
+    if (!dir.exists()) {
+        dir.mkpath(".");
+        qDebug() << "Created extraction directory";
+    }
+
+    // Extract ZIP archive using unzip command
+    qDebug() << "Extracting ZIP archive...";
+    process.start("unzip", QStringList() << path << "-d" << extractDir);
+    process.waitForFinished();
+
+    if (process.exitCode() != 0) {
+        qDebug() << "ZIP extraction error:" << process.readAllStandardError();
+        return process.exitCode();
+    }
+    qDebug() << "ZIP archive extracted successfully";
+
+    // Find .dmg file in extracted directory
+    QDirIterator it(extractDir, QStringList() << "*.dmg", QDir::Files, QDirIterator::Subdirectories);
+    if (!it.hasNext()) {
+        qDebug() << "No .dmg file found in the extracted archive";
+        return -1;
+    }
+
+    QString dmgPath = it.next();
+    qDebug() << "Found DMG file:" << dmgPath;
     QString mountPoint = tempDir + "/AmneziaVPN_mount";
 
     // Create mount point
-    QDir dir(mountPoint);
+    dir = QDir(mountPoint);
     if (!dir.exists()) {
         dir.mkpath(".");
     }
 
     // Mount DMG image
     qDebug() << "Mounting DMG image...";
-    process.start("hdiutil", QStringList() << "attach" << path << "-mountpoint" << mountPoint << "-nobrowse");
+    process.start("hdiutil", QStringList() << "attach" << dmgPath << "-mountpoint" << mountPoint << "-nobrowse");
     process.waitForFinished();
 
     if (process.exitCode() != 0) {
@@ -426,13 +484,13 @@ int IpcServer::installApp(const QString &path)
     }
 
     // Look for .app bundle in mounted image
-    QDirIterator it(mountPoint, QStringList() << "*.app", QDir::Dirs);
-    if (!it.hasNext()) {
+    QDirIterator appIt(mountPoint, QStringList() << "*.app", QDir::Dirs);
+    if (!appIt.hasNext()) {
         qDebug() << "No .app bundle found in DMG";
         return -1;
     }
 
-    QString appPath = it.next();
+    QString appPath = appIt.next();
     QString targetPath = "/Applications/" + QFileInfo(appPath).fileName();
 
     // Copy application to /Applications
@@ -448,6 +506,10 @@ int IpcServer::installApp(const QString &path)
     if (process.exitCode() != 0) {
         qDebug() << "Installation error:" << process.readAllStandardError();
     }
+
+    // Clean up
+    QDir(extractDir).removeRecursively();
+
     return process.exitCode();
 
 #elif defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
