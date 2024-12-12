@@ -389,13 +389,10 @@ int IpcServer::installApp(const QString &path)
 #ifdef Q_OS_WINDOWS
     QProcess process;
     logger.info() << "Launching installer with elevated privileges...";
-    process.start("powershell.exe",
-                  QStringList() << "Start-Process" << path << "-Verb"
-                                << "RunAs"
-                                << "-Wait");
+    process.start(path);
+    process.waitForFinished();
     logger.info() << "Installer stdout:" << process.readAllStandardOutput();
     logger.info() << "Installer stderr:" << process.readAllStandardError();
-    process.waitForFinished();
 
     if (process.exitCode() != 0) {
         logger.error() << "Installation error:" << process.readAllStandardError();
