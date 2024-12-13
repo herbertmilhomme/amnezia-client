@@ -110,7 +110,7 @@ export PATH=$PATH:~/go/bin
 mkdir build-ios
 $QT_IOS_BIN/qt-cmake . -B build-ios -GXcode -DQT_HOST_PATH=$QT_MACOS_ROOT_DIR
 ```
-Замените <ПУТЬ-К-ПАПКЕ-QT> и <QT-ВЕРСИЯ> на ваши значения.
+Замените <PATH-TO-QT-FOLDER> и <QT-VERSION> на ваши значения.
 
 Если появляется ошибка gomobile: command not found, убедитесь, что PATH настроен на папку bin, где установлен gomobile:
 ```bash
