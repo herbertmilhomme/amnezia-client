@@ -63,6 +63,7 @@ DrawerType2 {
             clip: true
             interactive: true
 
+            property int selectedIndex: LanguageModel.currentLanguageIndex
             property bool isFocusable: true
 
             Keys.onTabPressed: {
@@ -90,7 +91,6 @@ DrawerType2 {
             }
 
             model: LanguageModel
-            currentIndex: LanguageModel.currentLanguageIndex
 
             ButtonGroup {
                 id: buttonGroup
@@ -185,10 +185,10 @@ DrawerType2 {
                         }
 
                         ButtonGroup.group: buttonGroup
-                        checked: listView.currentIndex === index
+                        checked: listView.selectedIndex === index
 
                         onClicked: {
-                            listView.currentIndex = index
+                            listView.selectedIndex = index
                             LanguageModel.changeLanguage(languageIndex)
                             root.closeTriggered()
                         }
