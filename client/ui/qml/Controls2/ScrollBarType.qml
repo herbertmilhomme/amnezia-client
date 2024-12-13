@@ -7,5 +7,5 @@ import "../Controls2"
 ScrollBar {
     id: root
     
-    policy: ScrollBar.AsNeeded
+    policy: ScrollBar.AlwaysOn
 }
