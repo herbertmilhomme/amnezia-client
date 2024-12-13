@@ -60,35 +60,13 @@ DrawerType2 {
             anchors.right: parent.right
             anchors.bottom: parent.bottom
 
-            clip: true
-            interactive: true
-
-            property int selectedIndex: LanguageModel.currentLanguageIndex
             property bool isFocusable: true
+            property int selectedIndex: LanguageModel.currentLanguageIndex
 
-            Keys.onTabPressed: {
-                FocusController.nextKeyTabItem()
-            }
+            clip: true
+            reuseItems: true
 
-            Keys.onBacktabPressed: {
-                FocusController.previousKeyTabItem()
-            }
-
-            Keys.onUpPressed: {
-                FocusController.nextKeyUpItem()
-            }
-
-            Keys.onDownPressed: {
-                FocusController.nextKeyDownItem()
-            }
-
-            Keys.onLeftPressed: {
-                FocusController.nextKeyLeftItem()
-            }
-
-            Keys.onRightPressed: {
-                FocusController.nextKeyRightItem()
-            }
+            ScrollBar.vertical: ScrollBarType {}
 
             model: LanguageModel
 
