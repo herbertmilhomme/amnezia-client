@@ -20,7 +20,7 @@ ListView {
 
     property var clickedFunction
 
-    currentIndex: 0
+    property int selectedIndex: 0
 
     width: rootWidth
     height: root.contentItem.height
@@ -29,45 +29,21 @@ ListView {
 
     property bool isFocusable: true
 
-    Keys.onTabPressed: {
-        FocusController.nextKeyTabItem()
-    }
-
-    Keys.onBacktabPressed: {
-        FocusController.previousKeyTabItem()
-    }
-
-    Keys.onUpPressed: {
-        FocusController.nextKeyUpItem()
-    }
-    
-    Keys.onDownPressed: {
-        FocusController.nextKeyDownItem()
-    }
-    
-    Keys.onLeftPressed: {
-        FocusController.nextKeyLeftItem()
-    }
-
-    Keys.onRightPressed: {
-        FocusController.nextKeyRightItem()
-    }
-
     ButtonGroup {
         id: buttonGroup
     }
 
     function triggerCurrentItem() {
-        var item = root.itemAtIndex(currentIndex)
-        var radioButton = item.children[0]
-        radioButton.clicked()
+        var item = root.itemAtIndex(selectedIndex)
+        item.selectable.clicked()
     }
 
     delegate: ColumnLayout {
         id: content
 
+        property alias selectable: radioButton
+
         implicitWidth: rootWidth
-        // implicitHeight: content.implicitHeight
 
         RadioButton {
             id: radioButton
@@ -156,10 +132,10 @@ ListView {
             }
 
             ButtonGroup.group: buttonGroup
-            checked: root.currentIndex === index
+            checked: root.selectedIndex === index
 
             onClicked: {
-                root.currentIndex = index
+                root.selectedIndex = index
                 root.selectedText = name
                 if (clickedFunction && typeof clickedFunction === "function") {
                     clickedFunction()
@@ -168,7 +144,7 @@ ListView {
         }
 
         Component.onCompleted: {
-            if (root.currentIndex === index) {
+            if (root.selectedIndex === index) {
                 root.selectedText = name
             }
         }
