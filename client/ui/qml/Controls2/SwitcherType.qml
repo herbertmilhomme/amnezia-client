@@ -158,23 +158,11 @@ Switch {
         enabled: false
     }
 
-    Keys.onEnterPressed: {
-        if (!event.isAutoRepeat) {
-            root.checked = !root.checked
-            root.checkedChanged()
-        }
-        event.accepted = true
-    }
+    Keys.onEnterPressed: event => handleSwitch(event)
+    Keys.onReturnPressed: event => handleSwitch(event)
+    Keys.onSpacePressed: event => handleSwitch(event)
 
-    Keys.onReturnPressed: {
-        if (!event.isAutoRepeat) {
-            root.checked = !root.checked
-            root.checkedChanged()
-        }
-        event.accepted = true
-    }
-
-    Keys.onSpacePressed: {
+    function handleSwitch(event) {
         if (!event.isAutoRepeat) {
             root.checked = !root.checked
             root.checkedChanged()
