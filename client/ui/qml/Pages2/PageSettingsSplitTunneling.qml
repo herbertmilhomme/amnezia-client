@@ -144,18 +144,17 @@ PageType {
 
                 model: root.routeModesModel
 
-                currentIndex: getRouteModesModelIndex()
 
                 clickedFunction: function() {
                     selector.text = selectedText
                     selector.closeTriggered()
-                    if (SitesModel.routeMode !== root.routeModesModel[currentIndex].type) {
-                        SitesModel.routeMode = root.routeModesModel[currentIndex].type
+                    if (SitesModel.routeMode !== root.routeModesModel[selectedIndex].type) {
+                        SitesModel.routeMode = root.routeModesModel[selectedIndex].type
                     }
                 }
 
                 Component.onCompleted: {
-                    if (root.routeModesModel[currentIndex].type === SitesModel.routeMode) {
+                    if (root.routeModesModel[selectedIndex].type === SitesModel.routeMode) {
                         selector.text = selectedText
                     } else {
                         selector.text = root.routeModesModel[0].name
@@ -165,7 +164,7 @@ PageType {
                 Connections {
                     target: SitesModel
                     function onRouteModeChanged() {
-                        currentIndex = getRouteModesModelIndex()
+                        selectedIndex = getRouteModesModelIndex()
                     }
                 }
             }
@@ -173,41 +172,17 @@ PageType {
     }
 
     ListView {
-        id: sites
+        id: listView
 
         anchors.top: header.bottom
         anchors.topMargin: 16
-        width: parent.width
+        anchors.bottom: addSiteButton.top
 
-        height: 200 // TODO: Change to correct height
+        width: parent.width
 
         enabled: root.pageEnabled
 
         property bool isFocusable: true
-
-        Keys.onTabPressed: {
-            FocusController.nextKeyTabItem()
-        }
-
-        Keys.onBacktabPressed: {
-            FocusController.previousKeyTabItem()
-        }
-
-        Keys.onUpPressed: {
-            FocusController.nextKeyUpItem()
-        }
-
-        Keys.onDownPressed: {
-            FocusController.nextKeyDownItem()
-        }
-
-        Keys.onLeftPressed: {
-            FocusController.nextKeyLeftItem()
-        }
-
-        Keys.onRightPressed: {
-            FocusController.nextKeyRightItem()
-        }
 
         model: SortFilterProxyModel {
             id: proxySitesModel
@@ -230,55 +205,44 @@ PageType {
 
         clip: true
 
-        delegate: Item {
-            implicitWidth: sites.width
-            implicitHeight: delegateContent.implicitHeight
+        reuseItems: true
 
-            // onActiveFocusChanged: {
-            //     if (activeFocus) {
-            //         site.rightButton.forceActiveFocus()
-            //     }
-            // }
+        delegate: ColumnLayout {
+            id: delegateContent
 
-            ColumnLayout {
-                id: delegateContent
+            width: listView.width
 
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
+            LabelWithButtonType {
+                id: site
+                Layout.fillWidth: true
 
-                LabelWithButtonType {
-                    id: site
-                    Layout.fillWidth: true
+                text: url
+                descriptionText: ip
+                rightImageSource: "qrc:/images/controls/trash.svg"
+                rightImageColor: AmneziaStyle.color.paleGray
 
-                    text: url
-                    descriptionText: ip
-                    rightImageSource: "qrc:/images/controls/trash.svg"
-                    rightImageColor: AmneziaStyle.color.paleGray
+                clickedFunction: function() {
+                    var headerText = qsTr("Remove ") + url + "?"
+                    var yesButtonText = qsTr("Continue")
+                    var noButtonText = qsTr("Cancel")
 
-                    clickedFunction: function() {
-                        var headerText = qsTr("Remove ") + url + "?"
-                        var yesButtonText = qsTr("Continue")
-                        var noButtonText = qsTr("Cancel")
-
-                        var yesButtonFunction = function() {
-                            SitesController.removeSite(proxySitesModel.mapToSource(index))
-                            if (!GC.isMobile()) {
-                                site.rightButton.forceActiveFocus()
-                            }
+                    var yesButtonFunction = function() {
+                        SitesController.removeSite(proxySitesModel.mapToSource(index))
+                        if (!GC.isMobile()) {
+                            site.rightButton.forceActiveFocus()
                         }
-                        var noButtonFunction = function() {
-                            if (!GC.isMobile()) {
-                                site.rightButton.forceActiveFocus()
-                            }
-                        }
-
-                        showQuestionDrawer(headerText, "", yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
                     }
-                }
+                    var noButtonFunction = function() {
+                        if (!GC.isMobile()) {
+                            site.rightButton.forceActiveFocus()
+                        }
+                    }
 
-                DividerType {}
+                    showQuestionDrawer(headerText, "", yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
+                }
             }
+
+            DividerType {}
         }
     }
 
@@ -373,7 +337,7 @@ PageType {
 
             LabelWithButtonType {
                 id: exportSitesButton
-                visible: !SettingsController.isOnTv()
+                enabled: !SettingsController.isOnTv()
                 Layout.fillWidth: true
                 text: qsTr("Save site list")
 
@@ -398,7 +362,7 @@ PageType {
             }
 
             DividerType {
-                visible: !SettingsController.isOnTv()
+                enabled: !SettingsController.isOnTv()
             }
         }
     }
