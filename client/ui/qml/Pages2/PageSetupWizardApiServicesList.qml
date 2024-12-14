@@ -14,84 +14,83 @@ import "../Config"
 PageType {
     id: root
 
-    FlickableType {
-        id: fl
+    ColumnLayout {
+        id: header
+
         anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+
+        spacing: 0
+
+        BackButtonType {
+            id: backButton
+            Layout.topMargin: 20
+        }
+
+        HeaderType {
+            Layout.fillWidth: true
+            Layout.topMargin: 8
+            Layout.rightMargin: 16
+            Layout.leftMargin: 16
+            Layout.bottomMargin: 16
+
+            headerText: qsTr("VPN by Amnezia")
+            descriptionText: qsTr("Choose a VPN service that suits your needs.")
+        }
+    }
+
+    ListView {
+        id: servicesListView
+
+        anchors.top: header.bottom
+        anchors.right: parent.right
+        anchors.left: parent.left
         anchors.bottom: parent.bottom
-        contentHeight: content.height
+        anchors.topMargin: 16
+        spacing: 0
 
-        ColumnLayout {
-            id: content
+        property bool isFocusable: true
+        selectedIndex: 1
+        clip: true
+        model: ApiServicesModel
 
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
+        ScrollBar.vertical: ScrollBar {}
 
-            spacing: 0
+        delegate: Item {
+            implicitWidth: servicesListView.width
+            implicitHeight: delegateContent.implicitHeight
 
-            BackButtonType {
-                id: backButton
-                Layout.topMargin: 20
-            }
+            ColumnLayout {
+                id: delegateContent
 
-            HeaderType {
-                Layout.fillWidth: true
-                Layout.topMargin: 8
-                Layout.rightMargin: 16
-                Layout.leftMargin: 16
-                Layout.bottomMargin: 32
+                anchors.fill: parent
 
-                headerText: qsTr("VPN by Amnezia")
-                descriptionText: qsTr("Choose a VPN service that suits your needs.")
-            }
+                CardWithIconsType {
+                    id: card
 
-            ListView {
-                id: containers
-                width: parent.width
-                height: containers.contentItem.height
-                spacing: 16
+                    Layout.fillWidth: true
+                    Layout.rightMargin: 16
+                    Layout.leftMargin: 16
+                    Layout.bottomMargin: 16
 
-                property bool isFocusable: true
+                    headerText: name
+                    bodyText: cardDescription
+                    footerText: price
 
-                currentIndex: 1
-                interactive: false
-                model: ApiServicesModel
+                    rightImageSource: "qrc:/images/controls/chevron-right.svg"
 
-                delegate: Item {
-                    implicitWidth: containers.width
-                    implicitHeight: delegateContent.implicitHeight
+                    enabled: isServiceAvailable
 
-                    ColumnLayout {
-                        id: delegateContent
-
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-
-                        CardWithIconsType {
-                            id: card
-
-                            Layout.fillWidth: true
-                            Layout.rightMargin: 16
-                            Layout.leftMargin: 16
-
-                            headerText: name
-                            bodyText: cardDescription
-                            footerText: price
-
-                            rightImageSource: "qrc:/images/controls/chevron-right.svg"
-
-                            onClicked: {
-                                if (isServiceAvailable) {
-                                    ApiServicesModel.setServiceIndex(index)
-                                    PageController.goToPage(PageEnum.PageSetupWizardApiServiceInfo)
-                                }
-                            }
-
-                            Keys.onEnterPressed: clicked()
-                            Keys.onReturnPressed: clicked()
+                    onClicked: {
+                        if (isServiceAvailable) {
+                            ApiServicesModel.setServiceIndex(index)
+                            PageController.goToPage(PageEnum.PageSetupWizardApiServiceInfo)
                         }
                     }
+                    
+                    Keys.onEnterPressed: clicked()
+                    Keys.onReturnPressed: clicked()
                 }
             }
         }

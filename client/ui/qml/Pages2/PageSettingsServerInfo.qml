@@ -25,7 +25,7 @@ PageType {
     readonly property int pageSettingsApiServerInfo: 3
     readonly property int pageSettingsApiLanguageList: 4
 
-    property var server
+    property var processedServer
 
     Connections {
         target: PageController
@@ -35,10 +35,18 @@ PageType {
         }
     }
 
+    Connections {
+        target: ServersModel
+
+        function onProcessedServerChanged() {
+            root.processedServer = proxyServersModel.get(0)
+        }
+    }
+
     SortFilterProxyModel {
         id: proxyServersModel
         objectName: "proxyServersModel"
-        
+
         sourceModel: ServersModel
         filters: [
             ValueFilter {
@@ -48,7 +56,7 @@ PageType {
         ]
 
         Component.onCompleted: {
-            root.server = proxyServersModel.get(0)
+            root.processedServer = proxyServersModel.get(0)
         }
     }
 
@@ -65,8 +73,8 @@ PageType {
             objectName: "backButton"
 
             backButtonFunction: function() {
-                if (nestedStackView.currentIndex === root.pageSettingsApiServerInfo
-                        && ServersModel.getProcessedServerData("isCountrySelectionAvailable")) {
+                if (nestedStackView.currentIndex === root.pageSettingsApiServerInfo &&
+                        root.processedServer.isCountrySelectionAvailable) {
                     nestedStackView.currentIndex = root.pageSettingsApiLanguageList
                 } else {
                     PageController.closePage()
@@ -83,18 +91,23 @@ PageType {
             Layout.rightMargin: 16
             Layout.bottomMargin: 10
 
-            actionButtonImage: nestedStackView.currentIndex === root.pageSettingsApiLanguageList ? "qrc:/images/controls/settings.svg" : "qrc:/images/controls/edit-3.svg"
+            actionButtonImage: nestedStackView.currentIndex === root.pageSettingsApiLanguageList ? "qrc:/images/controls/settings.svg"
+                                                                                                 : "qrc:/images/controls/edit-3.svg"
 
-            headerText: root.server.name
+            headerText: root.processedServer.name
             descriptionText: {
-                if (ServersModel.getProcessedServerData("isServerFromGatewayApi")) {
-                    return ApiServicesModel.getSelectedServiceData("serviceDescription")
-                } else if (ServersModel.getProcessedServerData("isServerFromTelegramApi")) {
-                    return root.server.serverDescription
-                } else if (ServersModel.isProcessedServerHasWriteAccess()) {
-                    return root.server.credentialsLogin + " · " + root.server.hostName
+                if (root.processedServer.isServerFromGatewayApi) {
+                    if (nestedStackView.currentIndex === root.pageSettingsApiLanguageList) {
+                        return qsTr("Subscription is valid until ") + ApiServicesModel.getSelectedServiceData("endDate")
+                    } else {
+                        return ApiServicesModel.getSelectedServiceData("serviceDescription")
+                    }
+                } else if (root.processedServer.isServerFromTelegramApi) {
+                    return root.processedServer.serverDescription
+                } else if (root.processedServer.hasWriteAccess) {
+                    return root.processedServer.credentialsLogin + " · " + root.processedServer.hostName
                 } else {
-                    return root.server.hostName
+                    return root.processedServer.hostName
                 }
             }
 
@@ -129,7 +142,7 @@ PageType {
 
                     Layout.fillWidth: true
                     headerText: qsTr("Server name")
-                    textFieldText: root.server.name
+                    textFieldText: root.processedServer.name
                     textField.maximumLength: 30
                     checkEmptyText: true
                 }
@@ -146,9 +159,8 @@ PageType {
                             return
                         }
 
-                        if (serverName.textFieldText !== root.server.name) {
+                        if (serverName.textFieldText !== root.processedServer.name) {
                             ServersModel.setProcessedServerData("name", serverName.textFieldText);
-                            root.server = proxyServersModel.get(0);
                         }
                         serverNameEditDrawer.closeTriggered()
                     }
@@ -238,6 +250,5 @@ PageType {
                 stackView: root.stackView
             }
         }
-
     }
 }

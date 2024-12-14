@@ -129,6 +129,9 @@ protected:
 
 signals:
     void processedServerIndexChanged(const int index);
+    // emitted when the processed server index or processed server data is changed
+    void processedServerChanged();
+
     void defaultServerIndexChanged(const int index);
     void defaultServerNameChanged();
     void defaultServerDescriptionChanged();

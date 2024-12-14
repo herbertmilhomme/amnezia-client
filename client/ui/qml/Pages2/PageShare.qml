@@ -90,7 +90,7 @@ PageType {
                 break
             }
             case PageShare.ConfigType.Xray: {
-                ExportController.generateXrayConfig()
+                ExportController.generateXrayConfig(clientNameTextField.textFieldText)
                 shareConnectionDrawer.configCaption = qsTr("Save XRay config")
                 shareConnectionDrawer.configExtension = ".json"
                 shareConnectionDrawer.configFileName = "amnezia_for_xray"
