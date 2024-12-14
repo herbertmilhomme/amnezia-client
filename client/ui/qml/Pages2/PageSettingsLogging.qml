@@ -25,69 +25,6 @@ PageType {
         anchors.topMargin: 20
     }
 
-    QtObject {
-        id: clientLogs
-
-        property string title: qsTr("Client logs")
-        property string description: qsTr("AmneziaVPN logs")
-        property bool isVisible: true
-        property var openLogsHandler: function() {
-            SettingsController.openLogsFolder()
-        }
-        property var exportLogsHandler: function() {
-            var fileName = ""
-            if (GC.isMobile()) {
-                fileName = "AmneziaVPN.log"
-            } else {
-                fileName = SystemController.getFileName(qsTr("Save"),
-                                                        qsTr("Logs files (*.log)"),
-                                                        StandardPaths.standardLocations(StandardPaths.DocumentsLocation) + "/AmneziaVPN",
-                                                        true,
-                                                        ".log")
-            }
-            if (fileName !== "") {
-                PageController.showBusyIndicator(true)
-                SettingsController.exportLogsFile(fileName)
-                PageController.showBusyIndicator(false)
-                PageController.showNotificationMessage(qsTr("Logs file saved"))
-            }
-        }
-    }
-
-    QtObject {
-        id: serviceLogs
-
-        property string title: qsTr("Service logs")
-        property string description: qsTr("AmneziaVPN-service logs")
-        property bool isVisible: !GC.isMobile()
-        property var openLogsHandler: function() {
-            SettingsController.openServiceLogsFolder()
-        }
-        property var exportLogsHandler: function() {
-            var fileName = ""
-            if (GC.isMobile()) {
-                fileName = "AmneziaVPN-service.log"
-            } else {
-                fileName = SystemController.getFileName(qsTr("Save"),
-                                                        qsTr("Logs files (*.log)"),
-                                                        StandardPaths.standardLocations(StandardPaths.DocumentsLocation) + "/AmneziaVPN-service",
-                                                        true,
-                                                        ".log")
-            }
-            if (fileName !== "") {
-                PageController.showBusyIndicator(true)
-                SettingsController.exportServiceLogsFile(fileName)
-                PageController.showBusyIndicator(false)
-                PageController.showNotificationMessage(qsTr("Logs file saved"))
-            }
-        }
-    }
-
-    property list<QtObject> logTypes: [
-        clientLogs,
-        serviceLogs
-    ]
-
     ListView {
         id: listView
 
@@ -98,46 +35,10 @@ PageType {
 
         property bool isFocusable: true
 
-        Keys.onTabPressed: {
-            FocusController.nextKeyTabItem()
-        }
-
-        Keys.onBacktabPressed: {
-            FocusController.previousKeyTabItem()
-        }
-
-        Keys.onUpPressed: {
-            FocusController.nextKeyUpItem()
-        }
-
-        Keys.onDownPressed: {
-            FocusController.nextKeyDownItem()
-        }
-
-        Keys.onLeftPressed: {
-            FocusController.nextKeyLeftItem()
-        }
-
-        Keys.onRightPressed: {
-            FocusController.nextKeyRightItem()
-        }
-
         ScrollBar.vertical: ScrollBarType {}
 
-        model: logTypes
-        spacing: 24
-        snapMode: ListView.SnapOneItem
-
-        reuseItems: true
-
-        clip: true
-
         header: ColumnLayout {
-            id: headerContent
-
             width: listView.width
-
-            spacing: 0
 
             HeaderType {
                 Layout.fillWidth: true
@@ -199,14 +100,17 @@ PageType {
             }
         }
 
+        model: logTypes
+        clip: true
+        reuseItems: true
+        snapMode: ListView.SnapOneItem
+
         delegate: ColumnLayout {
             id: delegateContent
 
             width: listView.width
 
-            spacing: 0
-
-            visible: isVisible
+            enabled: isVisible
 
             ListItemTitleType {
                 Layout.fillWidth: true
@@ -255,6 +159,69 @@ PageType {
             }
 
             DividerType {}
+        }
+    }
+
+    property list<QtObject> logTypes: [
+        clientLogs,
+        serviceLogs
+    ]
+
+    QtObject {
+        id: clientLogs
+
+        readonly property string title: qsTr("Client logs")
+        readonly property string description: qsTr("AmneziaVPN logs")
+        readonly property bool isVisible: true
+        readonly property var openLogsHandler: function() {
+            SettingsController.openLogsFolder()
+        }
+        readonly property var exportLogsHandler: function() {
+            var fileName = ""
+            if (GC.isMobile()) {
+                fileName = "AmneziaVPN.log"
+            } else {
+                fileName = SystemController.getFileName(qsTr("Save"),
+                                                        qsTr("Logs files (*.log)"),
+                                                        StandardPaths.standardLocations(StandardPaths.DocumentsLocation) + "/AmneziaVPN",
+                                                        true,
+                                                        ".log")
+            }
+            if (fileName !== "") {
+                PageController.showBusyIndicator(true)
+                SettingsController.exportLogsFile(fileName)
+                PageController.showBusyIndicator(false)
+                PageController.showNotificationMessage(qsTr("Logs file saved"))
+            }
+        }
+    }
+
+    QtObject {
+        id: serviceLogs
+
+        readonly property string title: qsTr("Service logs")
+        readonly property string description: qsTr("AmneziaVPN-service logs")
+        readonly property bool isVisible: !GC.isMobile()
+        readonly property var openLogsHandler: function() {
+            SettingsController.openServiceLogsFolder()
+        }
+        readonly property var exportLogsHandler: function() {
+            var fileName = ""
+            if (GC.isMobile()) {
+                fileName = "AmneziaVPN-service.log"
+            } else {
+                fileName = SystemController.getFileName(qsTr("Save"),
+                                                        qsTr("Logs files (*.log)"),
+                                                        StandardPaths.standardLocations(StandardPaths.DocumentsLocation) + "/AmneziaVPN-service",
+                                                        true,
+                                                        ".log")
+            }
+            if (fileName !== "") {
+                PageController.showBusyIndicator(true)
+                SettingsController.exportServiceLogsFile(fileName)
+                PageController.showBusyIndicator(false)
+                PageController.showNotificationMessage(qsTr("Logs file saved"))
+            }
         }
     }
 }
