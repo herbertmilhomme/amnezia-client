@@ -104,13 +104,22 @@ PageType {
                 rightButtonClickedOnEnter: true
 
                 clickedFunc: function () {
-                    clickedHandler
+                    clickedHandler()
                 }
 
                 textField.onFocusChanged: {
                     var _currentIndex = listView.currentIndex
                     var _currentItem = listView.itemAtIndex(_currentIndex).children[0]
                     listView.model[_currentIndex].textFieldText = _currentItem.textFieldText.replace(/^\s+|\s+$/g, '')
+                }
+
+                textField.onTextChanged: {
+                    var _currentIndex = listView.currentIndex
+                    textFieldText = textField.text
+
+                    if (_currentIndex === vars.secretDataIndex) {
+                        buttonImageSource = textFieldText !== "" ? (hideText ? "qrc:/images/controls/eye.svg" : "qrc:/images/controls/eye-off.svg") : ""
+                    }
                 }
             }
         }
