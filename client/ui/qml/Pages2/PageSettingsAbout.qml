@@ -32,10 +32,10 @@ PageType {
     QtObject {
         id: telegramGroup
 
-        property string title: qsTr("Telegram group")
-        property string description: qsTr("To discuss features")
-        property string imageSource: "qrc:/images/controls/telegram.svg"
-        property var handler: function() {
+        readonly property string title: qsTr("Telegram group")
+        readonly property string description: qsTr("To discuss features")
+        readonly property string imageSource: "qrc:/images/controls/telegram.svg"
+        readonly property var handler: function() {
             Qt.openUrlExternally(qsTr("https://t.me/amnezia_vpn_en"))
         }
     }
@@ -43,10 +43,10 @@ PageType {
     QtObject {
         id: mail
 
-        property string title: qsTr("support@amnezia.org")
-        property string description: qsTr("For reviews and bug reports")
-        property string imageSource: "qrc:/images/controls/mail.svg"
-        property var handler: function() {
+        readonly property string title: qsTr("support@amnezia.org")
+        readonly property string description: qsTr("For reviews and bug reports")
+        readonly property string imageSource: "qrc:/images/controls/mail.svg"
+        readonly property var handler: function() {
             GC.copyToClipBoard(title)
             PageController.showNotificationMessage(qsTr("Copied"))
         }
@@ -55,10 +55,10 @@ PageType {
     QtObject {
         id: github
 
-        property string title: qsTr("GitHub")
-        property string description: qsTr("Discover the source code")
-        property string imageSource: "qrc:/images/controls/github.svg"
-        property var handler: function() {
+        readonly property string title: qsTr("GitHub")
+        readonly property string description: qsTr("Discover the source code")
+        readonly property string imageSource: "qrc:/images/controls/github.svg"
+        readonly property var handler: function() {
             Qt.openUrlExternally(qsTr("https://github.com/amnezia-vpn/amnezia-client"))
         }
     }
@@ -66,10 +66,10 @@ PageType {
     QtObject {
         id: website
 
-        property string title: qsTr("Website")
-        property string description: qsTr("Visit official website")
-        property string imageSource: "qrc:/images/controls/amnezia.svg"
-        property var handler: function() {
+        readonly property string title: qsTr("Website")
+        readonly property string description: qsTr("Visit official website")
+        readonly property string imageSource: "qrc:/images/controls/amnezia.svg"
+        readonly property var handler: function() {
             Qt.openUrlExternally(LanguageModel.getCurrentSiteUrl())
         }
     }

@@ -46,13 +46,15 @@ PageType {
 
     QtObject {
         id: onlyForwardApps
-        property string name: qsTr("Only the apps from the list should have access via VPN")
-        property int type: routeMode.onlyForwardApps
+
+        readonly property string name: qsTr("Only the apps from the list should have access via VPN")
+        readonly property int type: routeMode.onlyForwardApps
     }
     QtObject {
         id: allExceptApps
-        property string name: qsTr("Apps from the list should not have access via VPN")
-        property int type: routeMode.allExceptApps
+        
+        readonly property string name: qsTr("Apps from the list should not have access via VPN")
+        readonly property int type: routeMode.allExceptApps
     }
 
     function getRouteModesModelIndex() {
