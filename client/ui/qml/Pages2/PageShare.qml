@@ -256,9 +256,6 @@ PageType {
 
                         onClicked: {
                             accessTypeSelector.currentIndex = 0
-                            if (!GC.isMobile()) {
-                                clientNameTextField.textField.forceActiveFocus()
-                            }
                         }
                     }
 
@@ -543,10 +540,6 @@ PageType {
                 actionButtonFunction: function() {
                     root.isSearchBarVisible = true
                 }
-
-                Keys.onTabPressed: clientsListView.model.count > 0 ?
-                                       clientsListView.forceActiveFocus() :
-                                       lastItemTabClicked(focusItem)
             }
 
             RowLayout {
@@ -560,35 +553,13 @@ PageType {
 
                     textFieldPlaceholderText: qsTr("Search")
 
-                    Connections {
-                        target: root
-                        function onIsSearchBarVisibleChanged() {
-                            if (root.isSearchBarVisible) {
-                                // searchTextField.textField.forceActiveFocus()
-                            } else {
-                                searchTextField.textFieldText = ""
-                                if (!GC.isMobile()) {
-                                    // usersHeader.actionButton.forceActiveFocus()
-                                }
-                            }
-                        }
-                    }
-
                     Keys.onEscapePressed: {
                         root.isSearchBarVisible = false
                     }
 
                     function navigateTo() {
-                        if (GC.isMobile()) {
-                            // focusItem.forceActiveFocus()
-                            return;
-                        }
-
                         if (searchTextField.textFieldText === "") {
                             root.isSearchBarVisible = false
-                            // usersHeader.actionButton.forceActiveFocus()
-                        } else {
-                            // closeSearchButton.forceActiveFocus()
                         }
                     }
 
@@ -601,16 +572,6 @@ PageType {
                     id: closeSearchButton
                     image: "qrc:/images/controls/close.svg"
                     imageColor: AmneziaStyle.color.paleGray
-
-                    Keys.onTabPressed: {
-                        if (!GC.isMobile()) {
-                            if (clientsListView.model.count > 0) {
-                                // clientsListView.forceActiveFocus()
-                            } else {
-                                // lastItemTabClicked(focusItem)
-                            }
-                        }
-                    }
 
                     function clickedFunc() {
                         root.isSearchBarVisible = false
@@ -631,30 +592,6 @@ PageType {
 
                 property bool isFocusable: true
 
-                Keys.onTabPressed: {
-                    FocusController.nextKeyTabItem()
-                }
-
-                Keys.onBacktabPressed: {
-                    FocusController.previousKeyTabItem()
-                }
-
-                Keys.onUpPressed: {
-                    FocusController.nextKeyUpItem()
-                }
-
-                Keys.onDownPressed: {
-                    FocusController.nextKeyDownItem()
-                }
-
-                Keys.onLeftPressed: {
-                    FocusController.nextKeyLeftItem()
-                }
-
-                Keys.onRightPressed: {
-                    FocusController.nextKeyRightItem()
-                }
-
                 model: SortFilterProxyModel {
                     id: proxyClientManagementModel
                     sourceModel: ClientManagementModel
@@ -671,8 +608,6 @@ PageType {
                 delegate: Item {
                     implicitWidth: clientsListView.width
                     implicitHeight: delegateContent.implicitHeight
-
-                    // property alias focusItem: clientFocusItem.rightButton
 
                     ColumnLayout {
                         id: delegateContent
@@ -703,12 +638,6 @@ PageType {
 
                             parent: root
 
-                            onClosed: {
-                                if (!GC.isMobile()) {
-                                    // focusItem.forceActiveFocus()
-                                }
-                            }
-
                             width: root.width
                             height: root.height
 
@@ -723,14 +652,6 @@ PageType {
 
                                 onImplicitHeightChanged: {
                                     clientInfoDrawer.expandedHeight = expandedStateContent.implicitHeight + 32
-                                }
-
-                                Connections {
-                                    target: clientInfoDrawer
-                                    enabled: !GC.isMobile()
-                                    function onOpened() {
-                                        // focusItem1.forceActiveFocus()
-                                    }
                                 }
 
                                 Header2TextType {
@@ -809,12 +730,6 @@ PageType {
                                         anchors.fill: parent
                                         expandedHeight: root.height * 0.35
 
-                                        onClosed: {
-                                            if (!GC.isMobile()) {
-                                                // focusItem1.forceActiveFocus()
-                                            }
-                                        }
-
                                         expandedStateContent: ColumnLayout {
                                             anchors.top: parent.top
                                             anchors.left: parent.left
@@ -822,14 +737,6 @@ PageType {
                                             anchors.topMargin: 32
                                             anchors.leftMargin: 16
                                             anchors.rightMargin: 16
-
-                                            Connections {
-                                                target: clientNameEditDrawer
-                                                enabled: !GC.isMobile()
-                                                function onOpened() {
-                                                    // clientNameEditor.textField.forceActiveFocus()
-                                                }
-                                            }
 
                                             TextFieldWithHeaderType {
                                                 id: clientNameEditor
@@ -912,18 +819,5 @@ PageType {
         id: shareConnectionDrawer
 
         anchors.fill: parent
-        onClosed: {
-            if (!GC.isMobile()) {
-                // clientNameTextField.textField.forceActiveFocus()
-            }
-        }
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        onPressed: function(mouse) {
-            // forceActiveFocus()
-            mouse.accepted = false
-        }
     }
 }
