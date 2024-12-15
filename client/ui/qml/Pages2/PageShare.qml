@@ -343,8 +343,8 @@ PageType {
                     clickedFunction: function() {
                         handler()
 
-                        if (serverSelector.selectedIndex !== serverSelectorListView.selectedIndex) {
-                            serverSelector.selectedIndex = serverSelectorListView.currentIndex
+                        if (serverSelector.currentIndex !== serverSelectorListView.selectedIndex) {
+                            serverSelector.currentIndex = serverSelectorListView.selectedIndex
                             serverSelector.severSelectorIndexChanged()
                         }
 
@@ -353,9 +353,9 @@ PageType {
 
                     Component.onCompleted: {
                         if (ServersModel.isDefaultServerHasWriteAccess() && ServersModel.getDefaultServerData("hasInstalledContainers")) {
-                            serverSelectorListView.currentIndex = proxyServersModel.mapFromSource(ServersModel.defaultIndex)
+                            serverSelectorListView.selectedIndex = proxyServersModel.mapFromSource(ServersModel.defaultIndex)
                         } else {
-                            serverSelectorListView.currentIndex = 0
+                            serverSelectorListView.selectedIndex = 0
                         }
 
                         serverSelectorListView.triggerCurrentItem()
@@ -363,7 +363,7 @@ PageType {
 
                     function handler() {
                         serverSelector.text = selectedText
-                        ServersModel.processedIndex = proxyServersModel.mapToSource(currentIndex)
+                        ServersModel.processedIndex = proxyServersModel.mapToSource(selectedIndex)
                     }
                 }
             }
@@ -401,8 +401,6 @@ PageType {
                         ]
                     }
 
-                    currentIndex: 0
-
                     clickedFunction: function() {
                         handler()
 
@@ -414,7 +412,7 @@ PageType {
 
                         function onSeverSelectorIndexChanged() {
                             var defaultContainer = proxyContainersModel.mapFromSource(ServersModel.getProcessedServerData("defaultContainer"))
-                            protocolSelectorListView.currentIndex = defaultContainer
+                            protocolSelectorListView.selectedIndex = defaultContainer
                             protocolSelectorListView.triggerCurrentItem()
                         }
                     }
@@ -429,7 +427,7 @@ PageType {
 
                         protocolSelector.text = selectedText
 
-                        ContainersModel.setProcessedContainerIndex(proxyContainersModel.mapToSource(currentIndex))
+                        ContainersModel.setProcessedContainerIndex(proxyContainersModel.mapToSource(selectedIndex))
 
                         fillConnectionTypeModel()
 
@@ -444,7 +442,7 @@ PageType {
                     function fillConnectionTypeModel() {
                         root.connectionTypesModel = [amneziaConnectionFormat]
 
-                        var index = proxyContainersModel.mapToSource(currentIndex)
+                        var index = proxyContainersModel.mapToSource(selectedIndex)
 
                         if (index === ContainerProps.containerFromString("amnezia-openvpn")) {
                             root.connectionTypesModel.push(openVpnConnectionFormat)
