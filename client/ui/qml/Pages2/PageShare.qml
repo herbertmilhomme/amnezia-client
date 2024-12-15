@@ -117,38 +117,38 @@ PageType {
 
     QtObject {
         id: amneziaConnectionFormat
-        property string name: qsTr("For the AmneziaVPN app")
-        property var type: PageShare.ConfigType.AmneziaConnection
+        readonly property string name: qsTr("For the AmneziaVPN app")
+        readonly property int type: PageShare.ConfigType.AmneziaConnection
     }
     QtObject {
         id: openVpnConnectionFormat
-        property string name: qsTr("OpenVPN native format")
-        property var type: PageShare.ConfigType.OpenVpn
+        readonly property string name: qsTr("OpenVPN native format")
+        readonly property int type: PageShare.ConfigType.OpenVpn
     }
     QtObject {
         id: wireGuardConnectionFormat
-        property string name: qsTr("WireGuard native format")
-        property var type: PageShare.ConfigType.WireGuard
+        readonly property string name: qsTr("WireGuard native format")
+        readonly property int type: PageShare.ConfigType.WireGuard
     }
     QtObject {
         id: awgConnectionFormat
-        property string name: qsTr("AmneziaWG native format")
-        property var type: PageShare.ConfigType.Awg
+        readonly property string name: qsTr("AmneziaWG native format")
+        readonly property int type: PageShare.ConfigType.Awg
     }
     QtObject {
         id: shadowSocksConnectionFormat
-        property string name: qsTr("Shadowsocks native format")
-        property var type: PageShare.ConfigType.ShadowSocks
+        readonly property string name: qsTr("Shadowsocks native format")
+        readonly property int type: PageShare.ConfigType.ShadowSocks
     }
     QtObject {
         id: cloakConnectionFormat
-        property string name: qsTr("Cloak native format")
-        property var type: PageShare.ConfigType.Cloak
+        readonly property string name: qsTr("Cloak native format")
+        readonly property int type: PageShare.ConfigType.Cloak
     }
     QtObject {
         id: xrayConnectionFormat
-        property string name: qsTr("XRay native format")
-        property var type: PageShare.ConfigType.Xray
+        readonly property string name: qsTr("XRay native format")
+        readonly property int type: PageShare.ConfigType.Xray
     }
 
     FlickableType {
@@ -343,8 +343,8 @@ PageType {
                     clickedFunction: function() {
                         handler()
 
-                        if (serverSelector.currentIndex !== serverSelectorListView.currentIndex) {
-                            serverSelector.currentIndex = serverSelectorListView.currentIndex
+                        if (serverSelector.selectedIndex !== serverSelectorListView.selectedIndex) {
+                            serverSelector.selectedIndex = serverSelectorListView.currentIndex
                             serverSelector.severSelectorIndexChanged()
                         }
 
