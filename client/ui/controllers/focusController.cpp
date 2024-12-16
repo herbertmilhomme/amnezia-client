@@ -1,19 +1,16 @@
 #include "focusController.h"
 
-#include "listViewFocusController.h"
-
-#include <QQuickWindow>
 #include <QQmlApplicationEngine>
+#include <QQuickWindow>
 
-
-bool isListView(QObject* item)
+bool isListView(QObject *item)
 {
     return item->inherits("QQuickListView");
 }
 
-bool isOnTheScene(QObject* object)
+bool isOnTheScene(QObject *object)
 {
-    QQuickItem* item = qobject_cast<QQuickItem*>(object);
+    QQuickItem *item = qobject_cast<QQuickItem *>(object);
     if (!item) {
         qWarning() << "Couldn't recognize object as item";
         return false;
@@ -26,7 +23,7 @@ bool isOnTheScene(QObject* object)
 
     QRectF itemRect = item->mapRectToScene(item->childrenRect());
 
-    QQuickWindow* window = item->window();
+    QQuickWindow *window = item->window();
     if (!window) {
         qWarning() << "Couldn't get the window on the Scene check";
         return false;
@@ -39,13 +36,14 @@ bool isOnTheScene(QObject* object)
     }
     QRectF windowRect = contentItem->childrenRect();
     const auto res = (windowRect.contains(itemRect) || isListView(item));
-    // qDebug() << (res ? "===>> item is inside the Scene" : "===>> ITEM IS OUTSIDE THE SCENE") << " itemRect: " << itemRect << "; windowRect: " << windowRect;
+    // qDebug() << (res ? "===>> item is inside the Scene" : "===>> ITEM IS OUTSIDE THE SCENE") << " itemRect: " <<
+    // itemRect << "; windowRect: " << windowRect;
     return res;
 }
 
-QList<QObject*> getSubChain(QObject* object)
+QList<QObject *> getSubChain(QObject *object)
 {
-    QList<QObject*> res;
+    QList<QObject *> res;
     if (!object) {
         qDebug() << "The object is NULL";
         return res;
@@ -53,12 +51,8 @@ QList<QObject*> getSubChain(QObject* object)
 
     const auto children = object->children();
 
-    for(const auto child : children) {
-        if (child
-            && isFocusable(child)
-            && isOnTheScene(child)
-            && isEnabled(child)
-            ) {
+    for (const auto child : children) {
+        if (child && focusControlTools::isFocusable(child) && isOnTheScene(child) && focusControlTools::isEnabled(child)) {
             res.append(child);
         } else {
             res.append(getSubChain(child));
@@ -67,28 +61,27 @@ QList<QObject*> getSubChain(QObject* object)
     return res;
 }
 
-FocusController::FocusController(QQmlApplicationEngine* engine, QObject *parent)
-    : QObject{parent}
-    , m_engine{engine}
-    , m_focusChain{}
-    , m_focusedItem{nullptr}
-    , m_rootObjects{}
-    , m_defaultFocusItem{QSharedPointer<QQuickItem>()}
-    , m_lvfc{nullptr}
+FocusController::FocusController(QQmlApplicationEngine *engine, QObject *parent)
+    : QObject { parent },
+      m_engine { engine },
+      m_focusChain {},
+      m_focusedItem { nullptr },
+      m_rootObjects {},
+      m_defaultFocusItem { QSharedPointer<QQuickItem>() },
+      m_lvfc { nullptr }
 {
-    QObject::connect(m_engine.get(), &QQmlApplicationEngine::objectCreated, this, [this](QObject *object, const QUrl &url){
-        QQuickItem* newDefaultFocusItem = object->findChild<QQuickItem*>("defaultFocusItem");
-        if(newDefaultFocusItem && m_defaultFocusItem != newDefaultFocusItem) {
-            m_defaultFocusItem.reset(newDefaultFocusItem);
-            qDebug() << "===>> NEW DEFAULT FOCUS ITEM: " << m_defaultFocusItem;
-        }
-    });
+    QObject::connect(m_engine.get(), &QQmlApplicationEngine::objectCreated, this,
+                     [this](QObject *object, const QUrl &url) {
+                         QQuickItem *newDefaultFocusItem = object->findChild<QQuickItem *>("defaultFocusItem");
+                         if (newDefaultFocusItem && m_defaultFocusItem != newDefaultFocusItem) {
+                             m_defaultFocusItem.reset(newDefaultFocusItem);
+                             qDebug() << "===>> NEW DEFAULT FOCUS ITEM: " << m_defaultFocusItem;
+                         }
+                     });
 
-    QObject::connect(this, &FocusController::focusedItemChanged, this, [this]() {
-        m_focusedItem->forceActiveFocus(Qt::TabFocusReason);
-    });
+    QObject::connect(this, &FocusController::focusedItemChanged, this,
+                     [this]() { m_focusedItem->forceActiveFocus(Qt::TabFocusReason); });
 }
-
 
 void FocusController::nextKeyTabItem()
 {
@@ -120,7 +113,7 @@ void FocusController::nextKeyRightItem()
     nextItem(Direction::Forward);
 }
 
-void FocusController::setFocusItem(QQuickItem* item)
+void FocusController::setFocusItem(QQuickItem *item)
 {
     if (m_focusedItem != item) {
         m_focusedItem = item;
@@ -137,7 +130,7 @@ void FocusController::setFocusOnDefaultItem()
     setFocusItem(m_defaultFocusItem.get());
 }
 
-void FocusController::pushRootObject(QObject* object)
+void FocusController::pushRootObject(QObject *object)
 {
     qDebug() << "===>> Calling < pushRootObject >...";
     m_rootObjects.push(object);
@@ -147,7 +140,7 @@ void FocusController::pushRootObject(QObject* object)
     qDebug() << "===>> ROOT OBJECTS: " << m_rootObjects;
 }
 
-void FocusController::dropRootObject(QObject* object)
+void FocusController::dropRootObject(QObject *object)
 {
     qDebug() << "===>> Calling < dropRootObject >...";
     if (m_rootObjects.empty()) {
@@ -160,7 +153,7 @@ void FocusController::dropRootObject(QObject* object)
         m_rootObjects.pop();
         dropListView();
         setFocusOnDefaultItem();
-        if(m_rootObjects.size()) {
+        if (m_rootObjects.size()) {
             qDebug() << "===>> ROOT OBJECT is changed to: " << m_rootObjects.top();
         } else {
             qDebug() << "===>> ROOT OBJECT is changed to DEFAULT";
@@ -182,11 +175,9 @@ void FocusController::reload(Direction direction)
     qDebug() << "===>> Calling < reload >...";
     m_focusChain.clear();
 
-    QObject* rootObject = (m_rootObjects.empty()
-                               ? m_engine->rootObjects().value(0)
-                               : m_rootObjects.top());
+    QObject *rootObject = (m_rootObjects.empty() ? m_engine->rootObjects().value(0) : m_rootObjects.top());
 
-    if(!rootObject) {
+    if (!rootObject) {
         qCritical() << "No ROOT OBJECT found!";
         resetRootObject();
         dropListView();
@@ -197,7 +188,8 @@ void FocusController::reload(Direction direction)
 
     m_focusChain.append(getSubChain(rootObject));
 
-    std::sort(m_focusChain.begin(), m_focusChain.end(), direction == Direction::Forward ? isLess : isMore);
+    std::sort(m_focusChain.begin(), m_focusChain.end(),
+              direction == Direction::Forward ? focusControlTools::isLess : focusControlTools::isMore);
 
     if (m_focusChain.empty()) {
         qWarning() << "Focus chain is empty!";
@@ -220,7 +212,7 @@ void FocusController::nextItem(Direction direction)
         return;
     }
 
-    if(m_focusChain.empty()) {
+    if (m_focusChain.empty()) {
         qWarning() << "There are no items to navigate";
         setFocusOnDefaultItem();
         return;
@@ -239,19 +231,19 @@ void FocusController::nextItem(Direction direction)
         focusedItemIndex++;
     }
 
-    const auto focusedItem = qobject_cast<QQuickItem*>(m_focusChain.at(focusedItemIndex));
+    const auto focusedItem = qobject_cast<QQuickItem *>(m_focusChain.at(focusedItemIndex));
 
-    if(focusedItem == nullptr) {
+    if (focusedItem == nullptr) {
         qWarning() << "Failed to get item to focus on. Setting focus on default";
         setFocusOnDefaultItem();
         return;
     }
-    
-    if(isListView(focusedItem)) {
+
+    if (isListView(focusedItem)) {
         qDebug() << "===>> Found [ListView]";
         m_lvfc = new ListViewFocusController(focusedItem, this);
         m_focusedItem = focusedItem;
-        if(direction == Direction::Forward) {
+        if (direction == Direction::Forward) {
             m_lvfc->nextDelegate();
             focusNextListViewItem();
         } else {
@@ -263,7 +255,7 @@ void FocusController::nextItem(Direction direction)
 
     setFocusItem(focusedItem);
 
-    printItems(m_focusChain, focusedItem);
+    focusControlTools::printItems(m_focusChain, focusedItem);
 
     ///////////////////////////////////////////////////////////
 
@@ -271,7 +263,7 @@ void FocusController::nextItem(Direction direction)
 
     qDebug() << "===>> CURRENT ACTIVE ITEM: " << w->activeFocusItem();
     qDebug() << "===>> CURRENT FOCUS OBJECT: " << w->focusObject();
-    if(m_rootObjects.empty()) {
+    if (m_rootObjects.empty()) {
         qDebug() << "===>> ROOT OBJECT IS DEFAULT";
     } else {
         qDebug() << "===>> ROOT OBJECT: " << m_rootObjects.top();
@@ -317,7 +309,7 @@ void FocusController::dropListView()
 {
     qDebug() << "===>> Calling < dropListView >...";
 
-    if(m_lvfc) {
+    if (m_lvfc) {
         delete m_lvfc;
         m_lvfc = nullptr;
     }
