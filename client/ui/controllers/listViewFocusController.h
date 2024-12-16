@@ -1,19 +1,22 @@
 #ifndef LISTVIEWFOCUSCONTROLLER_H
 #define LISTVIEWFOCUSCONTROLLER_H
 
+#include <QList>
 #include <QObject>
-#include <QStack>
-#include <QSharedPointer>
 #include <QQuickItem>
+#include <QSharedPointer>
+#include <QStack>
 
+namespace focusControlTools
+{
+    bool isEnabled(QObject *item);
+    bool isFocusable(QObject *item);
+    bool isMore(QObject *item1, QObject *item2);
+    bool isLess(QObject *item1, QObject *item2);
+    QList<QObject *> getSubChain(QObject *object);
 
-bool isEnabled(QObject* item);
-bool isFocusable(QObject* item);
-bool isMore(QObject* item1, QObject* item2);
-bool isLess(QObject* item1, QObject* item2);
-QList<QObject*> getSubChain(QObject* object);
-
-void printItems(const QList<QObject*>& items, QObject* current_item);
+    void printItems(const QList<QObject *> &items, QObject *current_item);
+}
 
 /*!
  * \brief The ListViewFocusController class manages the focus of elements in ListView
@@ -27,7 +30,7 @@ class ListViewFocusController : public QObject
 {
     Q_OBJECT
 public:
-    explicit ListViewFocusController(QQuickItem* listView, QObject* parent = nullptr);
+    explicit ListViewFocusController(QQuickItem *listView, QObject *parent = nullptr);
     ~ListViewFocusController();
 
     void nextDelegate();
@@ -54,19 +57,19 @@ private:
     int currentIndex() const;
     void setDelegateIndex(int index);
     void viewAtCurrentIndex() const;
-    QQuickItem* itemAtIndex(const int index) const;
-    QQuickItem* currentDelegate() const;
-    QQuickItem* focusedItem() const;
+    QQuickItem *itemAtIndex(const int index) const;
+    QQuickItem *currentDelegate() const;
+    QQuickItem *focusedItem() const;
 
     bool hasHeader() const;
     bool hasFooter() const;
 
-    QQuickItem* m_listView;
-    QList<QObject*> m_focusChain;
+    QQuickItem *m_listView;
+    QList<QObject *> m_focusChain;
     Section m_currentSection;
-    QQuickItem* m_header;
-    QQuickItem* m_footer;
-    QQuickItem* m_focusedItem; // Pointer to focused item on Delegate
+    QQuickItem *m_header;
+    QQuickItem *m_footer;
+    QQuickItem *m_focusedItem; // Pointer to focused item on Delegate
     qsizetype m_focusedItemIndex;
     qsizetype m_delegateIndex;
     bool m_isReturnNeeded;
