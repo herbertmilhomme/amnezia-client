@@ -53,6 +53,8 @@ private:
     bool hasHeader() const;
     bool hasFooter() const;
 
+    void printSectionName() const;
+
     QQuickItem *m_listView;
     QList<QObject *> m_focusChain;
     Section m_currentSection;

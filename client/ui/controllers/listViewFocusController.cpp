@@ -68,8 +68,8 @@ void ListViewFocusController::setDelegateIndex(int index)
 
 void ListViewFocusController::nextDelegate()
 {
-    const auto sectionName = m_currentSectionString[static_cast<int>(m_currentSection)];
-    qDebug() << "===>> [nextDelegate... current section: " << sectionName << " ]";
+    printSectionName();
+
     switch (m_currentSection) {
     case Section::Default: {
         if (hasHeader()) {
@@ -266,6 +266,12 @@ bool ListViewFocusController::hasHeader() const
 bool ListViewFocusController::hasFooter() const
 {
     return m_footer && !focusControl::getItemsChain(m_footer).isEmpty();
+}
+
+void ListViewFocusController::printSectionName() const
+{
+    const auto sectionName = m_currentSectionString[static_cast<int>(m_currentSection)];
+    qDebug() << "===>> [nextDelegate... current section: " << sectionName << " ]";
 }
 
 bool ListViewFocusController::isFirstFocusItemInListView() const
