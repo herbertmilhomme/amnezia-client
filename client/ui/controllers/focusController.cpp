@@ -1,65 +1,8 @@
 #include "focusController.h"
+#include "utils/focusControl.h"
 
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
-
-bool isListView(QObject *item)
-{
-    return item->inherits("QQuickListView");
-}
-
-bool isOnTheScene(QObject *object)
-{
-    QQuickItem *item = qobject_cast<QQuickItem *>(object);
-    if (!item) {
-        qWarning() << "Couldn't recognize object as item";
-        return false;
-    }
-
-    if (!item->isVisible()) {
-        // qDebug() << "===>> The item is not visible: " << item;
-        return false;
-    }
-
-    QRectF itemRect = item->mapRectToScene(item->childrenRect());
-
-    QQuickWindow *window = item->window();
-    if (!window) {
-        qWarning() << "Couldn't get the window on the Scene check";
-        return false;
-    }
-
-    const auto contentItem = window->contentItem();
-    if (!contentItem) {
-        qWarning() << "Couldn't get the content item on the Scene check";
-        return false;
-    }
-    QRectF windowRect = contentItem->childrenRect();
-    const auto res = (windowRect.contains(itemRect) || isListView(item));
-    // qDebug() << (res ? "===>> item is inside the Scene" : "===>> ITEM IS OUTSIDE THE SCENE") << " itemRect: " <<
-    // itemRect << "; windowRect: " << windowRect;
-    return res;
-}
-
-QList<QObject *> getSubChain(QObject *object)
-{
-    QList<QObject *> res;
-    if (!object) {
-        qDebug() << "The object is NULL";
-        return res;
-    }
-
-    const auto children = object->children();
-
-    for (const auto child : children) {
-        if (child && focusControlTools::isFocusable(child) && isOnTheScene(child) && focusControlTools::isEnabled(child)) {
-            res.append(child);
-        } else {
-            res.append(getSubChain(child));
-        }
-    }
-    return res;
-}
 
 FocusController::FocusController(QQmlApplicationEngine *engine, QObject *parent)
     : QObject { parent },
@@ -186,10 +129,10 @@ void FocusController::reload(Direction direction)
 
     qDebug() << "===>> ROOT OBJECTS: " << rootObject;
 
-    m_focusChain.append(getSubChain(rootObject));
+    m_focusChain.append(focusControl::getSubChain(rootObject));
 
     std::sort(m_focusChain.begin(), m_focusChain.end(),
-              direction == Direction::Forward ? focusControlTools::isLess : focusControlTools::isMore);
+              direction == Direction::Forward ? focusControl::isLess : focusControl::isMore);
 
     if (m_focusChain.empty()) {
         qWarning() << "Focus chain is empty!";
@@ -205,7 +148,7 @@ void FocusController::nextItem(Direction direction)
 
     reload(direction);
 
-    if (m_lvfc && isListView(m_focusedItem)) {
+    if (m_lvfc && focusControl::isListView(m_focusedItem)) {
         direction == Direction::Forward ? focusNextListViewItem() : focusPreviousListViewItem();
         qDebug() << "===>> Handling the [ ListView ]...";
 
@@ -239,7 +182,7 @@ void FocusController::nextItem(Direction direction)
         return;
     }
 
-    if (isListView(focusedItem)) {
+    if (focusControl::isListView(focusedItem)) {
         qDebug() << "===>> Found [ListView]";
         m_lvfc = new ListViewFocusController(focusedItem, this);
         m_focusedItem = focusedItem;
@@ -255,7 +198,7 @@ void FocusController::nextItem(Direction direction)
 
     setFocusItem(focusedItem);
 
-    focusControlTools::printItems(m_focusChain, focusedItem);
+    focusControl::printItems(m_focusChain, focusedItem);
 
     ///////////////////////////////////////////////////////////
 
