@@ -1,81 +1,7 @@
 #include "listViewFocusController.h"
+#include "utils/focusControl.h"
 
-#include <QPointF>
-#include <QQueue>
 #include <QQuickWindow>
-#include <QRectF>
-
-namespace focusControlTools
-{
-    bool isVisible(QObject *item)
-    {
-        const auto res = item->property("visible").toBool();
-        return res;
-    }
-
-    bool isFocusable(QObject *item)
-    {
-        const auto res = item->property("isFocusable").toBool();
-        return res;
-    }
-
-    QPointF getItemCenterPointOnScene(QQuickItem *item)
-    {
-        const auto x0 = item->x() + (item->width() / 2);
-        const auto y0 = item->y() + (item->height() / 2);
-        return item->parentItem()->mapToScene(QPointF { x0, y0 });
-    }
-
-    bool isLess(QObject *item1, QObject *item2)
-    {
-        const auto p1 = getItemCenterPointOnScene(qobject_cast<QQuickItem *>(item1));
-        const auto p2 = getItemCenterPointOnScene(qobject_cast<QQuickItem *>(item2));
-        return (p1.y() == p2.y()) ? (p1.x() < p2.x()) : (p1.y() < p2.y());
-    }
-
-    bool isMore(QObject *item1, QObject *item2)
-    {
-        return !isLess(item1, item2);
-    }
-
-    bool isEnabled(QObject *obj)
-    {
-        const auto item = qobject_cast<QQuickItem *>(obj);
-        return item && item->isEnabled();
-    }
-
-    QList<QObject *> getItemsChain(QObject *object)
-    {
-        QList<QObject *> res;
-        if (!object) {
-            qDebug() << "The object is NULL";
-            return res;
-        }
-
-        const auto children = object->children();
-
-        for (const auto child : children) {
-            if (child && isFocusable(child) && isEnabled(child) && isVisible(child)) {
-                res.append(child);
-            } else {
-                res.append(getItemsChain(child));
-            }
-        }
-        return res;
-    }
-
-    void printItems(const QList<QObject *> &items, QObject *current_item)
-    {
-        for (const auto &item : items) {
-            QQuickItem *i = qobject_cast<QQuickItem *>(item);
-            QPointF coords { getItemCenterPointOnScene(i) };
-            QString prefix = current_item == i ? "==>" : "   ";
-            qDebug() << prefix << " Item: " << i << " with coords: " << coords;
-        }
-    }
-} // namespace focusControlTools
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
 
 ListViewFocusController::ListViewFocusController(QQuickItem *listView, QObject *parent)
     : QObject { parent },
@@ -276,7 +202,7 @@ void ListViewFocusController::focusNextItem()
         return;
     }
 
-    m_focusChain = focusControlTools::getItemsChain(currentDelegate());
+    m_focusChain = focusControl::getItemsChain(currentDelegate());
 
     if (m_focusChain.empty()) {
         qWarning() << "No elements found in the delegate. Going to next delegate...";
@@ -298,7 +224,7 @@ void ListViewFocusController::focusPreviousItem()
 
     if (m_focusChain.empty()) {
         qDebug() << "Empty focusChain with current delegate: " << currentDelegate() << "Scanning for elements...";
-        m_focusChain = focusControlTools::getItemsChain(currentDelegate());
+        m_focusChain = focusControl::getItemsChain(currentDelegate());
     }
     if (m_focusChain.empty()) {
         qWarning() << "No elements found in the delegate. Going to next delegate...";
@@ -334,12 +260,12 @@ bool ListViewFocusController::isLastFocusItemInDelegate() const
 
 bool ListViewFocusController::hasHeader() const
 {
-    return m_header && !focusControlTools::getItemsChain(m_header).isEmpty();
+    return m_header && !focusControl::getItemsChain(m_header).isEmpty();
 }
 
 bool ListViewFocusController::hasFooter() const
 {
-    return m_footer && !focusControlTools::getItemsChain(m_footer).isEmpty();
+    return m_footer && !focusControl::getItemsChain(m_footer).isEmpty();
 }
 
 bool ListViewFocusController::isFirstFocusItemInListView() const

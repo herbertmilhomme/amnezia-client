@@ -7,17 +7,6 @@
 #include <QSharedPointer>
 #include <QStack>
 
-namespace focusControlTools
-{
-    bool isEnabled(QObject *item);
-    bool isFocusable(QObject *item);
-    bool isMore(QObject *item1, QObject *item2);
-    bool isLess(QObject *item1, QObject *item2);
-    QList<QObject *> getSubChain(QObject *object);
-
-    void printItems(const QList<QObject *> &items, QObject *current_item);
-}
-
 /*!
  * \brief The ListViewFocusController class manages the focus of elements in ListView
  * \details This class object moving focus to ListView's controls since ListView stores
