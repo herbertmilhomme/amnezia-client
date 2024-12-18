@@ -7,7 +7,7 @@
 #include <QJsonObject>
 #include <QThread>
 #include <QEventLoop>
-
+#include <QTimer>
 #include "../protocols/vpnprotocol.h"
 #import "ios_controller_wrapper.h"
 
@@ -60,6 +60,8 @@ Vpn::ConnectionState iosStatusToState(NEVPNStatus status) {
 
 namespace {
 IosController* s_instance = nullptr;
+QTimer *m_handshakeTimer = nullptr;
+bool is_WireGuard = false;
 }
 
 IosController::IosController() : QObject()
@@ -207,21 +209,27 @@ bool IosController::connectVpn(amnezia::Proto proto, const QJsonObject& configur
 
 
     if (proto == amnezia::Proto::OpenVpn) {
+        is_WireGuard = false;
         return setupOpenVPN();
     }
     if (proto == amnezia::Proto::Cloak) {
+        is_WireGuard = false;
         return setupCloak();
     }
     if (proto == amnezia::Proto::WireGuard) {
+        is_WireGuard = true;
         return setupWireGuard();
     }
     if (proto == amnezia::Proto::Awg) {
+        is_WireGuard = true;
         return setupAwg();
     }
     if (proto == amnezia::Proto::Xray) {
+        is_WireGuard = false;
         return setupXray();
     }
     if (proto == amnezia::Proto::SSXray) {
+        is_WireGuard = false;
         return setupSSXray();
     }
 
@@ -252,22 +260,85 @@ void IosController::checkStatus()
         uint64_t txBytes = [response[@"tx_bytes"] intValue];
         uint64_t rxBytes = [response[@"rx_bytes"] intValue];
         
-        uint64_t last_handshake_time_sec = 0;
-        if (response[@"last_handshake_time_sec"] && ![response[@"last_handshake_time_sec"] isKindOfClass:[NSNull class]]) {
-            last_handshake_time_sec = [response[@"last_handshake_time_sec"] intValue];
-        } else {
-            qDebug() << "Key last_handshake_time_sec is missing or null";
-        }
-        
-        if (last_handshake_time_sec < 0) {
-            disconnectVpn();
-            qDebug() << "Invalid handshake time, disconnecting VPN.";
-        }
-        
         emit bytesChanged(rxBytes - m_rxBytes, txBytes - m_txBytes);
         m_rxBytes = rxBytes;
         m_txBytes = txBytes;
     });
+}
+
+void IosController::stopForHandshake() {
+    if (m_handshakeTimer) {
+        if (m_handshakeTimer->isActive()) {
+            m_handshakeTimer->stop();
+        }
+        m_handshakeTimer->deleteLater();
+        m_handshakeTimer = nullptr;
+
+        qDebug() << "Handshake monitoring stopped.";
+    } else {
+        qDebug() << "No active handshake monitoring to stop.";
+    }
+}
+
+
+void IosController::waitForHandshake() {
+    qDebug() << "Waiting for last_handshake_time_sec to be greater than 0...";
+
+    // Initialize the timer if it's null
+    if (!m_handshakeTimer) {
+        m_handshakeTimer = new QTimer(this);
+
+        // Connect the timer's timeout signal to perform handshake checking
+        connect(m_handshakeTimer, &QTimer::timeout, this, [this]() {
+            // Prepare the message to check status
+            NSString *actionKey = [NSString stringWithUTF8String:MessageKey::action];
+            NSString *actionValue = [NSString stringWithUTF8String:Action::getStatus];
+            NSString *tunnelIdKey = [NSString stringWithUTF8String:MessageKey::tunnelId];
+            NSString *tunnelIdValue = !m_tunnelId.isEmpty() ? m_tunnelId.toNSString() : @"";
+
+            NSDictionary *message = @{actionKey: actionValue, tunnelIdKey: tunnelIdValue};
+
+            // Lambda to handle the response
+            auto checkHandshake = [this](NSDictionary *response) {
+                uint64_t last_handshake_time_sec = 0;
+                if (response && response[@"last_handshake_time_sec"] &&
+                    ![response[@"last_handshake_time_sec"] isKindOfClass:[NSNull class]]) {
+                    last_handshake_time_sec = [response[@"last_handshake_time_sec"] unsignedLongLongValue];
+                }
+
+                qDebug() << "last_handshake_time_sec:" << last_handshake_time_sec;
+
+                if (last_handshake_time_sec > 0) {
+                    // Handshake successful, update state
+                    qDebug() << "Handshake detected, updating state to CONNECTED.";
+                    emit connectionStateChanged(Vpn::ConnectionState::Connected);
+                    stopForHandshake();
+                    return;
+                } else {
+                    if (last_handshake_time_sec == 0) {
+                        // Keep retrying
+                        emit connectionStateChanged(Vpn::ConnectionState::Connecting);
+                    } else {
+                        // Handle handshake failure and stop monitoring
+                        emit connectionStateChanged(Vpn::ConnectionState::Disconnected);
+                        stopForHandshake();
+                        return;
+                    }
+                }
+            };
+
+            // Send the message to the VPN extension
+            sendVpnExtensionMessage(message, checkHandshake);
+        });
+
+        qDebug() << "Handshake timer initialized.";
+    }
+
+    // Start the timer only if it's not already active
+    if (m_handshakeTimer && !m_handshakeTimer->isActive()) {
+        m_handshakeTimer->start(1000); // Retry every 1 second
+        qDebug() << "Handshake timer Retry every 1 second";
+    }
 }
 
 void IosController::vpnStatusDidChange(void *pNotification)
@@ -276,7 +347,11 @@ void IosController::vpnStatusDidChange(void *pNotification)
 
     if (session /* && session == TunnelManager.session */ ) {
         qDebug() << "IosController::vpnStatusDidChange" << iosStatusToState(session.status) << session;
-
+        if (is_WireGuard && session.status == NEVPNStatusConnected)
+        {
+            // use last_handshake_time
+            return;
+        }
         if (session.status == NEVPNStatusDisconnected) {
             if (@available(iOS 16.0, *)) {
                 [session fetchLastDisconnectErrorWithCompletionHandler:^(NSError * _Nullable error) {
@@ -371,6 +446,7 @@ void IosController::vpnStatusDidChange(void *pNotification)
             } else {
                 qDebug() << "Disconnect error is unavailable on iOS < 16.0";
             }
+            stopForHandshake();
         }
 
         emit connectionStateChanged(iosStatusToState(session.status));
@@ -655,7 +731,7 @@ bool IosController::startWireGuard(const QString &config)
     tunnelProtocol.serverAddress = m_serverAddress;
 
     m_currentTunnel.protocolConfiguration = tunnelProtocol;
-
+    waitForHandshake();
     startTunnel();
 }
 
