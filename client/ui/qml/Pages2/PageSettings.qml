@@ -143,8 +143,8 @@ PageType {
                 Layout.preferredHeight: about.height
 
                 text: qsTr("Close application")
-                rightImageSource: "qrc:/images/controls/chevron-right.svg"
                 leftImageSource: "qrc:/images/controls/x-circle.svg"
+                isLeftImageHoverEnabled: false
 
                 clickedFunction: function() {
                     PageController.closeApplication()
