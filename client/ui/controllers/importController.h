@@ -54,7 +54,6 @@ public slots:
 
 signals:
     void importFinished();
-    void importErrorOccurred(const QString &errorMessage, bool goToPageHome);
     void importErrorOccurred(ErrorCode errorCode, bool goToPageHome);
 
     void qrDecodingFinished();
@@ -67,6 +66,8 @@ private:
     QJsonObject extractXrayConfig(const QString &data, const QString &description = "");
 
     void checkForMaliciousStrings(const QJsonObject &protocolConfig);
+
+    void processAmneziaConfig(QJsonObject &config);
 
 #if defined Q_OS_ANDROID || defined Q_OS_IOS
     void stopDecodingQr();

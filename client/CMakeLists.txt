@@ -25,7 +25,11 @@ execute_process(
 add_definitions(-DGIT_COMMIT_HASH="${GIT_COMMIT_HASH}")
 
 add_definitions(-DPROD_AGW_PUBLIC_KEY="$ENV{PROD_AGW_PUBLIC_KEY}")
-add_definitions(-DPROD_PROXY_STORAGE_KEY="$ENV{PROD_PROXY_STORAGE_KEY}")
+add_definitions(-DPROD_S3_ENDPOINT="$ENV{PROD_S3_ENDPOINT}")
+
+add_definitions(-DDEV_AGW_PUBLIC_KEY="$ENV{DEV_AGW_PUBLIC_KEY}")
+add_definitions(-DDEV_AGW_ENDPOINT="$ENV{DEV_AGW_ENDPOINT}")
+add_definitions(-DDEV_S3_ENDPOINT="$ENV{DEV_S3_ENDPOINT}")
 
 if(IOS)
     set(PACKAGES ${PACKAGES} Multimedia)
@@ -58,6 +62,7 @@ qt_add_executable(${PROJECT} MANUAL_FINALIZATION)
 if(WIN32 OR (APPLE AND NOT IOS) OR (LINUX AND NOT ANDROID))
     qt_add_repc_replicas(${PROJECT} ${CMAKE_CURRENT_LIST_DIR}/../ipc/ipc_interface.rep)
     qt_add_repc_replicas(${PROJECT} ${CMAKE_CURRENT_LIST_DIR}/../ipc/ipc_process_interface.rep)
+    qt_add_repc_replicas(${PROJECT} ${CMAKE_CURRENT_LIST_DIR}/../ipc/ipc_process_tun2socks.rep)
 endif()
 
 qt6_add_resources(QRC ${QRC} ${CMAKE_CURRENT_LIST_DIR}/resources.qrc)
@@ -110,6 +115,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/3rdparty.cmake)
 
 include_directories(
     ${CMAKE_CURRENT_LIST_DIR}/../ipc
+    ${CMAKE_CURRENT_LIST_DIR}/../common/logger
     ${CMAKE_CURRENT_LIST_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
 )
@@ -131,7 +137,6 @@ set(HEADERS ${HEADERS}
     ${CMAKE_CURRENT_LIST_DIR}/protocols/protocols_defs.h
     ${CMAKE_CURRENT_LIST_DIR}/protocols/qml_register_protocols.h
     ${CMAKE_CURRENT_LIST_DIR}/ui/pages.h
-    ${CMAKE_CURRENT_LIST_DIR}/ui/property_helper.h
     ${CMAKE_CURRENT_LIST_DIR}/ui/qautostart.h
     ${CMAKE_CURRENT_LIST_DIR}/protocols/vpnprotocol.h
     ${CMAKE_CURRENT_BINARY_DIR}/version.h
@@ -140,6 +145,7 @@ set(HEADERS ${HEADERS}
     ${CMAKE_CURRENT_LIST_DIR}/core/serialization/serialization.h
     ${CMAKE_CURRENT_LIST_DIR}/core/serialization/transfer.h
     ${CMAKE_CURRENT_LIST_DIR}/core/enums/apiEnums.h
+    ${CMAKE_CURRENT_LIST_DIR}/../common/logger/logger.h
 )
 
 # Mozilla headres
@@ -190,6 +196,7 @@ set(SOURCES ${SOURCES}
     ${CMAKE_CURRENT_LIST_DIR}/core/serialization/trojan.cpp
     ${CMAKE_CURRENT_LIST_DIR}/core/serialization/vmess.cpp
     ${CMAKE_CURRENT_LIST_DIR}/core/serialization/vmess_new.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/../common/logger/logger.cpp
 )
 
 # Mozilla sources

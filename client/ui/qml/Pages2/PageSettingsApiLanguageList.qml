@@ -54,8 +54,14 @@ PageType {
                         imageSource: "qrc:/images/controls/download.svg"
 
                         checked: index === ApiCountryModel.currentIndex
+                        checkable: !ConnectionController.isConnected
 
                         onClicked: {
+                            if (ConnectionController.isConnected) {
+                                PageController.showNotificationMessage(qsTr("Unable change server location while there is an active connection"))
+                                return
+                            }
+
                             if (index !== ApiCountryModel.currentIndex) {
                                 PageController.showBusyIndicator(true)
                                 var prevIndex = ApiCountryModel.currentIndex
@@ -90,7 +96,7 @@ PageType {
                         Layout.rightMargin: 32
                         Layout.alignment: Qt.AlignRight
 
-                        source: "qrc:/countriesFlags/images/flagKit/" + countryCode + ".svg"
+                        source: "qrc:/countriesFlags/images/flagKit/" + countryImageCode + ".svg"
                     }
                 }
 

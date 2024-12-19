@@ -79,6 +79,7 @@ Button {
                     visible: text !== ""
 
                     color: AmneziaStyle.color.mutedGray
+                    textFormat: Text.RichText
 
                     Layout.fillWidth: true
                     Layout.rightMargin: 16
@@ -144,6 +145,7 @@ Button {
 
         cursorShape: Qt.PointingHandCursor
         hoverEnabled: true
+        enabled: root.enabled
 
         onEntered: {
             backgroundRect.color = root.hoveredColor

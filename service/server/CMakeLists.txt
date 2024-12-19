@@ -18,8 +18,9 @@ set(HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/../../ipc/ipc.h
     ${CMAKE_CURRENT_LIST_DIR}/../../ipc/ipcserver.h
     ${CMAKE_CURRENT_LIST_DIR}/../../ipc/ipcserverprocess.h
+    ${CMAKE_CURRENT_LIST_DIR}/../../ipc/ipctun2socksprocess.h
     ${CMAKE_CURRENT_LIST_DIR}/localserver.h
-    ${CMAKE_CURRENT_LIST_DIR}/logger.h
+    ${CMAKE_CURRENT_LIST_DIR}/../../common/logger/logger.h
     ${CMAKE_CURRENT_LIST_DIR}/router.h
     ${CMAKE_CURRENT_LIST_DIR}/systemservice.h
     ${CMAKE_CURRENT_BINARY_DIR}/version.h
@@ -30,8 +31,9 @@ set(SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/../../client/core/networkUtilities.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../../ipc/ipcserver.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../../ipc/ipcserverprocess.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/../../ipc/ipctun2socksprocess.cpp
     ${CMAKE_CURRENT_LIST_DIR}/localserver.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/logger.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/../../common/logger/logger.cpp
     ${CMAKE_CURRENT_LIST_DIR}/main.cpp
     ${CMAKE_CURRENT_LIST_DIR}/router.cpp
     ${CMAKE_CURRENT_LIST_DIR}/systemservice.cpp
@@ -238,6 +240,7 @@ include_directories(
     ${CMAKE_CURRENT_LIST_DIR}
     ${CMAKE_CURRENT_LIST_DIR}/../../client
     ${CMAKE_CURRENT_LIST_DIR}/../../ipc
+    ${CMAKE_CURRENT_LIST_DIR}/../../common/logger
     ${CMAKE_CURRENT_BINARY_DIR}
 )
 
@@ -278,6 +281,7 @@ endif()
 
 qt_add_repc_sources(${PROJECT} ${CMAKE_CURRENT_LIST_DIR}/../../ipc/ipc_interface.rep)
 qt_add_repc_sources(${PROJECT} ${CMAKE_CURRENT_LIST_DIR}/../../ipc/ipc_process_interface.rep)
+qt_add_repc_sources(${PROJECT} ${CMAKE_CURRENT_LIST_DIR}/../../ipc/ipc_process_tun2socks.rep)
 
 # copy deploy artifacts required to run the application to the debug build folder
 if(WIN32)

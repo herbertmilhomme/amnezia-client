@@ -47,14 +47,86 @@ PageType {
                 KeyNavigation.tab: textKey.textField
             }
 
-
             HeaderType {
+                property bool isVisible: SettingsController.getInstallationUuid() !== "" || PageController.isStartPageVisible()
+
                 Layout.fillWidth: true
                 Layout.topMargin: 24
                 Layout.rightMargin: 16
                 Layout.leftMargin: 16
 
                 headerText: qsTr("Connection")
+
+                actionButtonImage: isVisible ? "qrc:/images/controls/more-vertical.svg" : ""
+                actionButtonFunction: function() {
+                    moreActionsDrawer.open()
+                }
+
+                DrawerType2 {
+                    id: moreActionsDrawer
+
+                    parent: root
+
+                    anchors.fill: parent
+                    expandedHeight: root.height * 0.5
+
+                    expandedContent: ColumnLayout {
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        spacing: 0
+
+                        HeaderType {
+                            Layout.fillWidth: true
+                            Layout.topMargin: 32
+                            Layout.leftMargin: 16
+                            Layout.rightMargin: 16
+
+                            headerText: qsTr("Settings")
+                        }
+
+                        SwitcherType {
+                            id: switcher
+                            Layout.fillWidth: true
+                            Layout.topMargin: 16
+                            Layout.leftMargin: 16
+                            Layout.rightMargin: 16
+
+                            text: qsTr("Enable logs")
+
+                            visible: PageController.isStartPageVisible()
+                            checked: SettingsController.isLoggingEnabled
+                            onCheckedChanged: {
+                                if (checked !== SettingsController.isLoggingEnabled) {
+                                    SettingsController.isLoggingEnabled = checked
+                                }
+                            }
+                        }
+
+                        LabelWithButtonType {
+                            id: supportUuid
+                            Layout.fillWidth: true
+                            Layout.topMargin: 16
+
+                            text: qsTr("Support tag")
+                            descriptionText: SettingsController.getInstallationUuid()
+
+                            descriptionOnTop: true
+
+                            rightImageSource: "qrc:/images/controls/copy.svg"
+                            rightImageColor: AmneziaStyle.color.paleGray
+
+                            visible: SettingsController.getInstallationUuid() !== ""
+                            clickedFunction: function() {
+                                GC.copyToClipBoard(descriptionText)
+                                PageController.showNotificationMessage(qsTr("Copied"))
+                                if (!GC.isMobile()) {
+                                    this.rightButton.forceActiveFocus()
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             ParagraphTextType {
@@ -118,8 +190,6 @@ PageType {
 
             CardWithIconsType {
                 id: apiInstalling
-
-                visible: false
 
                 Layout.fillWidth: true
                 Layout.rightMargin: 16

@@ -21,6 +21,7 @@ import android.os.Looper
 import android.os.Message
 import android.os.Messenger
 import android.provider.Settings
+import android.view.MotionEvent
 import android.view.WindowManager.LayoutParams
 import android.webkit.MimeTypeMap
 import android.widget.Toast
@@ -43,6 +44,7 @@ import kotlinx.coroutines.withContext
 import org.amnezia.vpn.protocol.getStatistics
 import org.amnezia.vpn.protocol.getStatus
 import org.amnezia.vpn.qt.QtAndroidController
+import org.amnezia.vpn.util.LibraryLoader.loadSharedLibrary
 import org.amnezia.vpn.util.Log
 import org.amnezia.vpn.util.Prefs
 import org.json.JSONException
@@ -157,7 +159,12 @@ class AmneziaActivity : QtActivity() {
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d(TAG, "Create Amnezia activity: $intent")
+        Log.d(TAG, "Create Amnezia activity")
+        loadLibs()
+        window.apply {
+            addFlags(LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+            statusBarColor = getColor(R.color.black)
+        }
         mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         val proto = mainScope.async(Dispatchers.IO) {
             VpnStateStore.getVpnState().vpnProto
@@ -175,6 +182,17 @@ class AmneziaActivity : QtActivity() {
         runBlocking { vpnProto = proto.await() }
     }
 
+    private fun loadLibs() {
+        listOf(
+            "rsapss",
+            "crypto_3",
+            "ssl_3",
+            "ssh"
+        ).forEach {
+            loadSharedLibrary(this.applicationContext, it)
+        }
+    }
+
     private fun registerBroadcastReceivers() {
         notificationStateReceiver = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             registerBroadcastReceiver(
@@ -183,7 +201,7 @@ class AmneziaActivity : QtActivity() {
                     NotificationManager.ACTION_APP_BLOCK_STATE_CHANGED
                 )
             ) {
-                Log.d(
+                Log.v(
                     TAG, "Notification state changed: ${it?.action}, blocked = " +
                         "${it?.getBooleanExtra(NotificationManager.EXTRA_BLOCKED_STATE, false)}"
                 )
@@ -197,7 +215,7 @@ class AmneziaActivity : QtActivity() {
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        Log.d(TAG, "onNewIntent: $intent")
+        Log.v(TAG, "onNewIntent: $intent")
         intent?.let(::processIntent)
     }
 
@@ -386,7 +404,7 @@ class AmneziaActivity : QtActivity() {
     @MainThread
     private fun startVpn(vpnConfig: String) {
         getVpnProto(vpnConfig)?.let { proto ->
-            Log.d(TAG, "Proto from config: $proto, current proto: $vpnProto")
+            Log.v(TAG, "Proto from config: $proto, current proto: $vpnProto")
             if (isServiceConnected) {
                 if (proto.serviceClass == vpnProto?.serviceClass) {
                     vpnProto = proto
@@ -499,7 +517,7 @@ class AmneziaActivity : QtActivity() {
                 startActivityForResult(it, CREATE_FILE_ACTION_CODE, ActivityResultHandler(
                     onSuccess = {
                         it?.data?.let { uri ->
-                            Log.d(TAG, "Save file to $uri")
+                            Log.v(TAG, "Save file to $uri")
                             try {
                                 contentResolver.openOutputStream(uri)?.use { os ->
                                     os.bufferedWriter().use { it.write(data) }
@@ -548,7 +566,7 @@ class AmneziaActivity : QtActivity() {
                 startActivityForResult(it, OPEN_FILE_ACTION_CODE, ActivityResultHandler(
                     onAny = {
                         val uri = it?.data?.toString() ?: ""
-                        Log.d(TAG, "Open file: $uri")
+                        Log.v(TAG, "Open file: $uri")
                         mainScope.launch {
                             qtInitialized.await()
                             QtAndroidController.onFileOpened(uri)
@@ -607,6 +625,14 @@ class AmneziaActivity : QtActivity() {
         mainScope.launch {
             val flag = if (enabled) 0 else LayoutParams.FLAG_SECURE
             window.setFlags(flag, LayoutParams.FLAG_SECURE)
+        }
+    }
+
+    @Suppress("unused")
+    fun setNavigationBarColor(color: Int) {
+        Log.v(TAG, "Change navigation bar color: ${"#%08X".format(color)}")
+        mainScope.launch {
+            window.navigationBarColor = color
         }
     }
 
@@ -682,6 +708,77 @@ class AmneziaActivity : QtActivity() {
                 })
             }
             .show()
+    }
+
+    @Suppress("unused")
+    fun requestAuthentication() {
+        Log.v(TAG, "Request authentication")
+        mainScope.launch {
+            qtInitialized.await()
+            Intent(this@AmneziaActivity, AuthActivity::class.java).also {
+                startActivity(it)
+            }
+        }
+    }
+
+    // workaround for a bug in Qt that causes the mouse click event not to be handled
+    // also disable right-click, as it causes the application to crash
+    private var lastButtonState = 0
+    private fun MotionEvent.fixCopy(): MotionEvent = MotionEvent.obtain(
+        downTime,
+        eventTime,
+        action,
+        pointerCount,
+        (0 until pointerCount).map { i ->
+            MotionEvent.PointerProperties().apply {
+                getPointerProperties(i, this)
+            }
+        }.toTypedArray(),
+        (0 until pointerCount).map { i ->
+            MotionEvent.PointerCoords().apply {
+                getPointerCoords(i, this)
+            }
+        }.toTypedArray(),
+        metaState,
+        MotionEvent.BUTTON_PRIMARY,
+        xPrecision,
+        yPrecision,
+        deviceId,
+        edgeFlags,
+        source,
+        flags
+    )
+
+    private fun handleMouseEvent(ev: MotionEvent, superDispatch: (MotionEvent?) -> Boolean): Boolean {
+        when (ev.action) {
+            MotionEvent.ACTION_DOWN -> {
+                lastButtonState = ev.buttonState
+                if (ev.buttonState == MotionEvent.BUTTON_SECONDARY) return true
+            }
+
+            MotionEvent.ACTION_UP -> {
+                when (lastButtonState) {
+                    MotionEvent.BUTTON_SECONDARY -> return true
+                    MotionEvent.BUTTON_PRIMARY -> {
+                        val modEvent = ev.fixCopy()
+                        return superDispatch(modEvent).apply { modEvent.recycle() }
+                    }
+                }
+            }
+        }
+        return superDispatch(ev)
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+        if (ev != null && ev.getToolType(0) == MotionEvent.TOOL_TYPE_MOUSE) {
+            return handleMouseEvent(ev) { super.dispatchTouchEvent(it) }
+        }
+        return super.dispatchTouchEvent(ev)
+    }
+
+    override fun dispatchTrackballEvent(ev: MotionEvent?): Boolean {
+        ev?.let { return handleMouseEvent(ev) { super.dispatchTrackballEvent(it) }}
+        return super.dispatchTrackballEvent(ev)
     }
 
     /**

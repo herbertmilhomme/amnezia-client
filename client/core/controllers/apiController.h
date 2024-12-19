@@ -14,14 +14,14 @@ class ApiController : public QObject
     Q_OBJECT
 
 public:
-    explicit ApiController(const QString &gatewayEndpoint, QObject *parent = nullptr);
+    explicit ApiController(const QString &gatewayEndpoint, bool isDevEnvironment, QObject *parent = nullptr);
 
 public slots:
     void updateServerConfigFromApi(const QString &installationUuid, const int serverIndex, QJsonObject serverConfig);
 
     ErrorCode getServicesList(QByteArray &responseBody);
     ErrorCode getConfigForService(const QString &installationUuid, const QString &userCountryCode, const QString &serviceType,
-                                  const QString &protocol, const QString &serverCountryCode, QJsonObject &serverConfig);
+                                  const QString &protocol, const QString &serverCountryCode, const QJsonObject &authData, QJsonObject &serverConfig);
 
 signals:
     void errorOccurred(ErrorCode errorCode);
@@ -44,6 +44,7 @@ private:
 
     QString m_gatewayEndpoint;
     QStringList m_proxyUrls;
+    bool m_isDevEnvironment = false;
 };
 
 #endif // APICONTROLLER_H
