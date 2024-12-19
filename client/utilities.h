@@ -7,7 +7,8 @@
 #include <QJsonDocument>
 
 #ifdef Q_OS_WIN
-    #include "Windows.h"
+#include <windows.h>
+#include <tlhelp32.h>
 #endif
 
 class Utils : public QObject
@@ -27,15 +28,19 @@ public:
     static bool initializePath(const QString &path);
 
     static bool processIsRunning(const QString &fileName, const bool fullFlag = false);
-    static void killProcessByName(const QString &name);
+    static bool killProcessByName(const QString &name);
 
     static QString openVpnExecPath();
     static QString wireguardExecPath();
     static QString certUtilPath();
     static QString tun2socksPath();
 
+    static void logException(const std::exception &e);
+    static void logException(const std::exception_ptr &eptr = std::current_exception());
+
 #ifdef Q_OS_WIN
     static bool signalCtrl(DWORD dwProcessId, DWORD dwCtrlEvent);
+    static QString getNextDriverLetter();
 #endif
 };
 

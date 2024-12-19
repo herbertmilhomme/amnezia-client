@@ -25,10 +25,11 @@ execute_process(
 add_definitions(-DGIT_COMMIT_HASH="${GIT_COMMIT_HASH}")
 
 add_definitions(-DPROD_AGW_PUBLIC_KEY="$ENV{PROD_AGW_PUBLIC_KEY}")
-add_definitions(-DPROD_PROXY_STORAGE_KEY="$ENV{PROD_PROXY_STORAGE_KEY}")
+add_definitions(-DPROD_S3_ENDPOINT="$ENV{PROD_S3_ENDPOINT}")
 
 add_definitions(-DDEV_AGW_PUBLIC_KEY="$ENV{DEV_AGW_PUBLIC_KEY}")
 add_definitions(-DDEV_AGW_ENDPOINT="$ENV{DEV_AGW_ENDPOINT}")
+add_definitions(-DDEV_S3_ENDPOINT="$ENV{DEV_S3_ENDPOINT}")
 
 if(IOS)
     set(PACKAGES ${PACKAGES} Multimedia)
@@ -61,6 +62,7 @@ qt_add_executable(${PROJECT} MANUAL_FINALIZATION)
 if(WIN32 OR (APPLE AND NOT IOS) OR (LINUX AND NOT ANDROID))
     qt_add_repc_replicas(${PROJECT} ${CMAKE_CURRENT_LIST_DIR}/../ipc/ipc_interface.rep)
     qt_add_repc_replicas(${PROJECT} ${CMAKE_CURRENT_LIST_DIR}/../ipc/ipc_process_interface.rep)
+    qt_add_repc_replicas(${PROJECT} ${CMAKE_CURRENT_LIST_DIR}/../ipc/ipc_process_tun2socks.rep)
 endif()
 
 qt6_add_resources(QRC ${QRC} ${CMAKE_CURRENT_LIST_DIR}/resources.qrc)

@@ -351,8 +351,6 @@ void IosController::vpnStatusDidChange(void *pNotification)
                                 }
                             }
                         }
-                    } else {
-                        qDebug() << "Disconnect error is absent";
                     }
                 }];
             } else {
@@ -499,6 +497,20 @@ bool IosController::setupWireGuard()
         wgConfig.insert(config_key::persistent_keep_alive, config[config_key::persistent_keep_alive]);
     } else {
         wgConfig.insert(config_key::persistent_keep_alive, "25");
+    }
+
+    if (config.contains(config_key::isObfuscationEnabled) && config.value(config_key::isObfuscationEnabled).toBool()) {
+        wgConfig.insert(config_key::initPacketMagicHeader, config[config_key::initPacketMagicHeader]);
+        wgConfig.insert(config_key::responsePacketMagicHeader, config[config_key::responsePacketMagicHeader]);
+        wgConfig.insert(config_key::underloadPacketMagicHeader, config[config_key::underloadPacketMagicHeader]);
+        wgConfig.insert(config_key::transportPacketMagicHeader, config[config_key::transportPacketMagicHeader]);
+
+        wgConfig.insert(config_key::initPacketJunkSize, config[config_key::initPacketJunkSize]);
+        wgConfig.insert(config_key::responsePacketJunkSize, config[config_key::responsePacketJunkSize]);
+
+        wgConfig.insert(config_key::junkPacketCount, config[config_key::junkPacketCount]);
+        wgConfig.insert(config_key::junkPacketMinSize, config[config_key::junkPacketMinSize]);
+        wgConfig.insert(config_key::junkPacketMaxSize, config[config_key::junkPacketMaxSize]);
     }
 
     QJsonDocument wgConfigDoc(wgConfig);
@@ -835,7 +847,7 @@ QString IosController::openFile() {
 
 void IosController::requestInetAccess() {
     NSURL *url = [NSURL URLWithString:@"http://captive.apple.com/generate_204"];
-    if (url) {
+    if (!url) {
         qDebug() << "IosController::requestInetAccess URL error";
         return;
     }
@@ -847,7 +859,6 @@ void IosController::requestInetAccess() {
         } else {
             NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
             QString responseBody = QString::fromUtf8((const char*)data.bytes, data.length);
-            qDebug() << "IosController::requestInetAccess server response:" << httpResponse.statusCode << "\n\n" <<responseBody;
         }
     }];
     [task resume];

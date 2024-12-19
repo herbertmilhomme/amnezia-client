@@ -34,13 +34,13 @@ ConnectionController::ConnectionController(const QSharedPointer<ServersModel> &s
 
 void ConnectionController::openConnection()
 {
-// #if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
-//     if (!Utils::processIsRunning(Utils::executable(SERVICE_NAME, false), true))
-//     {
-//         emit connectionErrorOccurred(ErrorCode::AmneziaServiceNotRunning);
-//         return;
-//     }
-// #endif
+#if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
+    if (!Utils::processIsRunning(Utils::executable(SERVICE_NAME, false), true))
+    {
+        emit connectionErrorOccurred(ErrorCode::AmneziaServiceNotRunning);
+        return;
+    }
+#endif
 
     int serverIndex = m_serversModel->getDefaultServerIndex();
     QJsonObject serverConfig = m_serversModel->getServerConfig(serverIndex);
@@ -51,8 +51,11 @@ void ConnectionController::openConnection()
     if (configVersion == ApiConfigSources::Telegram
         && !m_serversModel->data(serverIndex, ServersModel::Roles::HasInstalledContainers).toBool()) {
         emit updateApiConfigFromTelegram();
+        } else if (configVersion == ApiConfigSources::AmneziaGateway
+        && !m_serversModel->data(serverIndex, ServersModel::Roles::HasInstalledContainers).toBool()) {
+        emit updateApiConfigFromGateway();
     } else if (configVersion && m_serversModel->isApiKeyExpired(serverIndex)) {
-        qDebug() << "attempt to update api config by end_date event";
+        qDebug() << "attempt to update api config by expires_at event";
         if (configVersion == ApiConfigSources::Telegram) {
             emit updateApiConfigFromTelegram();
         } else {
