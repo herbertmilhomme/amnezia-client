@@ -34,6 +34,5 @@ class IpcInterface
     SLOT( bool updateResolvers(const QString& ifname, const QList<QHostAddress>& resolvers) );
 
     SLOT( int mountDmg(const QString &path, bool mount) );
-    SLOT (int installApp(const QString &path));
 };
 

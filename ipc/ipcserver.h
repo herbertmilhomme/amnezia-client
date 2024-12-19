@@ -39,7 +39,6 @@ public:
     virtual bool disableKillSwitch() override;
     virtual bool updateResolvers(const QString &ifname, const QList<QHostAddress> &resolvers) override;
     virtual int mountDmg(const QString &path, bool mount) override;
-    virtual int installApp(const QString &path) override;
 
 private:
     int m_localpid = 0;
