@@ -7,6 +7,7 @@
 
 #include "amnezia_application.h"
 #include "core/errorstrings.h"
+#include "core/scripts_registry.h"
 #include "version.h"
 
 namespace
@@ -121,10 +122,14 @@ void UpdateController::runInstaller()
                 file.write(reply->readAll());
                 file.close();
                 QString t = installerPath;
-                auto ipcReply = IpcClient::Interface()->installApp(t);
-                ipcReply.waitForFinished();
-                int result = ipcReply.returnValue();
 
+#if defined(Q_OS_WINDOWS)
+                runWindowsInstaller(t);
+#elif defined(Q_OS_MACOS)
+                runMacInstaller(t);
+#elif defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
+                runLinuxInstaller(t);
+#endif
                 // emit errorOccured("");
             }
         } else {
@@ -140,7 +145,69 @@ void UpdateController::runInstaller()
                 qDebug() << errorString(ErrorCode::ApiConfigDownloadError);
             }
         }
-
         reply->deleteLater();
     });
 }
+
+#if defined(Q_OS_WINDOWS)
+int UpdateController::runWindowsInstaller(const QString &installerPath)
+{
+    qDebug() << "Windows installer path:" << installerPath;
+    // TODO: Implement Windows installation logic
+    return -1;
+}
+#endif
+
+#if defined(Q_OS_MACOS)
+int UpdateController::runMacInstaller(const QString &installerPath)
+{
+    qDebug() << "macOS installer path:" << installerPath;
+    // TODO: Implement macOS installation logic
+    return -1;
+}
+#endif
+
+#if defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
+int UpdateController::runLinuxInstaller(const QString &installerPath)
+{
+    // Create temporary directory for extraction
+    QTemporaryDir extractDir;
+    extractDir.setAutoRemove(false);
+    if (!extractDir.isValid()) {
+        qDebug() << "Failed to create temporary directory";
+        return -1;
+    }
+    qDebug() << "Temporary directory created:" << extractDir.path();
+
+    // Create script file in the temporary directory
+    QString scriptPath = extractDir.path() + "/installer.sh";
+    QFile scriptFile(scriptPath);
+    if (!scriptFile.open(QIODevice::WriteOnly)) {
+        qDebug() << "Failed to create script file";
+        return -1;
+    }
+
+    // Get script content from registry
+    QString scriptContent = amnezia::scriptData(amnezia::ClientScriptType::linux_installer);
+    scriptFile.write(scriptContent.toUtf8());
+    scriptFile.close();
+    qDebug() << "Script file created:" << scriptPath;
+
+    // Make script executable
+    QFile::setPermissions(scriptPath, QFile::permissions(scriptPath) | QFile::ExeUser);
+
+    // Start detached process
+    qint64 pid;
+    bool success = QProcess::startDetached(
+            "/bin/bash", QStringList() << scriptPath << extractDir.path() << installerPath, extractDir.path(), &pid);
+
+    if (success) {
+        qDebug() << "Installation process started with PID:" << pid;
+    } else {
+        qDebug() << "Failed to start installation process";
+        return -1;
+    }
+
+    return 0;
+}
+#endif
