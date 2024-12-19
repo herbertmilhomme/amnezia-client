@@ -4,6 +4,7 @@
 #include <QFileInfo>
 #include <QLocalSocket>
 #include <QObject>
+#include <QJsonArray>
 
 #include "qjsonarray.h"
 #include "router.h"
