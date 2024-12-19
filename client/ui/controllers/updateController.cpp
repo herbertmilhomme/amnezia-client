@@ -15,7 +15,8 @@ namespace
 #ifdef Q_OS_MACOS
     const QString installerPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/AmneziaVPN.dmg";
 #elif defined Q_OS_WINDOWS
-    const QString installerPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/AmneziaVPN.exe";
+    const QString installerPath =
+            QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/AmneziaVPN_installer.exe";
 #elif defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
     const QString installerPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/AmneziaVPN.tar.zip";
 #endif
@@ -152,9 +153,18 @@ void UpdateController::runInstaller()
 #if defined(Q_OS_WINDOWS)
 int UpdateController::runWindowsInstaller(const QString &installerPath)
 {
-    qDebug() << "Windows installer path:" << installerPath;
-    // TODO: Implement Windows installation logic
-    return -1;
+    // Start the installer process
+    qint64 pid;
+    bool success = QProcess::startDetached(installerPath, QStringList(), QString(), &pid);
+
+    if (success) {
+        qDebug() << "Installation process started with PID:" << pid;
+    } else {
+        qDebug() << "Failed to start installation process";
+        return -1;
+    }
+
+    return 0;
 }
 #endif
 
