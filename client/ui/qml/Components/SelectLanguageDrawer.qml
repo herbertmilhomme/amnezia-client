@@ -32,9 +32,6 @@ DrawerType2 {
                 id: backButton
 
                 Layout.fillWidth: true
-                Layout.topMargin: 16
-                Layout.rightMargin: 16
-                Layout.leftMargin: 16
 
                 backButtonImage: "qrc:/images/controls/arrow-left.svg"
                 backButtonFunction: function() { root.closeTriggered() }
