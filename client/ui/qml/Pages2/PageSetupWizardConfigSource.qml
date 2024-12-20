@@ -252,7 +252,7 @@ PageType {
         property string title: qsTr("Restore from backup")
         property string description: qsTr("")
         property string imageSource: "qrc:/images/controls/archive-restore.svg"
-        property bool isVisible: true
+        property bool isVisible: PageController.isStartPageVisible()
         property var handler: function() {
             var filePath = SystemController.getFileName(qsTr("Open backup file"),
                                                         qsTr("Backup files (*.backup)"))
