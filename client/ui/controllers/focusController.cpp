@@ -1,5 +1,5 @@
 #include "focusController.h"
-#include "utils/focusControl.h"
+#include "utils/qmlUtils.h"
 
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
@@ -60,11 +60,11 @@ void FocusController::setFocusItem(QQuickItem *item)
 {
     if (m_focusedItem != item) {
         m_focusedItem = item;
-        emit focusedItemChanged();
         qDebug() << "===>> FocusItem is changed to " << item << "!";
     } else {
         qDebug() << "===>> FocusItem is is the same: " << item << "!";
     }
+    emit focusedItemChanged();
 }
 
 void FocusController::setFocusOnDefaultItem()

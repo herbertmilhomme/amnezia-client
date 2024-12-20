@@ -1,5 +1,4 @@
-#include "focusControl.h"
-#include "utils/focusControl.h"
+#include "qmlUtils.h"
 
 #include <QPointF>
 #include <QQuickItem>
