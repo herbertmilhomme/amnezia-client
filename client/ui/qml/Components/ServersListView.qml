@@ -18,6 +18,8 @@ import "../Config"
 ListView {
     id: root
 
+    property int selectedIndex: ServersModel.defaultIndex
+
     anchors.top: serversMenuHeader.bottom
     anchors.right: parent.right
     anchors.left: parent.left
@@ -25,7 +27,6 @@ ListView {
     anchors.topMargin: 16
 
     model: ServersModel
-    currentIndex: ServersModel.defaultIndex
 
     ScrollBar.vertical: ScrollBarType {
         id: scrollBar
@@ -38,11 +39,12 @@ ListView {
     Connections {
         target: ServersModel
         function onDefaultServerIndexChanged(serverIndex) {
-            root.currentIndex = serverIndex
+            root.selectedIndex = serverIndex
         }
     }
 
     clip: true
+    reuseItems: true
 
     delegate: Item {
         id: menuContentDelegate
@@ -68,16 +70,17 @@ ListView {
                 objectName: "serverRadioButtonRowLayout"
 
                 Layout.fillWidth: true
+
                 VerticalRadioButton {
                     id: serverRadioButton
                     objectName: "serverRadioButton"
 
                     Layout.fillWidth: true
-                    focus: true
+
                     text: name
                     descriptionText: serverDescription
 
-                    checked: index === root.currentIndex
+                    checked: index === root.selectedIndex
                     checkable: !ConnectionController.isConnected
 
                     ButtonGroup.group: serversRadioButtonGroup
@@ -88,15 +91,9 @@ ListView {
                             return
                         }
 
-                        root.currentIndex = index
+                        root.selectedIndex = index
 
                         ServersModel.defaultIndex = index
-                    }
-
-                    MouseArea {
-                        anchors.fill: serverRadioButton
-                        cursorShape: Qt.PointingHandCursor
-                        enabled: false
                     }
 
                     Keys.onEnterPressed: serverRadioButton.clicked()
