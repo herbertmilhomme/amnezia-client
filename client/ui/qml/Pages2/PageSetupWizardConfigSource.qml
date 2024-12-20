@@ -304,7 +304,7 @@ PageType {
         property string title: qsTr("I have nothing")
         property string description: qsTr("")
         property string imageSource: "qrc:/images/controls/help-circle.svg"
-        property bool isVisible: true
+        property bool isVisible: PageController.isStartPageVisible()
         property var handler: function() {
             Qt.openUrlExternally(LanguageModel.getCurrentSiteUrl())
         }
