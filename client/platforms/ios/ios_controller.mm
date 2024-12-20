@@ -528,7 +528,6 @@ bool IosController::setupWireGuard()
     QJsonDocument wgConfigDoc(wgConfig);
     QString wgConfigDocStr(wgConfigDoc.toJson(QJsonDocument::Compact));
 
-    waitForHandshake();
     return startWireGuard(wgConfigDocStr);
 }
 
@@ -626,7 +625,6 @@ bool IosController::setupAwg()
     QJsonDocument wgConfigDoc(wgConfig);
     QString wgConfigDocStr(wgConfigDoc.toJson(QJsonDocument::Compact));
 
-    waitForHandshake();
     return startWireGuard(wgConfigDocStr);
 }
 
@@ -655,6 +653,7 @@ bool IosController::startWireGuard(const QString &config)
 
     m_currentTunnel.protocolConfiguration = tunnelProtocol;
 
+    waitForHandshake();
     startTunnel();
 }
 
