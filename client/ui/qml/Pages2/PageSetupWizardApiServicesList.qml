@@ -51,15 +51,19 @@ PageType {
         spacing: 0
 
         property bool isFocusable: true
-        selectedIndex: 1
+        
         clip: true
+        reuseItems: true
+
         model: ApiServicesModel
 
-        ScrollBar.vertical: ScrollBar {}
+        ScrollBar.vertical: ScrollBarType {}
 
         delegate: Item {
             implicitWidth: servicesListView.width
             implicitHeight: delegateContent.implicitHeight
+
+            enabled: isServiceAvailable
 
             ColumnLayout {
                 id: delegateContent
@@ -79,8 +83,6 @@ PageType {
                     footerText: price
 
                     rightImageSource: "qrc:/images/controls/chevron-right.svg"
-
-                    enabled: isServiceAvailable
 
                     onClicked: {
                         if (isServiceAvailable) {
