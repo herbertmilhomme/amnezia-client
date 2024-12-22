@@ -59,7 +59,6 @@ Vpn::ConnectionState iosStatusToState(NEVPNStatus status) {
 namespace {
 IosController* s_instance = nullptr;
 QTimer *m_handshakeTimer = nullptr;
-bool is_WireGuard = false;
 }
 
 IosController::IosController() : QObject()
@@ -207,27 +206,21 @@ bool IosController::connectVpn(amnezia::Proto proto, const QJsonObject& configur
 
 
     if (proto == amnezia::Proto::OpenVpn) {
-        is_WireGuard = false;
         return setupOpenVPN();
     }
     if (proto == amnezia::Proto::Cloak) {
-        is_WireGuard = false;
         return setupCloak();
     }
     if (proto == amnezia::Proto::WireGuard) {
-        is_WireGuard = true;
         return setupWireGuard();
     }
     if (proto == amnezia::Proto::Awg) {
-        is_WireGuard = true;
         return setupAwg();
     }
     if (proto == amnezia::Proto::Xray) {
-        is_WireGuard = false;
         return setupXray();
     }
     if (proto == amnezia::Proto::SSXray) {
-        is_WireGuard = false;
         return setupSSXray();
     }
 
@@ -265,10 +258,10 @@ void IosController::checkStatus()
 void IosController::vpnStatusDidChange(void *pNotification)
 {
     NETunnelProviderSession *session = (NETunnelProviderSession *)pNotification;
-
+    NETunnelProviderProtocol *tunnelProtocol = (NETunnelProviderProtocol *)m_currentTunnel.protocolConfiguration;
     if (session /* && session == TunnelManager.session */ ) {
         qDebug() << "IosController::vpnStatusDidChange" << iosStatusToState(session.status) << session;
-        if (is_WireGuard && session.status == NEVPNStatusConnected)
+        if (tunnelProtocol.providerConfiguration[@"wireguard"] != nil && session.status == NEVPNStatusConnected)
         {
             // use last_handshake_time for check status connected for WireGuard
             return;
@@ -680,6 +673,8 @@ void IosController::startTunnel()
         protocolName = @"WireGuard";
     } else if (tunnelProtocol.providerConfiguration[@"ovpn"] != nil) {
         protocolName = @"OpenVPN";
+    } else if (tunnelProtocol.providerConfiguration[@"xray"] != nil) {
+        protocolName = @"XRay";
     }
 
     m_rxBytes = 0;
@@ -884,7 +879,6 @@ void IosController::stopForHandshake() {
         }
         m_handshakeTimer->deleteLater();
         m_handshakeTimer = nullptr;
-        is_WireGuard = false;
 
         qDebug() << "Handshake monitoring stopped.";
     } else {
