@@ -874,6 +874,12 @@ void IosController::requestInetAccess() {
 
 void IosController::stopForHandshake() {
     if (m_handshakeTimer) {
+        if (QThread::currentThread() != m_handshakeTimer->thread()) {
+            QMetaObject::invokeMethod(m_handshakeTimer, "stop", Qt::QueuedConnection);
+            QMetaObject::invokeMethod(m_handshakeTimer, "deleteLater", Qt::QueuedConnection);
+            m_handshakeTimer = nullptr;
+            return;
+        }
         if (m_handshakeTimer->isActive()) {
             m_handshakeTimer->stop();
         }
