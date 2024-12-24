@@ -3,6 +3,7 @@
         <file>images/tray/active.png</file>
         <file>images/tray/default.png</file>
         <file>images/tray/error.png</file>
+        <file>client_scripts/linux_installer.sh</file>
         <file>images/AmneziaVPN.png</file>
         <file>server_scripts/remove_container.sh</file>
         <file>server_scripts/setup_host_firewall.sh</file>
