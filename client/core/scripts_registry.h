@@ -35,7 +35,8 @@ namespace amnezia
 
     enum ClientScriptType {
         // Client-side scripts
-        linux_installer
+        linux_installer,
+        mac_installer
     };
 
     QString scriptFolder(DockerContainer container);

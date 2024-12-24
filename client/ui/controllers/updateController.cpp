@@ -193,9 +193,51 @@ int UpdateController::runWindowsInstaller(const QString &installerPath)
 #if defined(Q_OS_MACOS)
 int UpdateController::runMacInstaller(const QString &installerPath)
 {
-    logger.info() << "macOS installer path:" << installerPath;
-    // TODO: Implement macOS installation logic
-    return -1;
+    // Create temporary directory for extraction
+    QTemporaryDir extractDir;
+    extractDir.setAutoRemove(false);
+    if (!extractDir.isValid()) {
+        logger.error() << "Failed to create temporary directory";
+        return -1;
+    }
+    logger.info() << "Temporary directory created:" << extractDir.path();
+
+    // Create script file in the temporary directory
+    QString scriptPath = extractDir.path() + "/mac_installer.sh";
+    QFile scriptFile(scriptPath);
+    if (!scriptFile.open(QIODevice::WriteOnly)) {
+        logger.error() << "Failed to create script file";
+        return -1;
+    }
+
+    // Get script content from registry
+    QString scriptContent = amnezia::scriptData(amnezia::ClientScriptType::mac_installer);
+    if (scriptContent.isEmpty()) {
+        logger.error() << "macOS installer script content is empty";
+        scriptFile.close();
+        return -1;
+    }
+
+    scriptFile.write(scriptContent.toUtf8());
+    scriptFile.close();
+    logger.info() << "Script file created:" << scriptPath;
+
+    // Make script executable
+    QFile::setPermissions(scriptPath, QFile::permissions(scriptPath) | QFile::ExeUser);
+
+    // Start detached process
+    qint64 pid;
+    bool success = QProcess::startDetached(
+            "/bin/bash", QStringList() << scriptPath << extractDir.path() << installerPath, extractDir.path(), &pid);
+
+    if (success) {
+        logger.info() << "Installation process started with PID:" << pid;
+    } else {
+        logger.error() << "Failed to start installation process";
+        return -1;
+    }
+
+    return 0;
 }
 #endif
 
