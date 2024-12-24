@@ -8,10 +8,13 @@
 #include "amnezia_application.h"
 #include "core/errorstrings.h"
 #include "core/scripts_registry.h"
+#include "logger.h"
 #include "version.h"
 
 namespace
 {
+    Logger logger("UpdateController");
+
 #ifdef Q_OS_MACOS
     const QString installerPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/AmneziaVPN.dmg";
 #elif defined Q_OS_WINDOWS
@@ -53,7 +56,6 @@ void UpdateController::checkForUpdates()
             m_version = data.value("tag_name").toString();
 
             auto currentVersion = QVersionNumber::fromString(QString(APP_VERSION));
-            qDebug() << currentVersion;
             auto newVersion = QVersionNumber::fromString(m_version);
             if (newVersion > currentVersion) {
                 m_changelogText = data.value("body").toString();
@@ -86,30 +88,40 @@ void UpdateController::checkForUpdates()
         } else {
             if (reply->error() == QNetworkReply::NetworkError::OperationCanceledError
                 || reply->error() == QNetworkReply::NetworkError::TimeoutError) {
-                qDebug() << errorString(ErrorCode::ApiConfigTimeoutError);
+                logger.error() << errorString(ErrorCode::ApiConfigTimeoutError);
             } else {
                 QString err = reply->errorString();
-                qDebug() << QString::fromUtf8(reply->readAll());
-                qDebug() << reply->error();
-                qDebug() << err;
-                qDebug() << reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
-                qDebug() << errorString(ErrorCode::ApiConfigDownloadError);
+                logger.error() << QString::fromUtf8(reply->readAll());
+                logger.error() << "Network error code:" << QString::number(static_cast<int>(reply->error()));
+                logger.error() << "Error message:" << err;
+                logger.error() << "HTTP status:" << reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+                logger.error() << errorString(ErrorCode::ApiConfigDownloadError);
             }
         }
 
         reply->deleteLater();
     });
 
-    QObject::connect(reply, &QNetworkReply::errorOccurred,
-                     [this, reply](QNetworkReply::NetworkError error) { qDebug() << reply->errorString() << error; });
+    QObject::connect(reply, &QNetworkReply::errorOccurred, [this, reply](QNetworkReply::NetworkError error) {
+        logger.error() << "Network error occurred:" << reply->errorString() << error;
+    });
     connect(reply, &QNetworkReply::sslErrors, [this, reply](const QList<QSslError> &errors) {
-        qDebug().noquote() << errors;
-        qDebug() << errorString(ErrorCode::ApiConfigSslError);
+        QStringList errorStrings;
+        for (const QSslError &error : errors) {
+            errorStrings << error.errorString();
+        }
+        logger.error() << "SSL errors:" << errorStrings;
+        logger.error() << errorString(ErrorCode::ApiConfigSslError);
     });
 }
 
 void UpdateController::runInstaller()
 {
+    if (m_downloadUrl.isEmpty()) {
+        logger.error() << "Download URL is empty";
+        return;
+    }
+
     QNetworkRequest request;
     request.setTransferTimeout(7000);
     request.setUrl(m_downloadUrl);
@@ -119,31 +131,42 @@ void UpdateController::runInstaller()
     QObject::connect(reply, &QNetworkReply::finished, [this, reply]() {
         if (reply->error() == QNetworkReply::NoError) {
             QFile file(installerPath);
-            if (file.open(QIODevice::WriteOnly)) {
-                file.write(reply->readAll());
+            if (!file.open(QIODevice::WriteOnly)) {
+                logger.error() << "Failed to open installer file for writing:" << installerPath
+                               << "Error:" << file.errorString();
+                reply->deleteLater();
+                return;
+            }
+
+            if (file.write(reply->readAll()) == -1) {
+                logger.error() << "Failed to write installer data to file:" << installerPath
+                               << "Error:" << file.errorString();
                 file.close();
-                QString t = installerPath;
+                reply->deleteLater();
+                return;
+            }
+
+            file.close();
+            QString t = installerPath;
 
 #if defined(Q_OS_WINDOWS)
-                runWindowsInstaller(t);
+            runWindowsInstaller(t);
 #elif defined(Q_OS_MACOS)
-                runMacInstaller(t);
+            runMacInstaller(t);
 #elif defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
-                runLinuxInstaller(t);
+            runLinuxInstaller(t);
 #endif
-                // emit errorOccured("");
-            }
         } else {
             if (reply->error() == QNetworkReply::NetworkError::OperationCanceledError
                 || reply->error() == QNetworkReply::NetworkError::TimeoutError) {
-                qDebug() << errorString(ErrorCode::ApiConfigTimeoutError);
+                logger.error() << errorString(ErrorCode::ApiConfigTimeoutError);
             } else {
                 QString err = reply->errorString();
-                qDebug() << QString::fromUtf8(reply->readAll());
-                qDebug() << reply->error();
-                qDebug() << err;
-                qDebug() << reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
-                qDebug() << errorString(ErrorCode::ApiConfigDownloadError);
+                logger.error() << QString::fromUtf8(reply->readAll());
+                logger.error() << "Network error code:" << QString::number(static_cast<int>(reply->error()));
+                logger.error() << "Error message:" << err;
+                logger.error() << "HTTP status:" << reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+                logger.error() << errorString(ErrorCode::ApiConfigDownloadError);
             }
         }
         reply->deleteLater();
@@ -153,14 +176,13 @@ void UpdateController::runInstaller()
 #if defined(Q_OS_WINDOWS)
 int UpdateController::runWindowsInstaller(const QString &installerPath)
 {
-    // Start the installer process
     qint64 pid;
     bool success = QProcess::startDetached(installerPath, QStringList(), QString(), &pid);
 
     if (success) {
-        qDebug() << "Installation process started with PID:" << pid;
+        logger.info() << "Installation process started with PID:" << pid;
     } else {
-        qDebug() << "Failed to start installation process";
+        logger.error() << "Failed to start installation process";
         return -1;
     }
 
@@ -171,7 +193,7 @@ int UpdateController::runWindowsInstaller(const QString &installerPath)
 #if defined(Q_OS_MACOS)
 int UpdateController::runMacInstaller(const QString &installerPath)
 {
-    qDebug() << "macOS installer path:" << installerPath;
+    logger.info() << "macOS installer path:" << installerPath;
     // TODO: Implement macOS installation logic
     return -1;
 }
@@ -184,16 +206,16 @@ int UpdateController::runLinuxInstaller(const QString &installerPath)
     QTemporaryDir extractDir;
     extractDir.setAutoRemove(false);
     if (!extractDir.isValid()) {
-        qDebug() << "Failed to create temporary directory";
+        logger.error() << "Failed to create temporary directory";
         return -1;
     }
-    qDebug() << "Temporary directory created:" << extractDir.path();
+    logger.info() << "Temporary directory created:" << extractDir.path();
 
     // Create script file in the temporary directory
     QString scriptPath = extractDir.path() + "/installer.sh";
     QFile scriptFile(scriptPath);
     if (!scriptFile.open(QIODevice::WriteOnly)) {
-        qDebug() << "Failed to create script file";
+        logger.error() << "Failed to create script file";
         return -1;
     }
 
@@ -201,7 +223,7 @@ int UpdateController::runLinuxInstaller(const QString &installerPath)
     QString scriptContent = amnezia::scriptData(amnezia::ClientScriptType::linux_installer);
     scriptFile.write(scriptContent.toUtf8());
     scriptFile.close();
-    qDebug() << "Script file created:" << scriptPath;
+    logger.info() << "Script file created:" << scriptPath;
 
     // Make script executable
     QFile::setPermissions(scriptPath, QFile::permissions(scriptPath) | QFile::ExeUser);
@@ -212,9 +234,9 @@ int UpdateController::runLinuxInstaller(const QString &installerPath)
             "/bin/bash", QStringList() << scriptPath << extractDir.path() << installerPath, extractDir.path(), &pid);
 
     if (success) {
-        qDebug() << "Installation process started with PID:" << pid;
+        logger.info() << "Installation process started with PID:" << pid;
     } else {
-        qDebug() << "Failed to start installation process";
+        logger.error() << "Failed to start installation process";
         return -1;
     }
 

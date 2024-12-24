@@ -21,7 +21,6 @@ public slots:
     void runInstaller();
 signals:
     void updateFound();
-    void errorOccured(const QString &errorMessage);
 
 private:
     std::shared_ptr<Settings> m_settings;
