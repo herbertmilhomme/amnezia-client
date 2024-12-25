@@ -463,9 +463,12 @@ void AmneziaApplication::initControllers()
 
     m_updateController.reset(new UpdateController(m_settings));
     m_engine->rootContext()->setContextProperty("UpdateController", m_updateController.get());
-    m_updateController->checkForUpdates();
 
+#if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
     connect(m_updateController.get(), &UpdateController::updateFound, this, [this]() {
         QTimer::singleShot(1000, this, [this]() { m_pageController->showChangelogDrawer(); });
     });
+
+    m_updateController->checkForUpdates();
+#endif
 }
