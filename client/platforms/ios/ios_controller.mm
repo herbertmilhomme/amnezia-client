@@ -261,7 +261,8 @@ void IosController::vpnStatusDidChange(void *pNotification)
     NETunnelProviderProtocol *tunnelProtocol = (NETunnelProviderProtocol *)m_currentTunnel.protocolConfiguration;
     if (session /* && session == TunnelManager.session */ ) {
         qDebug() << "IosController::vpnStatusDidChange" << iosStatusToState(session.status) << session;
-        if (tunnelProtocol.providerConfiguration[@"wireguard"] != nil && session.status == NEVPNStatusConnected)
+        if (tunnelProtocol.providerConfiguration[@"wireguard"] != nil &&
+            (session.status == NEVPNStatusConnected || session.status == NEVPNStatusConnecting))
         {
             // use last_handshake_time for check status connected for WireGuard
             return;
