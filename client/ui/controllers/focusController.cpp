@@ -216,14 +216,14 @@ void FocusController::nextItem(Direction direction)
 void FocusController::focusNextListViewItem()
 {
     qDebug() << "===>> Calling < focusNextListViewItem >...";
-
+    m_lvfc->reloadFocusChain();
     if (m_lvfc->isLastFocusItemInListView() || m_lvfc->isReturnNeeded()) {
         qDebug() << "===>> Last item in [ ListView ] was reached. Going to the NEXT element after [ ListView ]";
         dropListView();
         nextItem(Direction::Forward);
         return;
     } else if (m_lvfc->isLastFocusItemInDelegate()) {
-        qDebug() << "===>> End of delegate elements was reached. Going to the next delegate";
+        qDebug() << "===>> End of delegate's elements was reached. Going to the next delegate";
         m_lvfc->resetFocusChain();
         m_lvfc->nextDelegate();
     }
@@ -234,13 +234,14 @@ void FocusController::focusNextListViewItem()
 void FocusController::focusPreviousListViewItem()
 {
     qDebug() << "===>> Calling < focusPreviousListViewItem >...";
-
+    m_lvfc->reloadFocusChain();
     if (m_lvfc->isFirstFocusItemInListView() || m_lvfc->isReturnNeeded()) {
         qDebug() << "===>> First item in [ ListView ] was reached. Going to the PREVIOUS element after [ ListView ]";
         dropListView();
         nextItem(Direction::Backward);
         return;
     } else if (m_lvfc->isFirstFocusItemInDelegate()) {
+        qDebug() << "===>> End of delegate's elements was reached. Going to the previous delegate";
         m_lvfc->resetFocusChain();
         m_lvfc->previousDelegate();
     }

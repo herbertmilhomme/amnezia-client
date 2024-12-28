@@ -202,7 +202,7 @@ void ListViewFocusController::focusNextItem()
         return;
     }
 
-    m_focusChain = focusControl::getItemsChain(currentDelegate());
+    reloadFocusChain();
 
     if (m_focusChain.empty()) {
         qWarning() << "No elements found in the delegate. Going to next delegate...";
@@ -224,7 +224,7 @@ void ListViewFocusController::focusPreviousItem()
 
     if (m_focusChain.empty()) {
         qDebug() << "Empty focusChain with current delegate: " << currentDelegate() << "Scanning for elements...";
-        m_focusChain = focusControl::getItemsChain(currentDelegate());
+        reloadFocusChain();
     }
     if (m_focusChain.empty()) {
         qWarning() << "No elements found in the delegate. Going to next delegate...";
@@ -246,6 +246,11 @@ void ListViewFocusController::resetFocusChain()
     m_focusChain.clear();
     m_focusedItem = nullptr;
     m_focusedItemIndex = -1;
+}
+
+void ListViewFocusController::reloadFocusChain()
+{
+    m_focusChain = focusControl::getItemsChain(currentDelegate());
 }
 
 bool ListViewFocusController::isFirstFocusItemInDelegate() const

@@ -28,6 +28,7 @@ public:
     void focusNextItem();
     void focusPreviousItem();
     void resetFocusChain();
+    void reloadFocusChain();
     bool isFirstFocusItemInListView() const;
     bool isFirstFocusItemInDelegate() const;
     bool isLastFocusItemInListView() const;
