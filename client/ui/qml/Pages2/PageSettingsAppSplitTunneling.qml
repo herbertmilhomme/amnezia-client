@@ -125,18 +125,18 @@ PageType {
 
                 model: root.routeModesModel
 
-                currentIndex: getRouteModesModelIndex()
+                selectedIndex: getRouteModesModelIndex()
 
                 clickedFunction: function() {
                     selector.text = selectedText
                     selector.closeTriggered()
-                    if (AppSplitTunnelingModel.routeMode !== root.routeModesModel[currentIndex].type) {
-                        AppSplitTunnelingModel.routeMode = root.routeModesModel[currentIndex].type
+                    if (AppSplitTunnelingModel.routeMode !== root.routeModesModel[selectedIndex].type) {
+                        AppSplitTunnelingModel.routeMode = root.routeModesModel[selectedIndex].type
                     }
                 }
 
                 Component.onCompleted: {
-                    if (root.routeModesModel[currentIndex].type === AppSplitTunnelingModel.routeMode) {
+                    if (root.routeModesModel[selectedIndex].type === AppSplitTunnelingModel.routeMode) {
                         selector.text = selectedText
                     } else {
                         selector.text = root.routeModesModel[0].name
@@ -146,7 +146,7 @@ PageType {
                 Connections {
                     target: AppSplitTunnelingModel
                     function onRouteModeChanged() {
-                        currentIndex = getRouteModesModelIndex()
+                        selectedIndex = getRouteModesModelIndex()
                     }
                 }
             }
