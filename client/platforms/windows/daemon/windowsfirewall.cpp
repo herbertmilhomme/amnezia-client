@@ -236,6 +236,14 @@ bool WindowsFirewall::enablePeerTraffic(const InterfaceConfig& config) {
     }
   }
 
+  for (const QString& dns : config.m_allowedDnsServers) {
+    logger.debug() << "Allow DNS: " << dns;
+    if (!allowTrafficTo(QHostAddress(dns), 53, HIGH_WEIGHT,
+                        "Allow DNS-Server", config.m_serverPublicKey)) {
+      return false;
+    }
+  }
+
   if (!config.m_excludedAddresses.empty()) {
     for (const QString& i : config.m_excludedAddresses) {
       logger.debug() << "range: " << i;

@@ -244,6 +244,12 @@ bool IpcServer::enableKillSwitch(const QJsonObject &configStr, int vpnAdapterInd
     dnsServers.append(configStr.value(amnezia::config_key::dns2).toString());
     dnsServers.append("127.0.0.1");
     dnsServers.append("127.0.0.53");
+    for (auto dns : configStr.value(amnezia::config_key::allowedDnsServers).toArray()) {
+        if (!dns.isString()) {
+            break;
+        }
+        dnsServers.append(dns.toString());
+    }
     LinuxFirewall::updateDNSServers(dnsServers);
     LinuxFirewall::setAnchorEnabled(LinuxFirewall::IPv4, QStringLiteral("320.allowDNS"), true);
     LinuxFirewall::setAnchorEnabled(LinuxFirewall::Both, QStringLiteral("400.allowPIA"), true);
@@ -272,6 +278,13 @@ bool IpcServer::enableKillSwitch(const QJsonObject &configStr, int vpnAdapterInd
     QStringList dnsServers;
     dnsServers.append(configStr.value(amnezia::config_key::dns1).toString());
     dnsServers.append(configStr.value(amnezia::config_key::dns2).toString());
+    for (auto dns : configStr.value(amnezia::config_key::allowedDnsServers).toArray()) {
+        if (!dns.isString()) {
+            break;
+        }
+        dnsServers.append(dns.toString());
+    }
+
     MacOSFirewall::setAnchorEnabled(QStringLiteral("310.blockDNS"), true);
     MacOSFirewall::setAnchorTable(QStringLiteral("310.blockDNS"), true, QStringLiteral("dnsaddr"), dnsServers);
 #endif
@@ -310,8 +323,6 @@ bool IpcServer::enablePeerTraffic(const QJsonObject &configStr)
     int splitTunnelType = configStr.value("splitTunnelType").toInt();
     QJsonArray splitTunnelSites = configStr.value("splitTunnelSites").toArray();
 
-    QStringList AllowedIPAddesses;
-
     // Use APP split tunnel
     if (splitTunnelType == 0 || splitTunnelType == 2) {
         config.m_allowedIPAddressRanges.append(IPAddress(QHostAddress("0.0.0.0"), 0));
@@ -338,11 +349,19 @@ bool IpcServer::enablePeerTraffic(const QJsonObject &configStr)
         }
     }
 
-    for (const QJsonValue &i : configStr.value(amnezia::config_key::splitTunnelApps).toArray()) {
-        if (!i.isString()) {
+    for (auto app : configStr.value(amnezia::config_key::splitTunnelApps).toArray()) {
+        if (!app.isString()) {
+            break;
+        }
+        config.m_vpnDisabledApps.append(app.toString());
+    }
+
+    for (auto dns : configStr.value(amnezia::config_key::allowedDnsServers).toArray()) {
+        if (!dns.isString()) {
             break;
         }
         config.m_vpnDisabledApps.append(i.toString());
+        config.m_allowedDnsServers.append(dns.toString());
     }
 
     // killSwitch toggle
