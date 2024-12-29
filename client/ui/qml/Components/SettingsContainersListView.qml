@@ -20,15 +20,9 @@ ListView {
     height: root.contentItem.height
 
     clip: true
-    interactive: false
+    reuseItems: true
 
     property bool isFocusable: false
-
-    onVisibleChanged: {
-        if (visible) {
-            this.currentIndex = 0
-        }
-    }
 
     delegate: Item {
         implicitWidth: root.width

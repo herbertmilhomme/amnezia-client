@@ -64,7 +64,6 @@ Button {
     implicitHeight: 56
 
     hoverEnabled: true
-    focusPolicy: Qt.TabFocus
 
     onFocusChanged: {
         if (root.activeFocus) {

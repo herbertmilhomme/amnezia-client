@@ -67,13 +67,6 @@ PageType {
                 activeFocusOnTab: true
                 focus: true
 
-                onActiveFocusChanged: {
-                    if (focus) {
-                        listView.currentIndex = 0
-                        listView.currentItem.focusItem.forceActiveFocus()
-                    }
-                }
-
                 delegate: Item {
                     implicitWidth: parent.width
                     implicitHeight: delegateContent.implicitHeight

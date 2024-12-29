@@ -18,8 +18,6 @@ import "../Config"
 PageType {
     id: root
 
-    // defaultActiveFocusItem: focusItem
-
     BackButtonType {
         id: backButton
 

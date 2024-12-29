@@ -26,6 +26,7 @@ ListView {
     height: root.contentItem.height
 
     clip: true
+    reuseItems: true
 
     property bool isFocusable: true
 

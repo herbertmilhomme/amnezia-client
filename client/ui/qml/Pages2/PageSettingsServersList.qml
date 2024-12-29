@@ -50,20 +50,14 @@ PageType {
         anchors.left: parent.left
         anchors.right: parent.right
 
-        height: 500 // servers.contentItem.height // TODO: calculate height
+        height: 500
 
-        property bool   isFocusable: true
+        property bool isFocusable: true
 
         model: ServersModel
 
         clip: true
-        interactive: false
-
-        onVisibleChanged: {
-            if (visible) {
-                currentIndex = 0
-            }
-        }
+        reuseItems: true
 
         delegate: Item {
             implicitWidth: servers.width

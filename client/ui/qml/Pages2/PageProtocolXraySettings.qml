@@ -57,13 +57,6 @@ PageType {
 
                 model: XrayConfigModel
 
-                // activeFocusOnTab: true
-                // onActiveFocusChanged: {
-                //     if (activeFocus) {
-                //         listview.itemAtIndex(0)?.focusItemId.forceActiveFocus()
-                //     }
-                // }
-
                 delegate: Item {
                     property alias focusItemId: textFieldWithHeaderType.textField
 

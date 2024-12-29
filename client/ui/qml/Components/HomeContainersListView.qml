@@ -18,85 +18,14 @@ ListView {
     property var selectedText
 
     width: rootWidth
-    height: contentItem.height // TODO: It should be fixed size, not content item height
+    height: contentItem.height
 
     clip: true
-    // interactive: false
-
-    // property FlickableType parentFlickable
-    // property var lastItemTabClicked
-
-    // property int currentFocusIndex: 0
-
-    // snapMode: ListView.SnapToItem
+    snapMode: ListView.SnapToItem
 
     ScrollBar.vertical: ScrollBarType {}
 
     property bool isFocusable: true
-
-    Keys.onTabPressed: {
-        FocusController.nextKeyTabItem()
-    }
-
-    Keys.onBacktabPressed: {
-        FocusController.previousKeyTabItem()
-    }
-
-    Keys.onUpPressed: {
-        FocusController.nextKeyUpItem()
-    }
-
-    Keys.onDownPressed: {
-        FocusController.nextKeyDownItem()
-    }
-
-    Keys.onLeftPressed: {
-        FocusController.nextKeyLeftItem()
-    }
-
-    Keys.onRightPressed: {
-        FocusController.nextKeyRightItem()
-    }
-
-    // activeFocusOnTab: true
-    // onActiveFocusChanged: {
-        // console.log("===========================")
-        // positionViewAtEnd()
-        // parentFlickable.ensureVisible(this.itemAtIndex(6))
-        //     if (activeFocus) {
-        //     this.currentFocusIndex = 0
-        //     this.itemAtIndex(currentFocusIndex).forceActiveFocus()
-        // }
-    // }
-
-    // Keys.onTabPressed: {
-    //     if (currentFocusIndex < this.count - 1) {
-    //         currentFocusIndex += 1
-    //         this.itemAtIndex(currentFocusIndex).forceActiveFocus()
-    //     } else {
-    //         currentFocusIndex = 0
-    //         if (lastItemTabClicked && typeof lastItemTabClicked === "function") {
-    //             lastItemTabClicked()
-    //         }
-    //     }
-    // }
-
-    // onVisibleChanged: {
-    //      if (visible) {
-    //          currentFocusIndex = 0
-    //          focusItem.forceActiveFocus()
-    //      }
-    //  }
-
-    // Item {
-    //     id: focusItem
-    // }
-
-    // onCurrentFocusIndexChanged: {
-    //     if (parentFlickable) {
-    //         parentFlickable.ensureVisible(this.itemAtIndex(currentFocusIndex))
-    //     }
-    // }
 
     ButtonGroup {
         id: containersRadioButtonGroup
@@ -136,7 +65,7 @@ ListView {
                     }
 
                     if (checked) {
-                        containersDropDown.closeTriggered() // TODO: containersDropDown is outside this file
+                        containersDropDown.closeTriggered()
                         ServersModel.setDefaultContainer(ServersModel.defaultIndex, proxyDefaultServerContainersModel.mapToSource(index))
                     } else {
                         ContainersModel.setProcessedContainerIndex(proxyDefaultServerContainersModel.mapToSource(index))

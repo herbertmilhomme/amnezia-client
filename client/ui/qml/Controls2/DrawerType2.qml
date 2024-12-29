@@ -12,9 +12,6 @@ Item {
     readonly property string drawerExpandedStateName: "expanded"
     readonly property string drawerCollapsedStateName: "collapsed"
 
-    // readonly property bool isExpanded: isExpandedStateActive()
-    // readonly property bool isCollapsed: isCollapsedStateActive()
-
     readonly property bool isOpened: isExpandedStateActive() || (isCollapsedStateActive && (dragArea.drag.active === true))
     readonly property bool isClosed: isCollapsedStateActive() && (dragArea.drag.active === false)
 

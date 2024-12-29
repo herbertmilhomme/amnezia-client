@@ -61,30 +61,6 @@ DrawerType2 {
 
             property bool isFocusable: true
 
-            Keys.onTabPressed: {
-                FocusController.nextKeyTabItem()
-            }
-
-            Keys.onBacktabPressed: {
-                FocusController.previousKeyTabItem()
-            }
-
-            Keys.onUpPressed: {
-                FocusController.nextKeyUpItem()
-            }
-
-            Keys.onDownPressed: {
-                FocusController.nextKeyDownItem()
-            }
-
-            Keys.onLeftPressed: {
-                FocusController.nextKeyLeftItem()
-            }
-
-            Keys.onRightPressed: {
-                FocusController.nextKeyRightItem()
-            }
-
             ScrollBar.vertical: ScrollBarType {}
 
             model: 1

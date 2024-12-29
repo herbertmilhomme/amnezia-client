@@ -56,13 +56,6 @@ PageType {
 
                 model: WireGuardConfigModel
 
-                // activeFocusOnTab: true
-                // onActiveFocusChanged: {
-                //     if (activeFocus) {
-                //         listview.itemAtIndex(0)?.focusItemId.forceActiveFocus()
-                //     }
-                // }
-
                 delegate: Item {
                     id: delegateItem
 

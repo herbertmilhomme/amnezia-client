@@ -28,11 +28,7 @@ ListView {
 
     model: ServersModel
 
-    ScrollBar.vertical: ScrollBarType {
-        id: scrollBar
-        objectName: "scrollBar"
-        policy: root.height >= root.contentHeight ? ScrollBar.AlwaysOff : ScrollBar.AlwaysOn
-    }
+    ScrollBar.vertical: ScrollBarType {}
 
     property bool isFocusable: true
 

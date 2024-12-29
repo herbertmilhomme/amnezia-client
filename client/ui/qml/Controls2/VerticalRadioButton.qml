@@ -55,7 +55,6 @@ RadioButton {
     }
 
     hoverEnabled: true
-    // focusPolicy: Qt.TabFocus
 
     indicator: Rectangle {
         id: background
