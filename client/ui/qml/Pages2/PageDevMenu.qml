@@ -16,32 +16,28 @@ import "../Components"
 PageType {
     id: root
 
-    ColumnLayout {
-        id: backButtonLayout
+    BackButtonType {
+        id: backButton
 
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-
         anchors.topMargin: 20
-
-        BackButtonType {
-            id: backButton
-        }
     }
 
-    FlickableType {
-        id: fl
-        anchors.top: backButtonLayout.bottom
+    ListView {
+        id: listView
+        anchors.top: backButton.bottom
         anchors.bottom: parent.bottom
-        contentHeight: content.implicitHeight
+        anchors.right: parent.right
+        anchors.left: parent.left
 
-        ColumnLayout {
-            id: content
+        property bool isFocusable: true
 
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
+        ScrollBar.vertical: ScrollBarType {}
+
+        header: ColumnLayout {
+            width: listView.width
 
             HeaderType {
                 id: header
@@ -52,6 +48,14 @@ PageType {
 
                 headerText: "Dev menu"
             }
+        }
+        
+        model: 1
+        clip: true
+        spacing: 16
+
+        delegate: ColumnLayout {
+            width: listView.width
 
             TextFieldWithHeaderType {
                 id: passwordTextField
@@ -60,7 +64,6 @@ PageType {
                 Layout.topMargin: 16
                 Layout.rightMargin: 16
                 Layout.leftMargin: 16
-                parentFlickable: fl
 
                 headerText: qsTr("Gateway endpoint")
                 textFieldText: SettingsController.gatewayEndpoint
@@ -78,14 +81,18 @@ PageType {
                     }
                 }
             }
+        }
+
+        footer: ColumnLayout {
+            width: listView.width
 
             SwitcherType {
                 id: switcher
 
                 Layout.fillWidth: true
+                Layout.topMargin: 24
                 Layout.rightMargin: 16
                 Layout.leftMargin: 16
-                Layout.topMargin: 16
 
                 text: qsTr("Dev gateway environment")
                 checked: SettingsController.isDevGatewayEnv
