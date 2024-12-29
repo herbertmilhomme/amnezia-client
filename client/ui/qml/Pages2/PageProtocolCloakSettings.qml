@@ -48,11 +48,13 @@ PageType {
             ListView {
                 id: listview
 
+                property int selectedIndex: 0
+
                 width: parent.width
                 height: listview.contentItem.height
 
                 clip: true
-                interactive: false
+                reuseItems: true
 
                 model: CloakConfigModel
 
@@ -156,7 +158,7 @@ PageType {
 
                                     for (var i = 0; i < cipherListView.model.count; i++) {
                                         if (cipherListView.model.get(i).name === cipherDropDown.text) {
-                                            currentIndex = i
+                                            selectedIndex = i
                                         }
                                     }
                                 }
