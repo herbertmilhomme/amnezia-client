@@ -82,7 +82,6 @@ namespace focusControl
     {
         QList<QObject *> res;
         if (!object) {
-            qDebug() << "The object is NULL";
             return res;
         }
 
@@ -102,7 +101,6 @@ namespace focusControl
     {
         QList<QObject *> res;
         if (!object) {
-            qDebug() << "The object is NULL";
             return res;
         }
 
