@@ -32,18 +32,15 @@ void ListViewFocusController::viewAtCurrentIndex() const
     switch (m_currentSection) {
     case Section::Default: [[fallthrough]];
     case Section::Header: {
-        qDebug() << "===>> [FOCUS ON BEGINNING...]";
         QMetaObject::invokeMethod(m_listView, "positionViewAtBeginning");
         break;
     }
     case Section::Delegate: {
-        qDebug() << "===>> [FOCUS ON INDEX...]";
         QMetaObject::invokeMethod(m_listView, "positionViewAtIndex", Q_ARG(int, m_delegateIndex), // Index
                                   Q_ARG(int, 2)); // PositionMode (0 = Visible)
         break;
     }
     case Section::Footer: {
-        qDebug() << "===>> [FOCUS ON END...]";
         QMetaObject::invokeMethod(m_listView, "positionViewAtEnd");
         break;
     }
@@ -68,8 +65,6 @@ void ListViewFocusController::setDelegateIndex(int index)
 
 void ListViewFocusController::nextDelegate()
 {
-    printSectionName();
-
     switch (m_currentSection) {
     case Section::Default: {
         if (hasHeader()) {
@@ -198,7 +193,6 @@ QQuickItem *ListViewFocusController::focusedItem() const
 void ListViewFocusController::focusNextItem()
 {
     if (m_isReturnNeeded) {
-        qDebug() << "===>> [ RETURN IS NEEDED... ]";
         return;
     }
 
@@ -212,7 +206,6 @@ void ListViewFocusController::focusNextItem()
     }
     m_focusedItemIndex++;
     m_focusedItem = qobject_cast<QQuickItem *>(m_focusChain.at(m_focusedItemIndex));
-    qDebug() << "==>> [ Focused Item: " << m_focusedItem << " with Index: " << m_focusedItemIndex << " ]";
     m_focusedItem->forceActiveFocus(Qt::TabFocusReason);
 }
 
@@ -223,7 +216,7 @@ void ListViewFocusController::focusPreviousItem()
     }
 
     if (m_focusChain.empty()) {
-        qDebug() << "Empty focusChain with current delegate: " << currentDelegate() << "Scanning for elements...";
+        qInfo() << "Empty focusChain with current delegate: " << currentDelegate() << "Scanning for elements...";
         reloadFocusChain();
     }
     if (m_focusChain.empty()) {
@@ -237,7 +230,6 @@ void ListViewFocusController::focusPreviousItem()
     }
     m_focusedItemIndex--;
     m_focusedItem = qobject_cast<QQuickItem *>(m_focusChain.at(m_focusedItemIndex));
-    qDebug() << "==>> [ Focused Item: " << m_focusedItem << " with Index: " << m_focusedItemIndex << " ]";
     m_focusedItem->forceActiveFocus(Qt::TabFocusReason);
 }
 
@@ -271,12 +263,6 @@ bool ListViewFocusController::hasHeader() const
 bool ListViewFocusController::hasFooter() const
 {
     return m_footer && !focusControl::getItemsChain(m_footer).isEmpty();
-}
-
-void ListViewFocusController::printSectionName() const
-{
-    const auto sectionName = m_currentSectionString[static_cast<int>(m_currentSection)];
-    qDebug() << "===>> [nextDelegate... current section: " << sectionName << " ]";
 }
 
 bool ListViewFocusController::isFirstFocusItemInListView() const
