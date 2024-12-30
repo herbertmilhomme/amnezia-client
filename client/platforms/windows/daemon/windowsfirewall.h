@@ -35,6 +35,7 @@ class WindowsFirewall final : public QObject {
   bool enablePeerTraffic(const InterfaceConfig& config);
   bool disablePeerTraffic(const QString& pubkey);
   bool disableKillSwitch();
+  bool allowAllTraffic();
 
  private:
   WindowsFirewall(QObject* parent);
