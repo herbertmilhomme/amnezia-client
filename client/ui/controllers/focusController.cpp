@@ -108,10 +108,10 @@ void FocusController::reload(Direction direction)
         return;
     }
 
-    m_focusChain.append(focusControl::getSubChain(rootObject));
+    m_focusChain.append(FocusControl::getSubChain(rootObject));
 
     std::sort(m_focusChain.begin(), m_focusChain.end(),
-              direction == Direction::Forward ? focusControl::isLess : focusControl::isMore);
+              direction == Direction::Forward ? FocusControl::isLess : FocusControl::isMore);
 
     if (m_focusChain.empty()) {
         qWarning() << "Focus chain is empty!";
@@ -125,7 +125,7 @@ void FocusController::nextItem(Direction direction)
 {
     reload(direction);
 
-    if (m_lvfc && focusControl::isListView(m_focusedItem)) {
+    if (m_lvfc && FocusControl::isListView(m_focusedItem)) {
         direction == Direction::Forward ? focusNextListViewItem() : focusPreviousListViewItem();
 
         return;
@@ -155,7 +155,7 @@ void FocusController::nextItem(Direction direction)
         return;
     }
 
-    if (focusControl::isListView(focusedItem)) {
+    if (FocusControl::isListView(focusedItem)) {
         m_lvfc = new ListViewFocusController(focusedItem, this);
         m_focusedItem = focusedItem;
         if (direction == Direction::Forward) {

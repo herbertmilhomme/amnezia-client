@@ -242,7 +242,7 @@ void ListViewFocusController::resetFocusChain()
 
 void ListViewFocusController::reloadFocusChain()
 {
-    m_focusChain = focusControl::getItemsChain(currentDelegate());
+    m_focusChain = FocusControl::getItemsChain(currentDelegate());
 }
 
 bool ListViewFocusController::isFirstFocusItemInDelegate() const
@@ -257,12 +257,12 @@ bool ListViewFocusController::isLastFocusItemInDelegate() const
 
 bool ListViewFocusController::hasHeader() const
 {
-    return m_header && !focusControl::getItemsChain(m_header).isEmpty();
+    return m_header && !FocusControl::getItemsChain(m_header).isEmpty();
 }
 
 bool ListViewFocusController::hasFooter() const
 {
-    return m_footer && !focusControl::getItemsChain(m_footer).isEmpty();
+    return m_footer && !FocusControl::getItemsChain(m_footer).isEmpty();
 }
 
 bool ListViewFocusController::isFirstFocusItemInListView() const

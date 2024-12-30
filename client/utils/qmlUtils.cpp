@@ -4,7 +4,7 @@
 #include <QQuickItem>
 #include <QQuickWindow>
 
-namespace focusControl
+namespace FocusControl
 {
     QPointF getItemCenterPointOnScene(QQuickItem *item)
     {
@@ -125,4 +125,4 @@ namespace focusControl
             qDebug() << prefix << " Item: " << i << " with coords: " << coords;
         }
     }
-} // namespace focusControl
+} // namespace FocusControl

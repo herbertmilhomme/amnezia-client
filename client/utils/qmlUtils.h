@@ -4,7 +4,7 @@
 #include <QList>
 #include <QObject>
 
-namespace focusControl
+namespace FocusControl
 {
     bool isEnabled(QObject *item);
     bool isVisible(QObject *item);
@@ -25,6 +25,6 @@ namespace focusControl
     QList<QObject *> getItemsChain(QObject *object);
 
     void printItems(const QList<QObject *> &items, QObject *current_item);
-}
+} // namespace FocusControl
 
 #endif // FOCUSCONTROL_H
