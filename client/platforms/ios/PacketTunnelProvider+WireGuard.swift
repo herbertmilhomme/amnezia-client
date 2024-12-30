@@ -118,7 +118,7 @@ extension PacketTunnelProvider {
             if let lastHandshakeValue = lastHandshakeString, let handshakeValue = Int64(lastHandshakeValue) {
                 lastHandshake = handshakeValue
             } else {
-                lastHandshake = -2
+                lastHandshake = -2  // Trả về lỗi nếu không có giá trị last_handshake_time_sec
             }
 
             let response: [String: Any] = [

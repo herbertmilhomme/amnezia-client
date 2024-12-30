@@ -269,7 +269,31 @@ bool AmneziaApplication::parseCommands()
 
     QCommandLineOption c_cleanup { { "c", "cleanup" }, "Cleanup logs" };
     m_parser.addOption(c_cleanup);
+    
+#if defined(MACOS_NE)
+    // Handle positional arguments for MacOS NE
+    QStringList rawArgs = arguments();  // Get the full list of arguments
+    QStringList positionalArgs;
 
+    for (int i = 1; i < rawArgs.size(); ++i) {
+        if (!rawArgs[i].startsWith("-")) {
+            positionalArgs << rawArgs[i];  // Collect non-option arguments
+        }
+    }
+
+    if (!positionalArgs.isEmpty()) {
+        QString mode = positionalArgs.first();
+        qInfo() << "Running in mode:" << mode;
+
+        if (mode == "DebugMode") {
+            qInfo() << "Debug Mode activated for MacOS NE";
+            // Do something specific for DebugMode
+        } else {
+            qWarning() << "Unknown mode for MacOS NE:" << mode;
+        }
+    }
+#endif
+    
     m_parser.process(*this);
 
     if (m_parser.isSet(c_cleanup)) {
