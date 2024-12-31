@@ -179,6 +179,11 @@ void IpcServer::setLogsEnabled(bool enabled)
     }
 }
 
+bool IpcServer::allowTrafficTo(QStringList ranges)
+{
+    return KillSwitch::instance()->allowTrafficTo(ranges);
+}
+
 bool IpcServer::disableAllTraffic()
 {
     return KillSwitch::instance()->disableAllTraffic();

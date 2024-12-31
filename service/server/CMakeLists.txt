@@ -258,6 +258,9 @@ if(APPLE)
         ${CMAKE_CURRENT_SOURCE_DIR}/../../client/platforms/macos/daemon/wireguardutilsmacos.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../../client/platforms/macos/daemon/macosfirewall.cpp
     )
+
+    set(LIBS ${OPENSSL_LIB_CRYPTO_PATH} qt6keychain)
+
 endif()
 
 if(LINUX)
@@ -288,6 +291,9 @@ if(LINUX)
         ${CMAKE_CURRENT_SOURCE_DIR}/../../client/platforms/linux/daemon/linuxroutemonitor.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../../client/platforms/linux/daemon/linuxfirewall.cpp
     )
+
+    set(LIBS ${OPENSSL_LIB_CRYPTO_PATH} qt6keychain -static-libstdc++ -static-libgcc -ldl)
+
 endif()
 
 include(${CMAKE_CURRENT_LIST_DIR}/../src/qtservice.cmake)
@@ -299,6 +305,7 @@ include_directories(
     ${CMAKE_CURRENT_LIST_DIR}/../../common/logger
     ${CMAKE_CURRENT_BINARY_DIR}
 )
+
 
 add_executable(${PROJECT} ${SOURCES} ${HEADERS})
 target_link_libraries(${PROJECT} PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::RemoteObjects Qt6::Core5Compat Qt6::DBus ${LIBS})
