@@ -94,6 +94,9 @@ bool KillSwitch::disableKillSwitch() {
 #endif
 
 #ifdef Q_OS_WIN
+    if (isStrictKillSwitchEnabled()) {
+        return disableAllTraffic();
+    }
     return WindowsFirewall::instance()->allowAllTraffic();
 #endif
 
