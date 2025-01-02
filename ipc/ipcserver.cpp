@@ -368,14 +368,3 @@ bool IpcServer::enablePeerTraffic(const QJsonObject &configStr)
 #endif
     return true;
 }
-
-int IpcServer::mountDmg(const QString &path, bool mount)
-{
-#ifdef Q_OS_MACOS
-    qDebug() << path;
-    auto res = QProcess::execute(QString("sudo hdiutil %1 %2").arg(mount ? "attach" : "unmount", path));
-    qDebug() << res;
-    return res;
-#endif
-    return 0;
-}

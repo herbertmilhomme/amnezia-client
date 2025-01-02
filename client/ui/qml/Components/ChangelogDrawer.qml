@@ -16,14 +16,6 @@ DrawerType2 {
     expandedContent: Item {
         implicitHeight: root.expandedHeight
 
-        Connections {
-            target: root
-            enabled: !GC.isMobile()
-            function onOpened() {
-                focusItem.forceActiveFocus()
-            }
-        }
-
         Header2TextType {
             id: header
             anchors.top: parent.top
@@ -32,6 +24,7 @@ DrawerType2 {
             anchors.topMargin: 16
             anchors.rightMargin: 16
             anchors.leftMargin: 16
+            anchors.bottomMargin: 16
 
             text: UpdateController.headerText
         }
@@ -46,9 +39,10 @@ DrawerType2 {
                 anchors.top: parent.top
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.topMargin: 48
+                anchors.topMargin: 16
                 anchors.rightMargin: 16
                 anchors.leftMargin: 16
+                anchors.bottomMargin: 16
 
                 HoverHandler {
                     enabled: parent.hoveredLink
@@ -64,17 +58,11 @@ DrawerType2 {
             }
         }
 
-        Item {
-            id: focusItem
-            KeyNavigation.tab: updateButton
-        }
-
         BasicButtonType {
             id: updateButton
             anchors.bottom: skipButton.top
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.topMargin: 16
             anchors.bottomMargin: 8
             anchors.rightMargin: 16
             anchors.leftMargin: 16
@@ -87,8 +75,6 @@ DrawerType2 {
                 PageController.showBusyIndicator(false)
                 root.close()
             }
-
-            KeyNavigation.tab: skipButton
         }
 
         BasicButtonType {
@@ -107,13 +93,11 @@ DrawerType2 {
             textColor: "#D7D8DB"
             borderWidth: 1
 
-            text: qsTr("Skip this version")
+            text: qsTr("Skip")
 
             clickedFunc: function() {
                 root.close()
             }
-
-            KeyNavigation.tab: focusItem
         }
     }
 }

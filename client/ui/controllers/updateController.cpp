@@ -147,14 +147,13 @@ void UpdateController::runInstaller()
             }
 
             file.close();
-            QString t = installerPath;
 
 #if defined(Q_OS_WINDOWS)
-            runWindowsInstaller(t);
+            runWindowsInstaller(installerPath);
 #elif defined(Q_OS_MACOS)
-            runMacInstaller(t);
+            runMacInstaller(installerPath);
 #elif defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
-            runLinuxInstaller(t);
+            runLinuxInstaller(installerPath);
 #endif
         } else {
             if (reply->error() == QNetworkReply::NetworkError::OperationCanceledError
