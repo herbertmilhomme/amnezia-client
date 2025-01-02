@@ -98,7 +98,7 @@ Window  {
         }
 
         function onShowChangelogDrawer() {
-            changelogDrawer.open()
+            changelogDrawer.openTriggered()
         }
     }
 

@@ -13,7 +13,7 @@ DrawerType2 {
     anchors.fill: parent
     expandedHeight: parent.height * 0.9
 
-    expandedContent: Item {
+    expandedStateContent: Item {
         implicitHeight: root.expandedHeight
 
         Header2TextType {
@@ -73,7 +73,7 @@ DrawerType2 {
                 PageController.showBusyIndicator(true)
                 UpdateController.runInstaller()
                 PageController.showBusyIndicator(false)
-                root.close()
+                root.closeTriggered()
             }
         }
 
@@ -96,7 +96,7 @@ DrawerType2 {
             text: qsTr("Skip")
 
             clickedFunc: function() {
-                root.close()
+                root.closeTriggered()
             }
         }
     }
