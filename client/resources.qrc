@@ -60,9 +60,6 @@
         <file>images/tray/error.png</file>
         <file>client_scripts/linux_installer.sh</file>
         <file>client_scripts/mac_installer.sh</file>
-        <file>images/AmneziaVPN.png</file>
-        <file>server_scripts/remove_container.sh</file>
-        <file>server_scripts/setup_host_firewall.sh</file>
         <file>server_scripts/openvpn_cloak/Dockerfile</file>
         <file>server_scripts/awg/configure_container.sh</file>
         <file>server_scripts/awg/Dockerfile</file>
@@ -177,12 +174,10 @@
         <file>ui/qml/Controls2/VerticalRadioButton.qml</file>
         <file>ui/qml/Controls2/WarningType.qml</file>
         <file>ui/qml/Components/ChangelogDrawer.qml</file>
-        <file>fonts/pt-root-ui_vf.ttf</file>
         <file>ui/qml/Modules/Style/qmldir</file>
         <file>ui/qml/Filters/ContainersModelFilters.qml</file>
         <file>ui/qml/main2.qml</file>
         <file>ui/qml/Modules/Style/AmneziaStyle.qml</file>
-        <file>ui/qml/Modules/Style/qmldir</file>
         <file>ui/qml/Pages2/PageDeinstalling.qml</file>
         <file>ui/qml/Pages2/PageDevMenu.qml</file>
         <file>ui/qml/Pages2/PageHome.qml</file>
