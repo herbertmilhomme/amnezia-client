@@ -100,7 +100,9 @@ public slots:
     void closeApplication();
 
     void setDrawerDepth(const int depth);
-    int getDrawerDepth();
+    int getDrawerDepth() const;
+    int incrementDrawerDepth();
+    int decrementDrawerDepth();
 
   private slots:
     void onShowErrorMessage(amnezia::ErrorCode errorCode);
@@ -135,11 +137,7 @@ signals:
     void escapePressed();
     void closeTopDrawer();
 
-    void forceTabBarActiveFocus();
-    void forceStackActiveFocus();
-
     void showChangelogDrawer();
-
 private:
     QSharedPointer<ServersModel> m_serversModel;
 
