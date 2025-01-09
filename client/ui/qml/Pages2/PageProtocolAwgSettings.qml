@@ -36,12 +36,12 @@ PageType {
     ListView {
         id: listview
 
+        property bool isFocusable: true
+
         anchors.top: backButtonLayout.bottom
         anchors.bottom: parent.bottom
 
         width: parent.width
-
-        property bool isFocusable: true
 
         Keys.onTabPressed: {
             FocusController.nextKeyTabItem()
@@ -76,7 +76,7 @@ PageType {
             implicitWidth: listview.width
             implicitHeight: col.implicitHeight
 
-            property alias portTextField: portTextField
+            property alias vpnAddressSubnetTextField: vpnAddressSubnetTextField
             property bool isEnabled: ServersModel.isProcessedServerHasWriteAccess()
 
             ColumnLayout {
@@ -98,9 +98,29 @@ PageType {
                 }
 
                 TextFieldWithHeaderType {
-                    id: portTextField
+                    id: vpnAddressSubnetTextField
+
                     Layout.fillWidth: true
                     Layout.topMargin: 40
+
+                    enabled: delegateItem.isEnabled
+
+                    headerText: qsTr("VPN address subnet")
+                    textFieldText: subnetAddress
+
+                    textField.onEditingFinished: {
+                        if (textFieldText !== subnetAddress) {
+                            subnetAddress = textFieldText
+                        }
+                    }
+
+                    checkEmptyText: true
+                }
+
+                TextFieldWithHeaderType {
+                    id: portTextField
+                    Layout.fillWidth: true
+                    Layout.topMargin: 16
 
                     enabled: delegateItem.isEnabled
 
@@ -115,26 +135,6 @@ PageType {
                         }
                     }
 
-                    checkEmptyText: true
-                }
-
-                TextFieldWithHeaderType {
-                    id: mtuTextField
-                    Layout.fillWidth: true
-                    Layout.topMargin: 16
-
-                    headerText: qsTr("MTU")
-                    textFieldText: mtu
-                    textField.validator: IntValidator { bottom: 576; top: 65535 }
-
-                    textField.onEditingFinished: {
-                        if (textFieldText === "") {
-                            textFieldText = "0"
-                        }
-                        if (textFieldText !== mtu) {
-                            mtu = textFieldText
-                        }
-                    }
                     checkEmptyText: true
                 }
 
@@ -332,7 +332,8 @@ PageType {
                              junkPacketMaxSizeTextField.errorText === "" &&
                              junkPacketMinSizeTextField.errorText === "" &&
                              junkPacketCountTextField.errorText === "" &&
-                             portTextField.errorText === ""
+                             portTextField.errorText === "" &&
+                             vpnAddressSubnetTextField.errorText === ""
 
                     text: qsTr("Save")
 
