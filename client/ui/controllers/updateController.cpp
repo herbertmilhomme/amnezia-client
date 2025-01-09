@@ -117,6 +117,7 @@ void UpdateController::checkForUpdates()
 
 void UpdateController::runInstaller()
 {
+#if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
     if (m_downloadUrl.isEmpty()) {
         logger.error() << "Download URL is empty";
         return;
@@ -170,6 +171,7 @@ void UpdateController::runInstaller()
         }
         reply->deleteLater();
     });
+#endif
 }
 
 #if defined(Q_OS_WINDOWS)
