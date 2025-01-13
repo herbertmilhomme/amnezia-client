@@ -14,87 +14,85 @@ import "../Config"
 PageType {
     id: root
 
-    defaultActiveFocusItem: focusItem
+    ColumnLayout {
+        id: header
 
-    FlickableType {
-        id: fl
         anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+
+        spacing: 0
+
+        BackButtonType {
+            id: backButton
+            Layout.topMargin: 20
+        }
+
+        HeaderType {
+            Layout.fillWidth: true
+            Layout.topMargin: 8
+            Layout.rightMargin: 16
+            Layout.leftMargin: 16
+            Layout.bottomMargin: 16
+
+            headerText: qsTr("VPN by Amnezia")
+            descriptionText: qsTr("Choose a VPN service that suits your needs.")
+        }
+    }
+
+    ListView {
+        id: servicesListView
+
+        anchors.top: header.bottom
+        anchors.right: parent.right
+        anchors.left: parent.left
         anchors.bottom: parent.bottom
-        contentHeight: content.height
+        anchors.topMargin: 16
+        spacing: 0
 
-        ColumnLayout {
-            id: content
+        property bool isFocusable: true
+        
+        clip: true
+        reuseItems: true
 
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
+        model: ApiServicesModel
 
-            spacing: 0
+        ScrollBar.vertical: ScrollBarType {}
 
-            Item {
-                id: focusItem
-                KeyNavigation.tab: backButton
-            }
+        delegate: Item {
+            implicitWidth: servicesListView.width
+            implicitHeight: delegateContent.implicitHeight
 
-            BackButtonType {
-                id: backButton
-                Layout.topMargin: 20
-//                KeyNavigation.tab: fileButton.rightButton
-            }
+            enabled: isServiceAvailable
 
-            HeaderType {
-                Layout.fillWidth: true
-                Layout.topMargin: 8
-                Layout.rightMargin: 16
-                Layout.leftMargin: 16
-                Layout.bottomMargin: 32
+            ColumnLayout {
+                id: delegateContent
 
-                headerText: qsTr("VPN by Amnezia")
-                descriptionText: qsTr("Choose a VPN service that suits your needs.")
-            }
+                anchors.fill: parent
 
-            ListView {
-                id: containers
-                width: parent.width
-                height: containers.contentItem.height
-                spacing: 16
+                CardWithIconsType {
+                    id: card
 
-                currentIndex: 1
-                interactive: false
-                model: ApiServicesModel
+                    Layout.fillWidth: true
+                    Layout.rightMargin: 16
+                    Layout.leftMargin: 16
+                    Layout.bottomMargin: 16
 
-                delegate: Item {
-                    implicitWidth: containers.width
-                    implicitHeight: delegateContent.implicitHeight
+                    headerText: name
+                    bodyText: cardDescription
+                    footerText: price
 
-                    ColumnLayout {
-                        id: delegateContent
+                    rightImageSource: "qrc:/images/controls/chevron-right.svg"
 
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-
-                        CardWithIconsType {
-                            id: card
-
-                            Layout.fillWidth: true
-                            Layout.rightMargin: 16
-                            Layout.leftMargin: 16
-
-                            headerText: name
-                            bodyText: cardDescription
-                            footerText: price
-
-                            rightImageSource: "qrc:/images/controls/chevron-right.svg"
-
-                            onClicked: {
-                                if (isServiceAvailable) {
-                                    ApiServicesModel.setServiceIndex(index)
-                                    PageController.goToPage(PageEnum.PageSetupWizardApiServiceInfo)
-                                }
-                            }
+                    onClicked: {
+                        if (isServiceAvailable) {
+                            ApiServicesModel.setServiceIndex(index)
+                            PageController.goToPage(PageEnum.PageSetupWizardApiServiceInfo)
                         }
                     }
+                    
+                    Keys.onEnterPressed: clicked()
+                    Keys.onReturnPressed: clicked()
                 }
             }
         }

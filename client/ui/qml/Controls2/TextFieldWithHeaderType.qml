@@ -40,6 +40,7 @@ Item {
     implicitHeight: content.implicitHeight
 
     property FlickableType parentFlickable
+
     Connections {
         target: textField
         function onFocusChanged() {
@@ -84,7 +85,16 @@ Item {
 
                     TextField {
                         id: textField
-                        activeFocusOnTab: false
+
+                        property bool isFocusable: true
+
+                        Keys.onTabPressed: {
+                            FocusController.nextKeyTabItem()
+                        }
+
+                        Keys.onBacktabPressed: {
+                            FocusController.previousKeyTabItem()
+                        }
 
                         enabled: root.textFieldEditable
                         color: root.enabled ? root.textFieldTextColor : root.textFieldTextDisabledColor
@@ -183,7 +193,7 @@ Item {
 
         focusPolicy: Qt.NoFocus
         text: root.buttonText
-        imageSource: root.buttonImageSource
+        leftImageSource: root.buttonImageSource
 
         anchors.top: content.top
         anchors.bottom: content.bottom
@@ -209,9 +219,9 @@ Item {
             clickedFunc()
         }
 
-        if (KeyNavigation.tab) {
-            KeyNavigation.tab.forceActiveFocus();
-        }
+        // if (KeyNavigation.tab) {
+        //     KeyNavigation.tab.forceActiveFocus();
+        // }
     }
 
     Keys.onReturnPressed: {
@@ -219,8 +229,8 @@ Item {
             clickedFunc()
         }
 
-        if (KeyNavigation.tab) {
-            KeyNavigation.tab.forceActiveFocus();
-        }
+        // if (KeyNavigation.tab) {
+        //     KeyNavigation.tab.forceActiveFocus();
+        // }
     }
 }

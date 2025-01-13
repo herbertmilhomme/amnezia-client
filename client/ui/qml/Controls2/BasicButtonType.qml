@@ -22,9 +22,10 @@ Button {
     property int borderWidth: 0
     property int borderFocusedWidth: 1
 
-    property string imageSource
+    property string leftImageSource
     property string rightImageSource
     property string leftImageColor: textColor
+    property bool changeLeftImageSize: true
 
     property bool squareLeftSide: false
 
@@ -34,10 +35,35 @@ Button {
 
     property alias buttonTextLabel: buttonText
 
+    property bool isFocusable: true
+
+    Keys.onTabPressed: {
+        FocusController.nextKeyTabItem()
+    }
+
+    Keys.onBacktabPressed: {
+        FocusController.previousKeyTabItem()
+    }
+
+    Keys.onUpPressed: {
+        FocusController.nextKeyUpItem()
+    }
+    
+    Keys.onDownPressed: {
+        FocusController.nextKeyDownItem()
+    }
+    
+    Keys.onLeftPressed: {
+        FocusController.nextKeyLeftItem()
+    }
+
+    Keys.onRightPressed: {
+        FocusController.nextKeyRightItem()
+    }
+    
     implicitHeight: 56
 
     hoverEnabled: true
-    focusPolicy: Qt.TabFocus
 
     onFocusChanged: {
         if (root.activeFocus) {
@@ -127,16 +153,21 @@ Button {
             anchors.centerIn: parent
 
             Image {
-                Layout.preferredHeight: 20
-                Layout.preferredWidth: 20
-
-                source: root.imageSource
-                visible: root.imageSource === "" ? false : true
+                id: leftImage
+                source: root.leftImageSource
+                visible: root.leftImageSource === "" ? false : true
 
                 layer {
-                    enabled: true
+                    enabled: leftImageColor !== "" ? true : false
                     effect: ColorOverlay {
                         color: leftImageColor
+                    }
+                }
+
+                Component.onCompleted: {
+                    if (root.changeLeftImageSize) {
+                        leftImage.Layout.preferredHeight = 20
+                        leftImage.Layout.preferredWidth = 20
                     }
                 }
             }
@@ -144,7 +175,7 @@ Button {
             ButtonTextType {
                 id: buttonText
 
-                color: textColor
+                color: root.textColor
                 text: root.text
                 visible: root.text === "" ? false : true
 
