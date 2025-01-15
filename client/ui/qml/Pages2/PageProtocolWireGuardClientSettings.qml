@@ -16,8 +16,6 @@ import "../Components"
 PageType {
     id: root
 
-    defaultActiveFocusItem: listview.currentItem.mtuTextField.textField
-
     Item {
         id: focusItem
         onFocusChanged: {
@@ -149,8 +147,6 @@ PageType {
         enabled: listview.currentItem.isSaveButtonEnabled
 
         text: qsTr("Save")
-
-        Keys.onTabPressed: lastItemTabClicked(focusItem)
 
         clickedFunc: function() {
             forceActiveFocus()

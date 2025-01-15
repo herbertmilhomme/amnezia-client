@@ -1,8 +1,13 @@
 # Amnezia VPN
-## _The best client for self-hosted VPN_
+
+### _The best client for self-hosted VPN_
+
 
 [![Build Status](https://github.com/amnezia-vpn/amnezia-client/actions/workflows/deploy.yml/badge.svg?branch=dev)](https://github.com/amnezia-vpn/amnezia-client/actions/workflows/deploy.yml?query=branch:dev)
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/amnezia-vpn/amnezia-client)
+
+### [English]([https://github.com/amnezia-vpn/amnezia-client/blob/dev/README_RU.md](https://github.com/amnezia-vpn/amnezia-client/tree/dev?tab=readme-ov-file#)) | [Русский](https://github.com/amnezia-vpn/amnezia-client/blob/dev/README_RU.md)
+
 
 [Amnezia](https://amnezia.org) is an open-source VPN client, with a key feature that enables you to deploy your own VPN server on your server.
 
@@ -180,7 +185,7 @@ GPL v3.0
 
 Patreon: [https://www.patreon.com/amneziavpn](https://www.patreon.com/amneziavpn)
 
-Bitcoin: bc1q26eevjcg9j0wuyywd2e3uc9cs2w58lpkpjxq6p <br>
+Bitcoin: bc1qmhtgcf9637rl3kqyy22r2a8wa8laka4t9rx2mf <br>
 USDT BEP20: 0x6abD576765a826f87D1D95183438f9408C901bE4 <br>
 USDT TRC20: TELAitazF1MZGmiNjTcnxDjEiH5oe7LC9d <br>
 XMR: 48spms39jt1L2L5vyw2RQW6CXD6odUd4jFu19GZcDyKKQV9U88wsJVjSbL4CfRys37jVMdoaWVPSvezCQPhHXUW5UKLqUp3 <br> 
