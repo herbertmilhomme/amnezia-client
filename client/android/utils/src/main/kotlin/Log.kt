@@ -1,6 +1,8 @@
 package org.amnezia.vpn.util
 
 import android.content.Context
+import android.icu.text.DateFormat
+import android.icu.text.SimpleDateFormat
 import android.os.Build
 import android.os.Process
 import java.io.File
@@ -8,8 +10,8 @@ import java.io.IOException
 import java.io.RandomAccessFile
 import java.nio.channels.FileChannel
 import java.nio.channels.FileLock
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.locks.ReentrantLock
 import org.amnezia.vpn.util.Log.Priority.D
 import org.amnezia.vpn.util.Log.Priority.E
@@ -37,7 +39,9 @@ private const val LOG_MAX_FILE_SIZE = 1024 * 1024
  * |                   |              | create a report and/or terminate the process |
  */
 object Log {
-    private val dateTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern(DATE_TIME_PATTERN)
+    private val dateTimeFormat = object : ThreadLocal<DateFormat>() {
+        override fun initialValue(): DateFormat = SimpleDateFormat(DATE_TIME_PATTERN, Locale.US)
+    }
 
     private lateinit var logDir: File
     private val logFile: File by lazy { File(logDir, LOG_FILE_NAME) }
@@ -135,7 +139,7 @@ object Log {
     }
 
     private fun formatLogMsg(tag: String, msg: String, priority: Priority): String {
-        val date = LocalDateTime.now().format(dateTimeFormat)
+        val date = dateTimeFormat.get()?.format(Date())
         return "$date ${Process.myPid()} ${Process.myTid()} $priority [${Thread.currentThread().name}] " +
             "$tag: $msg\n"
     }

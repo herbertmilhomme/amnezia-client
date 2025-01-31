@@ -8,11 +8,9 @@ import android.net.NetworkCapabilities
 import android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET
 import android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED
 import android.net.NetworkRequest
-import android.os.Build
 import android.os.Handler
 import androidx.core.content.getSystemService
 import kotlin.LazyThreadSafetyMode.NONE
-import kotlinx.coroutines.delay
 import org.amnezia.vpn.util.Log
 
 private const val TAG = "NetworkState"
@@ -47,7 +45,9 @@ class NetworkState(
 
             override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
                 Log.v(TAG, "onCapabilitiesChanged: $network, $networkCapabilities")
-                checkNetworkState(network, networkCapabilities)
+                handler.post {
+                    checkNetworkState(network, networkCapabilities)
+                }
             }
 
             private fun checkNetworkState(network: Network, networkCapabilities: NetworkCapabilities) {
@@ -76,33 +76,10 @@ class NetworkState(
         }
     }
 
-    suspend fun bindNetworkListener() {
+    fun bindNetworkListener() {
         if (isListenerBound) return
         Log.d(TAG, "Bind network listener")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            connectivityManager.registerBestMatchingNetworkCallback(networkRequest, networkCallback, handler)
-        } else {
-            val numberAttempts = 300
-            var attemptCount = 0
-            while(true) {
-                try {
-                    connectivityManager.requestNetwork(networkRequest, networkCallback, handler)
-                    break
-                } catch (e: SecurityException) {
-                    Log.e(TAG, "Failed to bind network listener: $e")
-                    // Android 11 bug: https://issuetracker.google.com/issues/175055271
-                    if (e.message?.startsWith("Package android does not belong to") == true) {
-                        if (++attemptCount > numberAttempts) {
-                            throw e
-                        }
-                        delay(1000)
-                        continue
-                    } else {
-                        throw e
-                    }
-                }
-            }
-        }
+        connectivityManager.requestNetwork(networkRequest, networkCallback)
         isListenerBound = true
     }
 

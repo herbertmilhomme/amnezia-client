@@ -317,7 +317,7 @@ jobs:
 
     env:
       ANDROID_BUILD_PLATFORM: android-34
-      QT_VERSION: 6.7.3
+      QT_VERSION: 6.6.3
       QT_MODULES: 'qtremoteobjects qt5compat qtimageformats qtshadertools'
       PROD_AGW_PUBLIC_KEY: ${{ secrets.PROD_AGW_PUBLIC_KEY }}
       PROD_S3_ENDPOINT: ${{ secrets.PROD_S3_ENDPOINT }}
@@ -332,7 +332,7 @@ jobs:
         version: ${{ env.QT_VERSION }}
         host: 'linux'
         target: 'desktop'
-        arch: 'linux_gcc_64'
+        arch: 'gcc_64'
         modules: ${{ env.QT_MODULES }}
         dir: ${{ runner.temp }}
         py7zrversion: '==0.22.*'

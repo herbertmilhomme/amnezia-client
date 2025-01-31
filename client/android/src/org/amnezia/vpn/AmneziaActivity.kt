@@ -3,9 +3,7 @@ package org.amnezia.vpn
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlertDialog
-import android.app.NotificationManager
 import android.content.ActivityNotFoundException
-import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Intent
 import android.content.Intent.EXTRA_MIME_TYPES
@@ -77,7 +75,6 @@ class AmneziaActivity : QtActivity() {
     private var isWaitingStatus = true
     private var isServiceConnected = false
     private var isInBoundState = false
-    private var notificationStateReceiver: BroadcastReceiver? = null
     private lateinit var vpnServiceMessenger: IpcMessenger
     private var pfd: ParcelFileDescriptor? = null
 
@@ -186,7 +183,6 @@ class AmneziaActivity : QtActivity() {
                 doBindService()
             }
         )
-        registerBroadcastReceivers()
         intent?.let(::processIntent)
         runBlocking { vpnProto = proto.await() }
     }
@@ -200,26 +196,6 @@ class AmneziaActivity : QtActivity() {
         ).forEach {
             loadSharedLibrary(this.applicationContext, it)
         }
-    }
-
-    private fun registerBroadcastReceivers() {
-        notificationStateReceiver = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            registerBroadcastReceiver(
-                arrayOf(
-                    NotificationManager.ACTION_NOTIFICATION_CHANNEL_BLOCK_STATE_CHANGED,
-                    NotificationManager.ACTION_APP_BLOCK_STATE_CHANGED
-                )
-            ) {
-                Log.v(
-                    TAG, "Notification state changed: ${it?.action}, blocked = " +
-                        "${it?.getBooleanExtra(NotificationManager.EXTRA_BLOCKED_STATE, false)}"
-                )
-                mainScope.launch {
-                    qtInitialized.await()
-                    QtAndroidController.onNotificationStateChanged()
-                }
-            }
-        } else null
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -267,8 +243,6 @@ class AmneziaActivity : QtActivity() {
 
     override fun onDestroy() {
         Log.d(TAG, "Destroy Amnezia activity")
-        unregisterBroadcastReceiver(notificationStateReceiver)
-        notificationStateReceiver = null
         mainScope.cancel()
         super.onDestroy()
     }
@@ -747,7 +721,7 @@ class AmneziaActivity : QtActivity() {
     }
 
     @Suppress("unused")
-    fun isNotificationPermissionGranted(): Boolean = applicationContext.isNotificationPermissionGranted()
+    fun isNotificationPermissionGranted(): Boolean = true
 
     @Suppress("unused")
     fun requestNotificationPermission() {
@@ -846,67 +820,6 @@ class AmneziaActivity : QtActivity() {
             }),
             0, 0, 1.0f, 1.0f, 0, 0, 0,0
         )
-
-    // workaround for a bug in Qt that causes the mouse click event not to be handled
-    // also disable right-click, as it causes the application to crash
-    private var lastButtonState = 0
-    private fun MotionEvent.fixCopy(): MotionEvent = MotionEvent.obtain(
-        downTime,
-        eventTime,
-        action,
-        pointerCount,
-        (0 until pointerCount).map { i ->
-            MotionEvent.PointerProperties().apply {
-                getPointerProperties(i, this)
-            }
-        }.toTypedArray(),
-        (0 until pointerCount).map { i ->
-            MotionEvent.PointerCoords().apply {
-                getPointerCoords(i, this)
-            }
-        }.toTypedArray(),
-        metaState,
-        MotionEvent.BUTTON_PRIMARY,
-        xPrecision,
-        yPrecision,
-        deviceId,
-        edgeFlags,
-        source,
-        flags
-    )
-
-    private fun handleMouseEvent(ev: MotionEvent, superDispatch: (MotionEvent?) -> Boolean): Boolean {
-        when (ev.action) {
-            MotionEvent.ACTION_DOWN -> {
-                lastButtonState = ev.buttonState
-                if (ev.buttonState == MotionEvent.BUTTON_SECONDARY) return true
-            }
-
-            MotionEvent.ACTION_UP -> {
-                when (lastButtonState) {
-                    MotionEvent.BUTTON_SECONDARY -> return true
-                    MotionEvent.BUTTON_PRIMARY -> {
-                        val modEvent = ev.fixCopy()
-                        return superDispatch(modEvent).apply { modEvent.recycle() }
-                    }
-                }
-            }
-        }
-        return superDispatch(ev)
-    }
-
-    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
-        Log.v(TAG, "dispatchTouch: $ev")
-        if (ev != null && ev.getToolType(0) == MotionEvent.TOOL_TYPE_MOUSE) {
-            return handleMouseEvent(ev) { super.dispatchTouchEvent(it) }
-        }
-        return super.dispatchTouchEvent(ev)
-    }
-
-    override fun dispatchTrackballEvent(ev: MotionEvent?): Boolean {
-        ev?.let { return handleMouseEvent(ev) { super.dispatchTrackballEvent(it) }}
-        return super.dispatchTrackballEvent(ev)
-    }
 
     /**
      * Utils methods
