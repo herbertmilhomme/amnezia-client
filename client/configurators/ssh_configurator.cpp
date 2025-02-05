@@ -67,6 +67,7 @@ QString SshConfigurator::convertOpenSShKey(const QString &key)
 #endif
 }
 
+// DEAD CODE.
 void SshConfigurator::openSshTerminal(const ServerCredentials &credentials)
 {
 #if !defined(Q_OS_IOS) && !defined(MACOS_NE)
@@ -101,10 +102,8 @@ QProcessEnvironment SshConfigurator::prepareEnv()
     pathEnvVar.clear();
     pathEnvVar.prepend(QDir::toNativeSeparators(QApplication::applicationDirPath()) + "\\cygwin;");
     pathEnvVar.prepend(QDir::toNativeSeparators(QApplication::applicationDirPath()) + "\\openvpn;");
-#elif defined(Q_OS_MAC)
-#if !defined(MACOS_NE)
+#elif defined(Q_OS_MAC) !defined(MACOS_NE)
     pathEnvVar.prepend(QDir::toNativeSeparators(QApplication::applicationDirPath()) + "/Contents/MacOS");
-#endif
 #endif
 
     env.insert("PATH", pathEnvVar);

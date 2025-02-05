@@ -413,19 +413,9 @@ endif()
 target_sources(${PROJECT} PRIVATE ${SOURCES} ${HEADERS} ${RESOURCES} ${QRC} ${I18NQRC})
 if(MACOS_NE)
     message("Copy MacOS Network Extension files")
-    # if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    #     add_custom_command(TARGET ${PROJECT} POST_BUILD
-    #     COMMAND codesign --force --sign 'Apple Distribution: Privacy Technologies OU (X7UJ388FXK)' --timestamp --options runtime
-    #             ${CMAKE_SOURCE_DIR}/client/3rd/OpenVPNAdapter/build/Release-macos/OpenVPNAdapter.framework
-    #     )
-    # endif()
-    
     add_custom_command(TARGET ${PROJECT} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory
                 $<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks
-        # COMMAND ${CMAKE_COMMAND} -E copy_directory
-        #         $ENV{QT_MACOS_ROOT_DIR}/lib/QtConcurrent.framework
-        #         $<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks/QtConcurrent.framework
         
         COMMAND ${CMAKE_COMMAND} -E echo "Copying OpenVPNAdapter.framework..."
         COMMAND ${CMAKE_COMMAND} -E copy_directory

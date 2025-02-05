@@ -47,7 +47,7 @@ extension PacketTunnelProvider {
         let configuration = OpenVPNConfiguration()
         configuration.fileContent = ovpnConfiguration
         if str.contains("cloak") {
-           configuration.setPTCloak()
+            configuration.setPTCloak()
         }
 
         let evaluation: OpenVPNConfigurationEvaluation?
@@ -73,7 +73,7 @@ extension PacketTunnelProvider {
         startHandler = completionHandler
         ovpnAdapter?.connect(using: packetFlow)
     }
-    
+
     func handleOpenVPNStatusMessage(_ messageData: Data, completionHandler: ((Data?) -> Void)? = nil) {
         guard let completionHandler = completionHandler else { return }
         let bytesin = ovpnAdapter?.transportStatistics.bytesIn

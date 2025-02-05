@@ -111,14 +111,14 @@ extension PacketTunnelProvider {
                     settingsDictionary[pair[0]] = pair[1]
                 }
             }
-            
+
             let lastHandshakeString = settingsDictionary["last_handshake_time_sec"]
             let lastHandshake: Int64
-            
+
             if let lastHandshakeValue = lastHandshakeString, let handshakeValue = Int64(lastHandshakeValue) {
                 lastHandshake = handshakeValue
             } else {
-                lastHandshake = -2  // Trả về lỗi nếu không có giá trị last_handshake_time_sec
+                lastHandshake = -2  // Return an error if there is no value for `last_handshake_time_sec`
             }
 
             let response: [String: Any] = [
