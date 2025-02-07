@@ -121,7 +121,8 @@ void AmneziaApplication::init()
     m_engine->addImageProvider(QLatin1String("installedAppImage"), new InstalledAppsImageProvider);
 #endif
 
-#if defined(Q_OS_IOS) || defined(MACOS_NE)
+#if defined(Q_OS_IOS)
+#if defined(MACOS_NE)
     IosController::Instance()->initialize();
     connect(IosController::Instance(), &IosController::importConfigFromOutside, this, [this](QString data) {
         emit m_pageController->goToPageHome();
@@ -134,6 +135,7 @@ void AmneziaApplication::init()
         m_pageController->goToPageSettingsBackup();
         emit m_settingsController->importBackupFromOutside(filePath);
     });
+#endif
 
     QTimer::singleShot(0, this, [this]() { AmneziaVPN::toggleScreenshots(m_settings->isScreenshotsEnabled()); });
 
