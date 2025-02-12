@@ -145,10 +145,10 @@ jobs:
 # ------------------------------------------------------
 
   Build-iOS:
-    runs-on: macos-13
+    runs-on: macos-latest
 
     env:
-      QT_VERSION: 6.6.2
+      QT_VERSION: 6.8.0
       CC: cc
       CXX: c++
       PROD_AGW_PUBLIC_KEY: ${{ secrets.PROD_AGW_PUBLIC_KEY }}
@@ -161,7 +161,7 @@ jobs:
     - name: 'Setup xcode'
       uses: maxim-lobanov/setup-xcode@v1
       with:
-        xcode-version: '15.2'
+        xcode-version: '15.4.0'
 
     - name: 'Install desktop Qt'
       uses: jurplel/install-qt-action@v3
@@ -213,6 +213,7 @@ jobs:
 
     - name: 'Build project'
       run: |
+        set -o pipefail
         git submodule update --init --recursive
         export QT_BIN_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/ios/bin"
         export QT_MACOS_ROOT_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/macos"
@@ -260,7 +261,7 @@ jobs:
     - name: 'Setup xcode'
       uses: maxim-lobanov/setup-xcode@v1
       with:
-        xcode-version: '15.4.0'
+        xcode-version: '15.4'
 
     - name: 'Install Qt'
       uses: jurplel/install-qt-action@v3
@@ -292,9 +293,14 @@ jobs:
 
     - name: 'Build project'
       run: |
+        set -o pipefail
         export QT_BIN_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/macos/bin"
         export QIF_BIN_DIR="${{ runner.temp }}/Qt/Tools/QtInstallerFramework/${{ env.QIF_VERSION }}/bin"
-        bash deploy/build_macos.sh
+        bash deploy/build_macos.sh | \
+          sed -e '/-Xcc -DPROD_AGW_PUBLIC_KEY/,/-Xcc/ { /-Xcc/!d; }' -e '/-Xcc -DPROD_AGW_PUBLIC_KEY/d' | \
+          sed -e '/-Xcc -DDEV_AGW_PUBLIC_KEY/,/-Xcc/ { /-Xcc/!d; }' -e '/-Xcc -DDEV_AGW_PUBLIC_KEY/d' | \
+          sed -e '/-DPROD_AGW_PUBLIC_KEY/,/-D/ { /-D/!d; }' -e '/-DPROD_AGW_PUBLIC_KEY/d' | \
+          sed -e '/-DDEV_AGW_PUBLIC_KEY/,/-D/ { /-D/!d; }' -e '/-DDEV_AGW_PUBLIC_KEY/d'
 
     - name: 'Upload installer artifact'
       uses: actions/upload-artifact@v4
@@ -379,8 +385,8 @@ jobs:
         MAC_TRUST_CERT_BASE64: ${{ secrets.MAC_TRUST_CERT_BASE64 }}
         MAC_SIGNING_CERT_BASE64: ${{ secrets.MAC_SIGNING_CERT_BASE64 }}
         MAC_SIGNING_CERT_PASSWORD: ${{ secrets.MAC_SIGNING_CERT_PASSWORD }}
-        MAC_APP_PROVISIONING_PROFILE: ${{ secrets.MAC_APP_PROVISIONING_PROFILE }}
-        MAC_NE_PROVISIONING_PROFILE: ${{ secrets.MAC_NE_PROVISIONING_PROFILE }}
+        MAC_APP_PROVISIONING_PROFILE: ${{ secrets.APPSTORE_CONNECT_MAC_PROVISIONING }}
+        MAC_NE_PROVISIONING_PROFILE: ${{ secrets.APPSTORE_CONNECT_MAC_NE_PROVISIONING }}
         APPSTORE_CONNECT_KEY_ID: ${{ secrets.APPSTORE_CONNECT_KEY_ID }}
         APPSTORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
         APPSTORE_CONNECT_PRIVATE_KEY: ${{ secrets.APPSTORE_CONNECT_PRIVATE_KEY }}
