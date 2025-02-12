@@ -2,7 +2,7 @@
 #include "utils/converter.h"
 #include "core/errorstrings.h"
 
-#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
+#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS) || defined(MACOS_NE)
     #include <QGuiApplication>
 #else
     #include <QApplication>
@@ -11,7 +11,7 @@
 #ifdef Q_OS_ANDROID
     #include "platforms/android/android_controller.h"
 #endif
-#if defined Q_OS_MAC
+#if defined Q_OS_MAC && !defined(MACOS_NE)
     #include "ui/macos_util.h"
 #endif
 
@@ -114,7 +114,7 @@ void PageController::showOnStartup()
     } else {
 #if defined(Q_OS_WIN) || (defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID))
         emit hideMainWindow();
-#elif defined Q_OS_MACX
+#elif defined Q_OS_MACX and !defined MACOS_NE
         setDockIconVisible(false);
 #endif
     }

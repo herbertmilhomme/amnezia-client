@@ -167,7 +167,7 @@ bool AmneziaApplication::parseCommands()
 
     QCommandLineOption c_cleanup { { "c", "cleanup" }, "Cleanup logs" };
     m_parser.addOption(c_cleanup);
-
+    
     m_parser.process(*this);
 
     if (m_parser.isSet(c_cleanup)) {
@@ -179,9 +179,8 @@ bool AmneziaApplication::parseCommands()
     return true;
 }
 
-#if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
-void AmneziaApplication::startLocalServer()
-{
+#if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS) && !defined(MACOS_NE)
+void AmneziaApplication::startLocalServer() {
     const QString serverName("AmneziaVPNInstance");
     QLocalServer::removeServer(serverName);
 
