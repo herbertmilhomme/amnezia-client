@@ -163,12 +163,12 @@ PageType {
                 Layout.rightMargin: 16
                 Layout.leftMargin: 16
 
-                visible: textKey.textFieldText !== ""
+                visible: textKey.textField.text !== ""
 
                 text: qsTr("Continue")
 
                 clickedFunc: function() {
-                    if (ImportController.extractConfigFromData(textKey.textFieldText)) {
+                    if (ImportController.extractConfigFromData(textKey.textField.text)) {
                         PageController.goToPage(PageEnum.PageSetupWizardViewConfig)
                     }
                 }
@@ -204,6 +204,34 @@ PageType {
                 leftImageSource: imageSource
 
                 onClicked: { handler() }
+            }
+        }
+
+        footer: ColumnLayout {
+            width: listView.width
+
+            BasicButtonType {
+                id: siteLink2
+                Layout.topMargin: 24
+                Layout.bottomMargin: 16
+                Layout.alignment: Qt.AlignHCenter
+                implicitHeight: 32
+
+                visible: Qt.platform.os !== "ios"
+
+                defaultColor: AmneziaStyle.color.transparent
+                hoveredColor: AmneziaStyle.color.translucentWhite
+                pressedColor: AmneziaStyle.color.sheerWhite
+                disabledColor: AmneziaStyle.color.mutedGray
+                textColor: AmneziaStyle.color.goldenApricot
+
+                text: qsTr("Site Amnezia")
+
+                rightImageSource: "qrc:/images/controls/external-link.svg"
+
+                clickedFunc: function() {
+                    Qt.openUrlExternally(LanguageModel.getCurrentSiteUrl())
+                }
             }
         }
     }
@@ -304,7 +332,7 @@ PageType {
         property string title: qsTr("I have nothing")
         property string description: qsTr("")
         property string imageSource: "qrc:/images/controls/help-circle.svg"
-        property bool isVisible: PageController.isStartPageVisible()
+        property bool isVisible: PageController.isStartPageVisible() && Qt.platform.os !== "ios"
         property var handler: function() {
             Qt.openUrlExternally(LanguageModel.getCurrentSiteUrl())
         }

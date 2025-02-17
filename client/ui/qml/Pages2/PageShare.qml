@@ -51,25 +51,25 @@ PageType {
 
             switch (type) {
             case PageShare.ConfigType.AmneziaConnection: {
-                ExportController.generateConnectionConfig(clientNameTextField.textFieldText);
+                ExportController.generateConnectionConfig(clientNameTextField.textField.text);
                 break;
             }
             case PageShare.ConfigType.OpenVpn: {
-                ExportController.generateOpenVpnConfig(clientNameTextField.textFieldText)
+                ExportController.generateOpenVpnConfig(clientNameTextField.textField.text)
                 shareConnectionDrawer.configCaption = qsTr("Save OpenVPN config")
                 shareConnectionDrawer.configExtension = ".ovpn"
                 shareConnectionDrawer.configFileName = "amnezia_for_openvpn"
                 break
             }
             case PageShare.ConfigType.WireGuard: {
-                ExportController.generateWireGuardConfig(clientNameTextField.textFieldText)
+                ExportController.generateWireGuardConfig(clientNameTextField.textField.text)
                 shareConnectionDrawer.configCaption = qsTr("Save WireGuard config")
                 shareConnectionDrawer.configExtension = ".conf"
                 shareConnectionDrawer.configFileName = "amnezia_for_wireguard"
                 break
             }
             case PageShare.ConfigType.Awg: {
-                ExportController.generateAwgConfig(clientNameTextField.textFieldText)
+                ExportController.generateAwgConfig(clientNameTextField.textField.text)
                 shareConnectionDrawer.configCaption = qsTr("Save AmneziaWG config")
                 shareConnectionDrawer.configExtension = ".conf"
                 shareConnectionDrawer.configFileName = "amnezia_for_awg"
@@ -90,7 +90,7 @@ PageType {
                 break
             }
             case PageShare.ConfigType.Xray: {
-                ExportController.generateXrayConfig(clientNameTextField.textFieldText)
+                ExportController.generateXrayConfig(clientNameTextField.textField.text)
                 shareConnectionDrawer.configCaption = qsTr("Save XRay config")
                 shareConnectionDrawer.configExtension = ".json"
                 shareConnectionDrawer.configFileName = "amnezia_for_xray"
@@ -296,7 +296,7 @@ PageType {
                 visible: accessTypeSelector.currentIndex === 0
 
                 headerText: qsTr("User name")
-                textFieldText: "New client"
+                textField.text: "New client"
                 textField.maximumLength: 20
 
                 checkEmptyText: true
@@ -355,6 +355,7 @@ PageType {
                             serverSelectorListView.selectedIndex = 0
                         }
 
+                        serverSelectorListView.positionViewAtIndex(selectedIndex, ListView.Beginning)
                         serverSelectorListView.triggerCurrentItem()
                     }
 
@@ -410,6 +411,7 @@ PageType {
                         function onSeverSelectorIndexChanged() {
                             var defaultContainer = proxyContainersModel.mapFromSource(ServersModel.getProcessedServerData("defaultContainer"))
                             protocolSelectorListView.selectedIndex = defaultContainer
+                            protocolSelectorListView.positionViewAtIndex(selectedIndex, ListView.Beginning)
                             protocolSelectorListView.triggerCurrentItem()
                         }
                     }
@@ -479,9 +481,11 @@ PageType {
                 headerText: qsTr("Connection format")
 
                 listView: ListViewWithRadioButtonType {
+                    id: exportTypeSelectorListView
+
                     onCurrentIndexChanged: {
-                        exportTypeSelector.currentIndex = currentIndex
-                        exportTypeSelector.text = selectedText
+                        exportTypeSelector.currentIndex = exportTypeSelectorListView.selectedIndex
+                        exportTypeSelector.text = exportTypeSelectorListView.selectedText
                     }
 
                     rootWidth: root.width
@@ -492,14 +496,14 @@ PageType {
                     currentIndex: 0
 
                     clickedFunction: function() {
-                        exportTypeSelector.text = selectedText
-                        exportTypeSelector.currentIndex = currentIndex
+                        exportTypeSelector.text = exportTypeSelectorListView.selectedText
+                        exportTypeSelector.currentIndex = exportTypeSelectorListView.selectedIndex
                         exportTypeSelector.closeTriggered()
                     }
 
                     Component.onCompleted: {
-                        exportTypeSelector.text = selectedText
-                        exportTypeSelector.currentIndex = currentIndex
+                        exportTypeSelector.text = exportTypeSelectorListView.selectedText
+                        exportTypeSelector.currentIndex = exportTypeSelectorListView.selectedIndex
                     }
                 }
             }
@@ -521,7 +525,7 @@ PageType {
                 parentFlickable: a
 
                 clickedFunc: function(){
-                    if (clientNameTextField.textFieldText !== "") {
+                    if (clientNameTextField.textField.text !== "") {
                         ExportController.generateConfig(root.connectionTypesModel[exportTypeSelector.currentIndex].type)
                     }
                 }
@@ -551,14 +555,14 @@ PageType {
                     id: searchTextField
                     Layout.fillWidth: true
 
-                    textFieldPlaceholderText: qsTr("Search")
+                    textField.placeholderText: qsTr("Search")
 
                     Keys.onEscapePressed: {
                         root.isSearchBarVisible = false
                     }
 
                     function navigateTo() {
-                        if (searchTextField.textFieldText === "") {
+                        if (searchTextField.textField.text === "") {
                             root.isSearchBarVisible = false
                         }
                     }
@@ -597,12 +601,13 @@ PageType {
                     sourceModel: ClientManagementModel
                     filters: RegExpFilter {
                         roleName: "clientName"
-                        pattern: ".*" + searchTextField.textFieldText + ".*"
+                        pattern: ".*" + searchTextField.textField.text + ".*"
                         caseSensitivity: Qt.CaseInsensitive
                     }
                 }
 
                 clip: true
+                interactive: false
                 reuseItems: true
 
                 delegate: Item {
@@ -667,7 +672,11 @@ PageType {
                                 ParagraphTextType {
                                     color: AmneziaStyle.color.mutedGray
                                     visible: creationDate
-                                    Layout.fillWidth: true
+                                    Layout.maximumWidth: parent.width
+
+                                    maximumLineCount: 2
+                                    wrapMode: Text.Wrap
+                                    elide: Qt.ElideRight
 
                                     text: qsTr("Creation date: %1").arg(creationDate)
                                 }
@@ -675,7 +684,11 @@ PageType {
                                 ParagraphTextType {
                                     color: AmneziaStyle.color.mutedGray
                                     visible: latestHandshake
-                                    Layout.fillWidth: true
+                                    Layout.maximumWidth: parent.width
+
+                                    maximumLineCount: 2
+                                    wrapMode: Text.Wrap
+                                    elide: Qt.ElideRight
 
                                     text: qsTr("Latest handshake: %1").arg(latestHandshake)
                                 }
@@ -683,7 +696,11 @@ PageType {
                                 ParagraphTextType {
                                     color: AmneziaStyle.color.mutedGray
                                     visible: dataReceived
-                                    Layout.fillWidth: true
+                                    Layout.maximumWidth: parent.width
+
+                                    maximumLineCount: 2
+                                    wrapMode: Text.Wrap
+                                    elide: Qt.ElideRight
 
                                     text: qsTr("Data received: %1").arg(dataReceived)
                                 }
@@ -691,7 +708,11 @@ PageType {
                                 ParagraphTextType {
                                     color: AmneziaStyle.color.mutedGray
                                     visible: dataSent
-                                    Layout.fillWidth: true
+                                    Layout.maximumWidth: parent.width
+
+                                    maximumLineCount: 2
+                                    wrapMode: Text.Wrap
+                                    elide: Qt.ElideRight
 
                                     text: qsTr("Data sent: %1").arg(dataSent)
                                 }
@@ -699,7 +720,9 @@ PageType {
                                 ParagraphTextType {
                                     color: AmneziaStyle.color.mutedGray
                                     visible: allowedIps
-                                    Layout.fillWidth: true
+                                    Layout.maximumWidth: parent.width
+
+                                    wrapMode: Text.Wrap
 
                                     text: qsTr("Allowed IPs: %1").arg(allowedIps)
                                 }
@@ -742,7 +765,7 @@ PageType {
                                                 id: clientNameEditor
                                                 Layout.fillWidth: true
                                                 headerText: qsTr("Client name")
-                                                textFieldText: clientName
+                                                textField.text: clientName
                                                 textField.maximumLength: 20
                                                 checkEmptyText: true
                                             }
@@ -755,14 +778,14 @@ PageType {
                                                 text: qsTr("Save")
 
                                                 clickedFunc: function() {
-                                                    if (clientNameEditor.textFieldText === "") {
+                                                    if (clientNameEditor.textField.text === "") {
                                                         return
                                                     }
 
-                                                    if (clientNameEditor.textFieldText !== clientName) {
+                                                    if (clientNameEditor.textField.text !== clientName) {
                                                         PageController.showBusyIndicator(true)
                                                         ExportController.renameClient(index,
-                                                                                      clientNameEditor.textFieldText,
+                                                                                      clientNameEditor.textField.text,
                                                                                       ContainersModel.getProcessedContainerIndex(),
                                                                                       ServersModel.getProcessedServerCredentials())
                                                         PageController.showBusyIndicator(false)

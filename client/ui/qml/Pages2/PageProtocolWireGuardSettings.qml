@@ -59,7 +59,7 @@ PageType {
                 delegate: Item {
                     id: delegateItem
 
-                    property alias focusItemId: portTextField.textField
+                    property alias focusItemId: vpnAddressSubnetTextField
                     property bool isEnabled: ServersModel.isProcessedServerHasWriteAccess()
 
                     implicitWidth: listview.width
@@ -83,20 +83,18 @@ PageType {
                         }
 
                         TextFieldWithHeaderType {
-                            id: portTextField
+                            id: vpnAddressSubnetTextField
                             Layout.fillWidth: true
                             Layout.topMargin: 40
 
                             enabled: delegateItem.isEnabled
 
-                            headerText: qsTr("Port")
-                            textFieldText: port
-                            textField.maximumLength: 5
-                            textField.validator: IntValidator { bottom: 1; top: 65535 }
+                            headerText: qsTr("VPN address subnet")
+                            textField.text: subnetAddress
 
                             textField.onEditingFinished: {
-                                if (textFieldText !== port) {
-                                    port = textFieldText
+                                if (textField.text !== subnetAddress) {
+                                    subnetAddress = textField.text
                                 }
                             }
 
@@ -104,22 +102,23 @@ PageType {
                         }
 
                         TextFieldWithHeaderType {
-                            id: mtuTextField
+                            id: portTextField
                             Layout.fillWidth: true
                             Layout.topMargin: 16
 
-                            headerText: qsTr("MTU")
-                            textFieldText: mtu
-                            textField.validator: IntValidator { bottom: 576; top: 65535 }
+                            enabled: delegateItem.isEnabled
+
+                            headerText: qsTr("Port")
+                            textField.text: port
+                            textField.maximumLength: 5
+                            textField.validator: IntValidator { bottom: 1; top: 65535 }
 
                             textField.onEditingFinished: {
-                                if (textFieldText === "") {
-                                    textFieldText = "0"
-                                }
-                                if (textFieldText !== mtu) {
-                                    mtu = textFieldText
+                                if (textField.text !== port) {
+                                    port = textField.text
                                 }
                             }
+
                             checkEmptyText: true
                         }
 
@@ -129,7 +128,8 @@ PageType {
                             Layout.topMargin: 24
                             Layout.bottomMargin: 24
 
-                            enabled: portTextField.errorText === ""
+                            enabled: portTextField.errorText === "" &&
+                                     vpnAddressSubnetTextField.errorText === ""
 
                             text: qsTr("Save")
 
