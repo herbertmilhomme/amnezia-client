@@ -311,6 +311,87 @@ jobs:
         retention-days: 7
 
 # ------------------------------------------------------
+  Build-MacOS-NE:
+    runs-on: macos-latest
+
+    env:
+      QT_VERSION: 6.8.0
+      QIF_VERSION: 4.6
+      QT_MIRROR: https://mirrors.ocf.berkeley.edu/qt/
+      PROD_AGW_PUBLIC_KEY: ${{ secrets.PROD_AGW_PUBLIC_KEY }}
+      PROD_S3_ENDPOINT: ${{ secrets.PROD_S3_ENDPOINT }}
+      DEV_AGW_PUBLIC_KEY: ${{ secrets.DEV_AGW_PUBLIC_KEY }}
+      DEV_AGW_ENDPOINT: ${{ secrets.DEV_AGW_ENDPOINT }}
+      DEV_S3_ENDPOINT: ${{ secrets.DEV_S3_ENDPOINT }}
+
+    steps:
+    - name: 'Setup Xcode'
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '16.1'
+
+    - name: 'Install desktop Qt'
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: ${{ env.QT_VERSION }}
+        host: 'mac'
+        target: 'desktop'
+        modules: 'qtremoteobjects qt5compat qtshadertools qtmultimedia qtimageformats'
+        arch: 'clang_64'
+        dir: ${{ runner.temp }}
+        set-env: 'true'
+        extra: '--base ${{ env.QT_MIRROR }}'
+    - name: 'Install Qt Installer Framework ${{ env.QIF_VERSION }}'
+      run: |
+        mkdir -pv ${{ runner.temp }}/Qt/Tools/QtInstallerFramework
+        wget https://qt.amzsvc.com/tools/ifw/${{ env.QIF_VERSION }}.zip
+        unzip ${{ env.QIF_VERSION }}.zip -d ${{ runner.temp }}/Qt/Tools/QtInstallerFramework/
+    - name: 'Install Go'
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22.1'
+        cache: false
+
+    - name: 'Get sources'
+      uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+        fetch-depth: 10
+
+    - name: 'Install dependencies'
+      run: pip install jsonschema jinja2
+
+    - name: 'Set execute permissions for deploy script'
+      run: chmod +x deploy/build_macos_ne.sh
+
+    - name: 'Build and deploy macOS NE'
+      run: |
+        set -o pipefail
+        export QT_BIN_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/macos/bin" 
+        export QT_MACOS_ROOT_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/macos" 
+        bash deploy/build_macos_ne.sh | \
+          sed -e '/-Xcc -DPROD_AGW_PUBLIC_KEY/,/-Xcc/ { /-Xcc/!d; }' -e '/-Xcc -DPROD_AGW_PUBLIC_KEY/d' | \
+          sed -e '/-Xcc -DDEV_AGW_PUBLIC_KEY/,/-Xcc/ { /-Xcc/!d; }' -e '/-Xcc -DDEV_AGW_PUBLIC_KEY/d' | \
+          sed -e '/-DPROD_AGW_PUBLIC_KEY/,/-D/ { /-D/!d; }' -e '/-DPROD_AGW_PUBLIC_KEY/d' | \
+          sed -e '/-DDEV_AGW_PUBLIC_KEY/,/-D/ { /-D/!d; }' -e '/-DDEV_AGW_PUBLIC_KEY/d'
+
+      env:
+        MAC_TRUST_CERT_BASE64: ${{ secrets.MAC_TRUST_CERT_BASE64 }}
+        MAC_SIGNING_CERT_BASE64: ${{ secrets.MAC_SIGNING_CERT_BASE64 }}
+        MAC_SIGNING_CERT_PASSWORD: ${{ secrets.MAC_SIGNING_CERT_PASSWORD }}
+        MAC_APP_PROVISIONING_PROFILE: ${{ secrets.MAC_APP_PROVISIONING_PROFILE }}
+        MAC_NE_PROVISIONING_PROFILE: ${{ secrets.MAC_NE_PROVISIONING_PROFILE }}
+        APPSTORE_CONNECT_KEY_ID: ${{ secrets.APPSTORE_CONNECT_KEY_ID }}
+        APPSTORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
+        APPSTORE_CONNECT_PRIVATE_KEY: ${{ secrets.APPSTORE_CONNECT_PRIVATE_KEY }}
+    - name: 'Upload macOS .app and dSYMs to artifacts'
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos app & dsyms
+        path: |
+          ${{ github.workspace }}/AmneziaVPN.app
+        retention-days: 7
+# ------------------------------------------------------
 
   Build-Android:
     runs-on: ubuntu-latest

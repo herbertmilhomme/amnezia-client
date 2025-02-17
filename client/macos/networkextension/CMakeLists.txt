@@ -1,21 +1,19 @@
 enable_language(Swift)
-
+message("Client message >> macos build >> networkextension")
 set(CLIENT_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
 
 add_executable(networkextension)
+
+message("executable_path is: @executable_path/../../Frameworks")
 set_target_properties(networkextension PROPERTIES
     XCODE_PRODUCT_TYPE com.apple.product-type.app-extension
     BUNDLE_EXTENSION appex
 
-    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "${APPLE_PROJECT_VERSION}"
     MACOSX_BUNDLE_INFO_STRING "AmneziaVPNNetworkExtension"
     MACOSX_BUNDLE_BUNDLE_NAME "AmneziaVPNNetworkExtension"
-    MACOSX_BUNDLE_GUI_IDENTIFIER "${BUILD_IOS_APP_IDENTIFIER}.network-extension"
-    MACOSX_BUNDLE_BUNDLE_VERSION "${CMAKE_PROJECT_VERSION_TWEAK}"
-    MACOSX_BUNDLE_LONG_VERSION_STRING "${APPLE_PROJECT_VERSION}-${CMAKE_PROJECT_VERSION_TWEAK}"
-    MACOSX_BUNDLE_SHORT_VERSION_STRING "${APPLE_PROJECT_VERSION}"
-
     XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "${BUILD_IOS_APP_IDENTIFIER}.network-extension"
+    XCODE_ATTRIBUTE_PRODUCT_BUNDLE_NAME "${BUILD_IOS_APP_IDENTIFIER}.network-extension"
     XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/AmneziaVPNNetworkExtension.entitlements
     XCODE_ATTRIBUTE_MARKETING_VERSION "${APP_MAJOR_VERSION}"
     XCODE_ATTRIBUTE_CURRENT_PROJECT_VERSION "${BUILD_ID}"
@@ -23,18 +21,20 @@ set_target_properties(networkextension PROPERTIES
 
     XCODE_ATTRIBUTE_APPLICATION_EXTENSION_API_ONLY "YES"
     XCODE_ATTRIBUTE_ENABLE_BITCODE "NO"
-    XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
+    XCODE_ATTRIBUTE_MACOSX_DEPLOYMENT_TARGET "11.0"
 
-    XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/../../Frameworks"
+    XCODE_ATTRIBUTE_INFOPLIST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in
+    XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/../../../../Frameworks @loader_path/../../../../Frameworks"
 )
 
 if(DEPLOY)
+    message("DEPLOY is ON")
     set_target_properties(networkextension PROPERTIES
         XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Distribution"
         XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY[variant=Debug] "Apple Development"
         XCODE_ATTRIBUTE_CODE_SIGN_STYLE Manual
-        XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER "match AppStore org.amnezia.AmneziaVPN.network-extension"
-        XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER[variant=Debug] "match Development org.amnezia.AmneziaVPN.network-extension"
+        XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER "org.amnezia.AmneziaVPN.macOS-NE.network-extension"
+        XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER[variant=Debug] "org.amnezia.AmneziaVPN.macOS-NE.network-extension"
     )
 else()
     set_target_properties(networkextension PROPERTIES
@@ -59,15 +59,19 @@ find_library(FW_MOBILE_CORE MobileCoreServices)
 find_library(FW_UI_KIT UIKit)
 find_library(FW_LIBRESOLV libresolv.9.tbd)
 
-target_link_libraries(networkextension PRIVATE ${FW_ASSETS_LIBRARY})
-target_link_libraries(networkextension PRIVATE ${FW_MOBILE_CORE})
-target_link_libraries(networkextension PRIVATE ${FW_UI_KIT})
+
+# Set the root directory
+set(CLIENT_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
+
 target_link_libraries(networkextension PRIVATE ${FW_LIBRESOLV})
 
 target_compile_options(networkextension PRIVATE -DGROUP_ID=\"${BUILD_IOS_GROUP_IDENTIFIER}\")
 target_compile_options(networkextension PRIVATE -DNETWORK_EXTENSION=1)
 
 set(WG_APPLE_SOURCE_DIR ${CLIENT_ROOT_DIR}/3rd/amneziawg-apple/Sources)
+
+message("WG_APPLE_SOURCE_DIR is: ${WG_APPLE_SOURCE_DIR}")
+message("CLIENT_ROOT_DIR is: ${CLIENT_ROOT_DIR}")
 
 target_sources(networkextension PRIVATE
     ${WG_APPLE_SOURCE_DIR}/WireGuardKit/WireGuardAdapter.swift
@@ -98,8 +102,8 @@ target_sources(networkextension PRIVATE
     ${CLIENT_ROOT_DIR}/platforms/ios/PacketTunnelProvider+OpenVPN.swift
     ${CLIENT_ROOT_DIR}/platforms/ios/PacketTunnelProvider+Xray.swift
     ${CLIENT_ROOT_DIR}/platforms/ios/WGConfig.swift
-    ${CLIENT_ROOT_DIR}/platforms/ios/XrayConfig.swift
     ${CLIENT_ROOT_DIR}/platforms/ios/iosglue.mm
+    ${CLIENT_ROOT_DIR}/platforms/ios/XrayConfig.swift
 )
 
 target_sources(networkextension PRIVATE
@@ -125,6 +129,10 @@ target_sources(networkextension PRIVATE
 target_include_directories(networkextension PRIVATE ${CLIENT_ROOT_DIR})
 target_include_directories(networkextension PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(networkextension PRIVATE ${CLIENT_ROOT_DIR}/3rd-prebuilt/3rd-prebuilt/wireguard/ios/arm64/libwg-go.a)
+target_link_libraries(networkextension PRIVATE ${CLIENT_ROOT_DIR}/3rd-prebuilt/3rd-prebuilt/wireguard/macos/universal2/libwg-go.a)
 
-target_link_libraries(networkextension PRIVATE ${CLIENT_ROOT_DIR}/3rd-prebuilt/3rd-prebuilt/xray/HevSocks5Tunnel.xcframework)
+message(${CLIENT_ROOT_DIR})
+message(${CLIENT_ROOT_DIR}/3rd-prebuilt/3rd-prebuilt/xray/HevSocks5Tunnel.xcframework/macos-arm64_x86_64/libhev-socks5-tunnel.a)
+target_link_libraries(networkextension PRIVATE ${CLIENT_ROOT_DIR}/3rd-prebuilt/3rd-prebuilt/xray/HevSocks5Tunnel.xcframework/macos-arm64_x86_64/libhev-socks5-tunnel.a)
+
+target_include_directories(networkextension PRIVATE ${CLIENT_ROOT_DIR}/3rd-prebuilt/3rd-prebuilt/xray/HevSocks5Tunnel.xcframework/macos-arm64_x86_64/Headers)

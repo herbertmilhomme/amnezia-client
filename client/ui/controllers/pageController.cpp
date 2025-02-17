@@ -24,7 +24,7 @@ PageController::PageController(const QSharedPointer<ServersModel> &serversModel,
     AndroidController::instance()->setNavigationBarColor(initialPageNavigationBarColor);
 #endif
 
-#if defined Q_OS_MACX
+#if defined Q_OS_MACX and !defined MACOS_NE
     connect(this, &PageController::raiseMainWindow, []() { setDockIconVisible(true); });
     connect(this, &PageController::hideMainWindow, []() { setDockIconVisible(false); });
 #endif
