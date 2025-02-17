@@ -31,6 +31,7 @@ namespace PageLoader
         PageSettingsLogging,
         PageSettingsSplitTunneling,
         PageSettingsAppSplitTunneling,
+        PageSettingsKillSwitch,
 
         PageServiceSftpSettings,
         PageServiceTorWebsiteSettings,

@@ -10,8 +10,11 @@ Item {
 
     property string actionButtonImage
     property var actionButtonFunction
+    property var switcherFunction
+    property bool showSwitcher: false
 
     property alias actionButton: headerActionButton
+    property alias switcher: headerSwitcher
 
     property string headerText
     property int headerTextMaximumLineCount: 2
@@ -53,6 +56,18 @@ Item {
                 onClicked: {
                     if (actionButtonFunction && typeof actionButtonFunction === "function") {
                         actionButtonFunction()
+                    }
+                }
+            }
+
+            SwitcherType {
+                id: headerSwitcher
+                Layout.alignment: Qt.AlignRight
+                visible: root.showSwitcher
+
+                onToggled: {
+                    if (switcherFunction && typeof switcherFunction === "function") {
+                        switcherFunction(checked)
                     }
                 }
             }

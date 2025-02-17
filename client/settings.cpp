@@ -443,6 +443,16 @@ void Settings::setKillSwitchEnabled(bool enabled)
     setValue("Conf/killSwitchEnabled", enabled);
 }
 
+bool Settings::isStrictKillSwitchEnabled() const
+{
+    return value("Conf/strictKillSwitchEnabled", false).toBool();
+}
+
+void Settings::setStrictKillSwitchEnabled(bool enabled)
+{
+    setValue("Conf/strictKillSwitchEnabled", enabled);
+}
+
 QString Settings::getInstallationUuid(const bool needCreate)
 {
     auto uuid = value("Conf/installationUuid", "").toString();
