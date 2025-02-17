@@ -457,6 +457,7 @@ void AmneziaApplication::initControllers()
         QTimer::singleShot(1000, this, [this]() { m_connectionController->openConnection(); });
     }
     connect(m_settingsController.get(), &SettingsController::amneziaDnsToggled, m_serversModel.get(), &ServersModel::toggleAmneziaDns);
+    connect(m_settingsController.get(), &SettingsController::strictKillSwitchEnabledChanged, m_vpnConnection.get(), &VpnConnection::onKillswitchModeChanged);
 
     m_sitesController.reset(new SitesController(m_settings, m_vpnConnection, m_sitesModel));
     m_engine->rootContext()->setContextProperty("SitesController", m_sitesController.get());

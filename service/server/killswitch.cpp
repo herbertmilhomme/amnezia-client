@@ -43,15 +43,24 @@ bool KillSwitch::init()
         MacOSFirewall::install();
     }
 #endif
-    m_appSettigns = QSharedPointer<SecureQSettings>(new SecureQSettings(ORGANIZATION_NAME, APPLICATION_NAME, nullptr));
     if (isStrictKillSwitchEnabled()) {
         return disableAllTraffic();
     }
     return true;
 }
 
+bool KillSwitch::refresh()
+{
+    if (isStrictKillSwitchEnabled()) {
+        return disableAllTraffic();
+    }  else {
+        return disableKillSwitch();
+    }
+}
+
 bool KillSwitch::isStrictKillSwitchEnabled()
 {
+    m_appSettigns = QSharedPointer<SecureQSettings>(new SecureQSettings(ORGANIZATION_NAME, APPLICATION_NAME, nullptr));
     return m_appSettigns->value("Conf/strictKillSwitchEnabled", false).toBool();
 }
 
@@ -98,7 +107,6 @@ bool KillSwitch::disableKillSwitch() {
 #endif
 
     return true;
-
 }
 
 bool KillSwitch::disableAllTraffic() {
