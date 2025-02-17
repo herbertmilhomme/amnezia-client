@@ -33,9 +33,6 @@ KillSwitch* KillSwitch::instance()
 
 bool KillSwitch::init()
 {
-#ifdef Q_OS_WIN
-    WindowsFirewall::instance()->init();
-#endif
 #ifdef Q_OS_LINUX
     if (!LinuxFirewall::isInstalled()) {
         LinuxFirewall::install();
@@ -97,7 +94,7 @@ bool KillSwitch::disableKillSwitch() {
     if (isStrictKillSwitchEnabled()) {
         return disableAllTraffic();
     }
-    return WindowsFirewall::instance()->allowAllTraffic();
+    return WindowsFirewall::create(this)->allowAllTraffic();
 #endif
 
     return true;
@@ -106,7 +103,7 @@ bool KillSwitch::disableKillSwitch() {
 
 bool KillSwitch::disableAllTraffic() {
 #ifdef Q_OS_WIN
-    WindowsFirewall::instance()->enableKillSwitch(-1);
+    WindowsFirewall::create(this)->enableInterface(-1);
 #endif
 #ifdef Q_OS_LINUX
     if (!LinuxFirewall::isInstalled()) {
@@ -192,7 +189,7 @@ bool KillSwitch::enablePeerTraffic(const QJsonObject &configStr) {
 
            // killSwitch toggle
     if (QVariant(configStr.value(amnezia::config_key::killSwitchOption).toString()).toBool()) {
-        WindowsFirewall::instance()->enablePeerTraffic(config);
+        WindowsFirewall::create(this)->enablePeerTraffic(config);
     }
 
     WindowsDaemon::instance()->prepareActivation(config, inetAdapterIndex);
@@ -203,7 +200,7 @@ bool KillSwitch::enablePeerTraffic(const QJsonObject &configStr) {
 
 bool KillSwitch::enableKillSwitch(const QJsonObject &configStr, int vpnAdapterIndex) {
 #ifdef Q_OS_WIN
-    return WindowsFirewall::instance()->enableKillSwitch(vpnAdapterIndex);
+    return WindowsFirewall::create(this)->enableInterface(vpnAdapterIndex);
 #endif
 
 #if defined(Q_OS_LINUX) || defined(Q_OS_MACOS)
