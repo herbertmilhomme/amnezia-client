@@ -55,7 +55,20 @@ void VpnConnection::onBytesChanged(quint64 receivedBytes, quint64 sentBytes)
 void VpnConnection::onKillSwitchModeChanged(bool enabled)
 {
 #ifdef AMNEZIA_DESKTOP
+    if (!m_IpcClient) {
+        m_IpcClient = new IpcClient(this);
+    }
+
+    if (!m_IpcClient->isSocketConnected()) {
+        if (!IpcClient::init(m_IpcClient)) {
+            qWarning() << "Error occurred when init IPC client";
+            emit serviceIsNotReady();
+            return;
+        }
+    }
+
     if (IpcClient::Interface()) {
+        qDebug() << "Set KillSwitch Strict mode enabled " << enabled;
         IpcClient::Interface()->refreshKillSwitch(enabled);
     }
 #endif

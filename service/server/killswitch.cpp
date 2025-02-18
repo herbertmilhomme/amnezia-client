@@ -37,15 +37,18 @@ bool KillSwitch::init()
     if (!LinuxFirewall::isInstalled()) {
         LinuxFirewall::install();
     }
+    m_appSettigns = QSharedPointer<SecureQSettings>(new SecureQSettings(ORGANIZATION_NAME, APPLICATION_NAME, nullptr));
 #endif
 #ifdef Q_OS_MACOS
     if (!MacOSFirewall::isInstalled()) {
         MacOSFirewall::install();
     }
+    m_appSettigns = QSharedPointer<SecureQSettings>(new SecureQSettings(ORGANIZATION_NAME, APPLICATION_NAME, nullptr));
 #endif
     if (isStrictKillSwitchEnabled()) {
         return disableAllTraffic();
     }
+
     return true;
 }
 
@@ -56,6 +59,9 @@ bool KillSwitch::refresh(bool enabled)
                                + "\\" + QString(APPLICATION_NAME), QSettings::NativeFormat);
     RegHLM.setValue("strictKillSwitchEnabled", enabled);
 #endif
+
+    m_appSettigns->setValue("Conf/strictKillSwitchEnabled", enabled);
+
     if (isStrictKillSwitchEnabled()) {
         return disableAllTraffic();
     }  else {
@@ -70,7 +76,7 @@ bool KillSwitch::isStrictKillSwitchEnabled()
                              + "\\" + QString(APPLICATION_NAME), QSettings::NativeFormat);
     return RegHLM.value("strictKillSwitchEnabled", false).toBool();
 #endif
-    m_appSettigns = QSharedPointer<SecureQSettings>(new SecureQSettings(ORGANIZATION_NAME, APPLICATION_NAME, nullptr));
+    m_appSettigns->sync();
     return m_appSettigns->value("Conf/strictKillSwitchEnabled", false).toBool();
 }
 
