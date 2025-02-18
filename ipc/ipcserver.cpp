@@ -204,7 +204,7 @@ bool IpcServer::enablePeerTraffic(const QJsonObject &configStr)
     return KillSwitch::instance()->enablePeerTraffic(configStr);
 }
 
-bool IpcServer::refreshKillSwitch()
+bool IpcServer::refreshKillSwitch(bool enabled)
 {
-    return KillSwitch::instance()->refresh();
+    return KillSwitch::instance()->refresh(enabled);
 }

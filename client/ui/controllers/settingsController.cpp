@@ -256,7 +256,7 @@ bool SettingsController::isStrictKillSwitchEnabled()
 void SettingsController::toggleStrictKillSwitch(bool enable)
 {
     m_settings->setStrictKillSwitchEnabled(enable);
-    emit strictKillSwitchEnabledChanged();
+    emit strictKillSwitchEnabledChanged(enable);
 }
 
 bool SettingsController::isNotificationPermissionGranted()

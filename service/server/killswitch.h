@@ -12,7 +12,7 @@ class KillSwitch : public QObject
 public:
     static KillSwitch *instance();
     bool init();
-    bool refresh();
+    bool refresh(bool enabled);
     bool disableKillSwitch();
     bool disableAllTraffic();
     bool enablePeerTraffic( const QJsonObject &configStr);

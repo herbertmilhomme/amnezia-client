@@ -52,10 +52,12 @@ void VpnConnection::onBytesChanged(quint64 receivedBytes, quint64 sentBytes)
     emit bytesChanged(receivedBytes, sentBytes);
 }
 
-void VpnConnection::onKillswitchModeChanged()
+void VpnConnection::onKillSwitchModeChanged(bool enabled)
 {
 #ifdef AMNEZIA_DESKTOP
-    IpcClient::Interface()->refreshKillSwitch();
+    if (IpcClient::Interface()) {
+        IpcClient::Interface()->refreshKillSwitch(enabled);
+    }
 #endif
 }
 

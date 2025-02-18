@@ -49,8 +49,13 @@ bool KillSwitch::init()
     return true;
 }
 
-bool KillSwitch::refresh()
+bool KillSwitch::refresh(bool enabled)
 {
+#ifdef Q_OS_WIN
+    QSettings RegHLM("HKEY_LOCAL_MACHINE\\Software\\" + QString(ORGANIZATION_NAME)
+                               + "\\" + QString(APPLICATION_NAME), QSettings::NativeFormat);
+    RegHLM.setValue("strictKillSwitchEnabled", enabled);
+#endif
     if (isStrictKillSwitchEnabled()) {
         return disableAllTraffic();
     }  else {
@@ -60,6 +65,11 @@ bool KillSwitch::refresh()
 
 bool KillSwitch::isStrictKillSwitchEnabled()
 {
+#ifdef Q_OS_WIN
+    QSettings RegHLM("HKEY_LOCAL_MACHINE\\Software\\" + QString(ORGANIZATION_NAME)
+                             + "\\" + QString(APPLICATION_NAME), QSettings::NativeFormat);
+    return RegHLM.value("strictKillSwitchEnabled", false).toBool();
+#endif
     m_appSettigns = QSharedPointer<SecureQSettings>(new SecureQSettings(ORGANIZATION_NAME, APPLICATION_NAME, nullptr));
     return m_appSettigns->value("Conf/strictKillSwitchEnabled", false).toBool();
 }

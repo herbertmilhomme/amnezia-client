@@ -55,7 +55,7 @@ public slots:
     void addRoutes(const QStringList &ips);
     void deleteRoutes(const QStringList &ips);
     void flushDns();
-    void onKillswitchModeChanged();
+    void onKillSwitchModeChanged(bool enabled);
 
 signals:
     void bytesChanged(quint64 receivedBytes, quint64 sentBytes);

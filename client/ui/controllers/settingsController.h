@@ -104,7 +104,7 @@ signals:
     void secondaryDnsChanged();
     void loggingStateChanged();
     void killSwitchEnabledChanged();
-    void strictKillSwitchEnabledChanged();
+    void strictKillSwitchEnabledChanged(bool enabled);
 
     void restoreBackupFinished();
     void changeSettingsFinished(const QString &finishedMessage);
