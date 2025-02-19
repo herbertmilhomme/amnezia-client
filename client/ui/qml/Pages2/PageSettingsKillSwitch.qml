@@ -62,6 +62,9 @@ PageType {
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
 
+                selectedTextColor: AmneziaStyle.color.paleGray
+                selectedTextDisabledColor: AmneziaStyle.color.mutedGray
+                radioButtonPressedSource: "qrc:/images/controls/radio-button.svg"
                 enabled: SettingsController.isKillSwitchEnabled && !ConnectionController.isConnected
                 checked: !SettingsController.strictKillSwitchEnabled
 
@@ -81,6 +84,9 @@ PageType {
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
 
+                selectedTextColor: AmneziaStyle.color.paleGray
+                selectedTextDisabledColor: AmneziaStyle.color.mutedGray
+                radioButtonPressedSource: "qrc:/images/controls/radio-button.svg"
                 enabled: SettingsController.isKillSwitchEnabled && !ConnectionController.isConnected
                 checked: SettingsController.strictKillSwitchEnabled
 
