@@ -54,19 +54,19 @@ bool KillSwitch::init()
 
 bool KillSwitch::refresh(bool enabled)
 {
-#ifdef Q_OS_WIN
+#if  defined(Q_OS_WIN)
     QSettings RegHLM("HKEY_LOCAL_MACHINE\\Software\\" + QString(ORGANIZATION_NAME)
                                + "\\" + QString(APPLICATION_NAME), QSettings::NativeFormat);
     RegHLM.setValue("strictKillSwitchEnabled", enabled);
-#endif
-
+#elif
     m_appSettigns->setValue("Conf/strictKillSwitchEnabled", enabled);
-
+#endif
     if (isStrictKillSwitchEnabled()) {
         return disableAllTraffic();
     }  else {
         return disableKillSwitch();
     }
+
 }
 
 bool KillSwitch::isStrictKillSwitchEnabled()
