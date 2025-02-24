@@ -30,7 +30,7 @@ PageType {
         }
 
 
-        HeaderType {
+        BaseHeaderType {
             id: header
 
             Layout.fillWidth: true

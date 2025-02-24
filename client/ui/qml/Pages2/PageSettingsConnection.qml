@@ -36,7 +36,7 @@ PageType {
             anchors.left: parent.left
             anchors.right: parent.right
 
-            HeaderType {
+            BaseHeaderType {
                 Layout.fillWidth: true
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
