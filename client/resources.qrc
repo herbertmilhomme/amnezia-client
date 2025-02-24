@@ -143,7 +143,6 @@
         <file>ui/qml/Controls2/DropDownType.qml</file>
         <file>ui/qml/Controls2/FlickableType.qml</file>
         <file>ui/qml/Controls2/Header2Type.qml</file>
-        <file>ui/qml/Controls2/HeaderType.qml</file>
         <file>ui/qml/Controls2/BaseHeaderType.qml</file>
         <file>ui/qml/Controls2/HeaderTypeWithButton.qml</file>
         <file>ui/qml/Controls2/HeaderTypeWithSwitcher.qml</file>
