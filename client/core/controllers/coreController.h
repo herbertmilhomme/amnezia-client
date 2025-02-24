@@ -79,6 +79,7 @@ private:
     void initAutoConnectHandler();
     void initAmneziaDnsToggledHandler();
     void initPrepareConfigHandler();
+    void initStrictKillSwitchHandler();
 
     QQmlApplicationEngine *m_engine {}; // TODO use parent child system here?
     std::shared_ptr<Settings> m_settings;
