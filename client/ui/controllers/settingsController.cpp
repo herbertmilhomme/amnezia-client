@@ -246,6 +246,12 @@ void SettingsController::toggleKillSwitch(bool enable)
 {
     m_settings->setKillSwitchEnabled(enable);
     emit killSwitchEnabledChanged();
+    if (enable == false) {
+        emit strictKillSwitchEnabledChanged(false);
+    } else {
+        emit strictKillSwitchEnabledChanged(isStrictKillSwitchEnabled());
+    }
+
 }
 
 bool SettingsController::isStrictKillSwitchEnabled()
