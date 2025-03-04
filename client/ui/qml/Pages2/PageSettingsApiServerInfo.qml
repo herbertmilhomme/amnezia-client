@@ -28,7 +28,7 @@ PageType {
 
         readonly property string title: qsTr("Subscription status")
         readonly property string contentKey: "subscriptionStatus"
-        readonly property string objectImageSource: "qrc:/images/controls/map-pin.svg"
+        readonly property string objectImageSource: "qrc:/images/controls/info.svg"
     }
 
     QtObject {
@@ -42,9 +42,9 @@ PageType {
     QtObject {
         id: deviceCountObject
 
-        readonly property string title: qsTr("Connected devices")
+        readonly property string title: qsTr("Active connections")
         readonly property string contentKey: "connectedDevices"
-        readonly property string objectImageSource: "qrc:/images/controls/gauge.svg"
+        readonly property string objectImageSource: "qrc:/images/controls/monitor.svg"
     }
 
     property var processedServer
@@ -158,11 +158,28 @@ PageType {
 
             readonly property bool isVisibleForAmneziaFree: ApiAccountInfoModel.data("isComponentVisible")
 
+            WarningType {
+                id: warning
+
+                Layout.topMargin: 32
+                Layout.rightMargin: 16
+                Layout.leftMargin: 16
+                Layout.fillWidth: true
+
+                backGroundColor: AmneziaStyle.color.translucentRichBrown
+
+                textString: qsTr("Configurations have been updated for some countries. Download and install the updated configuration files")
+
+                iconPath: "qrc:/images/controls/alert-circle.svg"
+
+                visible: ApiAccountInfoModel.data("hasExpiredWorker")
+            }
+
             LabelWithButtonType {
                 id: vpnKey
 
                 Layout.fillWidth: true
-                Layout.topMargin: 32
+                Layout.topMargin: warning.visible ? 16 : 32
 
                 visible: false //footer.isVisibleForAmneziaFree
 
@@ -192,18 +209,38 @@ PageType {
 
             LabelWithButtonType {
                 Layout.fillWidth: true
-                Layout.topMargin: 32
+                Layout.topMargin: warning.visible ? 16 : 32
 
                 visible: footer.isVisibleForAmneziaFree
 
                 text: qsTr("Configuration files")
 
-                descriptionText: qsTr("To connect a router or AmneziaWG application")
+                descriptionText: qsTr("Manage configuration files")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
 
                 clickedFunction: function() {
                     ApiSettingsController.updateApiCountryModel()
                     PageController.goToPage(PageEnum.PageSettingsApiNativeConfigs)
+                }
+            }
+
+            DividerType {
+                visible: footer.isVisibleForAmneziaFree
+            }
+
+            LabelWithButtonType {
+                Layout.fillWidth: true
+
+                visible: footer.isVisibleForAmneziaFree
+
+                text: qsTr("Active devices")
+
+                descriptionText: qsTr("Manage currently connected devices")
+                rightImageSource: "qrc:/images/controls/chevron-right.svg"
+
+                clickedFunction: function() {
+                    ApiSettingsController.updateApiDevicesModel()
+                    PageController.goToPage(PageEnum.PageSettingsApiDevices)
                 }
             }
 
@@ -228,6 +265,8 @@ PageType {
             LabelWithButtonType {
                 Layout.fillWidth: true
 
+                visible: footer.isVisibleForAmneziaFree
+
                 text: qsTr("How to connect on another device")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
 
@@ -236,7 +275,9 @@ PageType {
                 }
             }
 
-            DividerType {}
+            DividerType {
+                visible: footer.isVisibleForAmneziaFree
+            }
 
             BasicButtonType {
                 id: resetButton
@@ -288,16 +329,17 @@ PageType {
                 pressedColor: AmneziaStyle.color.sheerWhite
                 textColor: AmneziaStyle.color.vibrantRed
 
-                text: qsTr("Deactivate the subscription on this device")
+                text: qsTr("Unlink this device")
 
                 clickedFunc: function() {
-                    var headerText = qsTr("Deactivate the subscription on this device?")
+                    var headerText = qsTr("Are you sure you want to unlink this device?")
+                    var descriptionText = qsTr("This will unlink the device from your subscription. You can reconnect it anytime by pressing Connect.")
                     var yesButtonText = qsTr("Continue")
                     var noButtonText = qsTr("Cancel")
 
                     var yesButtonFunction = function() {
                         if (ServersModel.isDefaultServerCurrentlyProcessed() && ConnectionController.isConnected) {
-                            PageController.showNotificationMessage(qsTr("The next time the “Connect” button is pressed, the device will be activated again"))
+                            PageController.showNotificationMessage(qsTr("Cannot unlink device during active connection"))
                         } else {
                             PageController.showBusyIndicator(true)
                             if (ApiConfigsController.deactivateDevice()) {
@@ -309,7 +351,7 @@ PageType {
                     var noButtonFunction = function() {
                     }
 
-                    showQuestionDrawer(headerText, "", yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
+                    showQuestionDrawer(headerText, descriptionText, yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
                 }
             }
 

@@ -48,8 +48,8 @@ QVariant ApiAccountInfoModel::data(const QModelIndex &index, int role) const
     }
     case ServiceDescriptionRole: {
         if (m_accountInfoData.configType == apiDefs::ConfigType::AmneziaPremiumV2) {
-            return tr("Classic VPN for comfortable work, downloading large files and watching videos. Works for any sites. Speed up to 200 "
-                      "Mb/s");
+            return tr("Classic VPN for seamless work, downloading large files, and watching videos. Access all websites and online resources. "
+                      "Speeds up to 200 Mbps");
         } else if (m_accountInfoData.configType == apiDefs::ConfigType::AmneziaFreeV3) {
             return tr("Free unlimited access to a basic set of websites such as Facebook, Instagram, Twitter (X), Discord, Telegram and "
                       "more. YouTube is not included in the free plan.");
@@ -57,6 +57,19 @@ QVariant ApiAccountInfoModel::data(const QModelIndex &index, int role) const
     }
     case IsComponentVisibleRole: {
         return m_accountInfoData.configType == apiDefs::ConfigType::AmneziaPremiumV2;
+    }
+    case HasExpiredWorkerRole: {
+        for (int i = 0; i < m_issuedConfigsInfo.size(); i++) {
+            QJsonObject issuedConfigObject = m_issuedConfigsInfo.at(i).toObject();
+
+            auto lastDownloaded = QDateTime::fromString(issuedConfigObject.value(apiDefs::key::lastDownloaded).toString());
+            auto workerLastUpdated = QDateTime::fromString(issuedConfigObject.value(apiDefs::key::workerLastUpdated).toString());
+
+            if (lastDownloaded < workerLastUpdated) {
+                return true;
+            }
+        }
+        return false;
     }
     }
 
@@ -124,6 +137,7 @@ QHash<int, QByteArray> ApiAccountInfoModel::roleNames() const
     roles[ConnectedDevicesRole] = "connectedDevices";
     roles[ServiceDescriptionRole] = "serviceDescription";
     roles[IsComponentVisibleRole] = "isComponentVisible";
+    roles[HasExpiredWorkerRole] = "hasExpiredWorker";
 
     return roles;
 }

@@ -99,7 +99,7 @@ PageType {
                 Layout.leftMargin: 16
 
                 headerText: qsTr("How to connect on another device")
-                descriptionText: qsTr("Instructions on the Amnezia website")
+                descriptionText: qsTr("Setup guides on the Amnezia website")
             }
         }
 
@@ -107,7 +107,6 @@ PageType {
             width: listView.width
 
             LabelWithButtonType {
-                id: telegramButton
                 Layout.fillWidth: true
                 Layout.topMargin: 6
 
