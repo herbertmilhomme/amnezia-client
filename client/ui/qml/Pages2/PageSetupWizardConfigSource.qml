@@ -163,12 +163,12 @@ PageType {
                 Layout.rightMargin: 16
                 Layout.leftMargin: 16
 
-                visible: textKey.textFieldText !== ""
+                visible: textKey.textField.text !== ""
 
                 text: qsTr("Continue")
 
                 clickedFunc: function() {
-                    if (ImportController.extractConfigFromData(textKey.textFieldText)) {
+                    if (ImportController.extractConfigFromData(textKey.textField.text)) {
                         PageController.goToPage(PageEnum.PageSetupWizardViewConfig)
                     }
                 }
@@ -217,6 +217,8 @@ PageType {
                 Layout.alignment: Qt.AlignHCenter
                 implicitHeight: 32
 
+                visible: Qt.platform.os !== "ios"
+
                 defaultColor: AmneziaStyle.color.transparent
                 hoveredColor: AmneziaStyle.color.translucentWhite
                 pressedColor: AmneziaStyle.color.sheerWhite
@@ -252,7 +254,7 @@ PageType {
         property bool isVisible: true
         property var handler: function() {
             PageController.showBusyIndicator(true)
-            var result = InstallController.fillAvailableServices()
+            var result = ApiConfigsController.fillAvailableServices()
             PageController.showBusyIndicator(false)
             if (result) {
                 PageController.goToPage(PageEnum.PageSetupWizardApiServicesList)
@@ -330,7 +332,7 @@ PageType {
         property string title: qsTr("I have nothing")
         property string description: qsTr("")
         property string imageSource: "qrc:/images/controls/help-circle.svg"
-        property bool isVisible: PageController.isStartPageVisible()
+        property bool isVisible: PageController.isStartPageVisible() && Qt.platform.os !== "ios"
         property var handler: function() {
             Qt.openUrlExternally(LanguageModel.getCurrentSiteUrl())
         }

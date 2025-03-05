@@ -70,7 +70,7 @@ PageType {
 
                 imageSource: "qrc:/images/controls/history.svg"
                 leftText: qsTr("Work period")
-                rightText: ApiServicesModel.getSelectedServiceData("workPeriod")
+                rightText: ApiServicesModel.getSelectedServiceData("timeLimit")
 
                 visible: rightText !== ""
             }
@@ -138,7 +138,7 @@ PageType {
                 PageController.closePage()
             } else {
                 PageController.showBusyIndicator(true)
-                InstallController.installServiceFromApi()
+                ApiConfigsController.importServiceFromGateway()
                 PageController.showBusyIndicator(false)
             }
         }
