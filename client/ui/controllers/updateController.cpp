@@ -18,15 +18,13 @@ namespace
 #ifdef Q_OS_MACOS
     const QString installerPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/AmneziaVPN.dmg";
 #elif defined Q_OS_WINDOWS
-    const QString installerPath =
-            QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/AmneziaVPN_installer.exe";
+    const QString installerPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/AmneziaVPN_installer.exe";
 #elif defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
     const QString installerPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/AmneziaVPN.tar.zip";
 #endif
 }
 
-UpdateController::UpdateController(const std::shared_ptr<Settings> &settings, QObject *parent)
-    : QObject(parent), m_settings(settings)
+UpdateController::UpdateController(const std::shared_ptr<Settings> &settings, QObject *parent) : QObject(parent), m_settings(settings)
 {
 }
 
@@ -37,7 +35,34 @@ QString UpdateController::getHeaderText()
 
 QString UpdateController::getChangelogText()
 {
-    return m_changelogText;
+    QStringList lines = m_changelogText.split("\n");
+    QStringList filteredChangeLogText;
+    bool add = false;
+    QString osSection;
+
+#ifdef Q_OS_WINDOWS
+    osSection = "### Windows";
+#elif defined(Q_OS_MACOS)
+    osSection = "### macOS";
+#elif defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
+    osSection = "### Linux";
+#endif
+
+    for (const QString &line : lines) {
+        if (line.startsWith("### General")) {
+            add = true;
+        } else if (line.startsWith("### ") && line != osSection) {
+            add = false;
+        } else if (line == osSection) {
+            add = true;
+        }
+
+        if (add) {
+            filteredChangeLogText.append(line);
+        }
+    }
+
+    return filteredChangeLogText.join("\n");
 }
 
 void UpdateController::checkForUpdates()
@@ -47,7 +72,7 @@ void UpdateController::checkForUpdates()
     QString endpoint = "https://api.github.com/repos/amnezia-vpn/amnezia-client/releases/latest";
     request.setUrl(endpoint);
 
-    QNetworkReply *reply = amnApp->manager()->get(request);
+    QNetworkReply *reply = amnApp->networkManager()->get(request);
 
     QObject::connect(reply, &QNetworkReply::finished, [this, reply]() {
         if (reply->error() == QNetworkReply::NoError) {
@@ -127,21 +152,19 @@ void UpdateController::runInstaller()
     request.setTransferTimeout(7000);
     request.setUrl(m_downloadUrl);
 
-    QNetworkReply *reply = amnApp->manager()->get(request);
+    QNetworkReply *reply = amnApp->networkManager()->get(request);
 
     QObject::connect(reply, &QNetworkReply::finished, [this, reply]() {
         if (reply->error() == QNetworkReply::NoError) {
             QFile file(installerPath);
             if (!file.open(QIODevice::WriteOnly)) {
-                logger.error() << "Failed to open installer file for writing:" << installerPath
-                               << "Error:" << file.errorString();
+                logger.error() << "Failed to open installer file for writing:" << installerPath << "Error:" << file.errorString();
                 reply->deleteLater();
                 return;
             }
 
             if (file.write(reply->readAll()) == -1) {
-                logger.error() << "Failed to write installer data to file:" << installerPath
-                               << "Error:" << file.errorString();
+                logger.error() << "Failed to write installer data to file:" << installerPath << "Error:" << file.errorString();
                 file.close();
                 reply->deleteLater();
                 return;
@@ -149,13 +172,13 @@ void UpdateController::runInstaller()
 
             file.close();
 
-#if defined(Q_OS_WINDOWS)
+    #if defined(Q_OS_WINDOWS)
             runWindowsInstaller(installerPath);
-#elif defined(Q_OS_MACOS)
+    #elif defined(Q_OS_MACOS)
             runMacInstaller(installerPath);
-#elif defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
+    #elif defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
             runLinuxInstaller(installerPath);
-#endif
+    #endif
         } else {
             if (reply->error() == QNetworkReply::NetworkError::OperationCanceledError
                 || reply->error() == QNetworkReply::NetworkError::TimeoutError) {
@@ -228,8 +251,8 @@ int UpdateController::runMacInstaller(const QString &installerPath)
 
     // Start detached process
     qint64 pid;
-    bool success = QProcess::startDetached(
-            "/bin/bash", QStringList() << scriptPath << extractDir.path() << installerPath, extractDir.path(), &pid);
+    bool success =
+            QProcess::startDetached("/bin/bash", QStringList() << scriptPath << extractDir.path() << installerPath, extractDir.path(), &pid);
 
     if (success) {
         logger.info() << "Installation process started with PID:" << pid;
@@ -273,8 +296,8 @@ int UpdateController::runLinuxInstaller(const QString &installerPath)
 
     // Start detached process
     qint64 pid;
-    bool success = QProcess::startDetached(
-            "/bin/bash", QStringList() << scriptPath << extractDir.path() << installerPath, extractDir.path(), &pid);
+    bool success =
+            QProcess::startDetached("/bin/bash", QStringList() << scriptPath << extractDir.path() << installerPath, extractDir.path(), &pid);
 
     if (success) {
         logger.info() << "Installation process started with PID:" << pid;

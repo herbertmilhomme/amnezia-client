@@ -141,6 +141,9 @@ void CoreController::initControllers()
 
     m_apiConfigsController.reset(new ApiConfigsController(m_serversModel, m_apiServicesModel, m_settings));
     m_engine->rootContext()->setContextProperty("ApiConfigsController", m_apiConfigsController.get());
+
+    m_updateController.reset(new UpdateController(m_settings));
+    m_engine->rootContext()->setContextProperty("UpdateController", m_updateController.get());
 }
 
 void CoreController::initAndroidController()
@@ -213,6 +216,7 @@ void CoreController::initSignalHandlers()
     initAutoConnectHandler();
     initAmneziaDnsToggledHandler();
     initPrepareConfigHandler();
+    initUpdateFoundHandler();
 }
 
 void CoreController::initNotificationHandler()
@@ -337,6 +341,16 @@ void CoreController::initPrepareConfigHandler()
 
         m_connectionController->openConnection();
     });
+}
+
+void CoreController::initUpdateFoundHandler()
+{
+#if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
+    connect(m_updateController.get(), &UpdateController::updateFound, this,
+            [this]() { QTimer::singleShot(1000, this, [this]() { m_pageController->showChangelogDrawer(); }); });
+
+    m_updateController->checkForUpdates();
+#endif
 }
 
 QSharedPointer<PageController> CoreController::pageController() const
