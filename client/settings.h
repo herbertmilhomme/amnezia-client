@@ -213,6 +213,10 @@ public:
 
     bool isKillSwitchEnabled() const;
     void setKillSwitchEnabled(bool enabled);
+
+    bool isStrictKillSwitchEnabled() const;
+    void setStrictKillSwitchEnabled(bool enabled);
+
     QString getInstallationUuid(const bool needCreate);
 
     void resetGatewayEndpoint();

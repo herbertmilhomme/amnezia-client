@@ -213,6 +213,7 @@ void CoreController::initSignalHandlers()
     initAutoConnectHandler();
     initAmneziaDnsToggledHandler();
     initPrepareConfigHandler();
+    initStrictKillSwitchHandler();
 }
 
 void CoreController::initNotificationHandler()
@@ -337,6 +338,12 @@ void CoreController::initPrepareConfigHandler()
 
         m_connectionController->openConnection();
     });
+}
+
+void CoreController::initStrictKillSwitchHandler()
+{
+    connect(m_settingsController.get(), &SettingsController::strictKillSwitchEnabledChanged, 
+            m_vpnConnection.get(), &VpnConnection::onKillSwitchModeChanged);
 }
 
 QSharedPointer<PageController> CoreController::pageController() const
