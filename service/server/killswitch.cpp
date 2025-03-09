@@ -214,7 +214,14 @@ bool KillSwitch::enablePeerTraffic(const QJsonObject &configStr) {
         config.m_vpnDisabledApps.append(i.toString());
     }
 
-           // killSwitch toggle
+    for (auto dns : configStr.value(amnezia::config_key::allowedDnsServers).toArray()) {
+        if (!dns.isString()) {
+            break;
+        }
+        config.m_allowedDnsServers.append(dns.toString());
+    }
+
+    // killSwitch toggle
     if (QVariant(configStr.value(amnezia::config_key::killSwitchOption).toString()).toBool()) {
         WindowsFirewall::create(this)->enablePeerTraffic(config);
     }
@@ -280,6 +287,14 @@ bool KillSwitch::enableKillSwitch(const QJsonObject &configStr, int vpnAdapterIn
     dnsServers.append(configStr.value(amnezia::config_key::dns2).toString());
     dnsServers.append("127.0.0.1");
     dnsServers.append("127.0.0.53");
+    
+    for (auto dns : configStr.value(amnezia::config_key::allowedDnsServers).toArray()) {
+        if (!dns.isString()) {
+            break;
+        }
+        dnsServers.append(dns.toString());
+    }
+    
     LinuxFirewall::updateDNSServers(dnsServers);
     LinuxFirewall::setAnchorEnabled(LinuxFirewall::IPv4, QStringLiteral("320.allowDNS"), true);
     LinuxFirewall::setAnchorEnabled(LinuxFirewall::Both, QStringLiteral("400.allowPIA"), true);
@@ -307,6 +322,14 @@ bool KillSwitch::enableKillSwitch(const QJsonObject &configStr, int vpnAdapterIn
     QStringList dnsServers;
     dnsServers.append(configStr.value(amnezia::config_key::dns1).toString());
     dnsServers.append(configStr.value(amnezia::config_key::dns2).toString());
+    
+    for (auto dns : configStr.value(amnezia::config_key::allowedDnsServers).toArray()) {
+        if (!dns.isString()) {
+            break;
+        }
+        dnsServers.append(dns.toString());
+    }
+    
     MacOSFirewall::setAnchorEnabled(QStringLiteral("310.blockDNS"), true);
     MacOSFirewall::setAnchorTable(QStringLiteral("310.blockDNS"), true, QStringLiteral("dnsaddr"), dnsServers);
 #endif

@@ -93,6 +93,20 @@ PageType {
             }
 
             DividerType {}
+            
+            LabelWithButtonType {
+                Layout.topMargin: 32
+                Layout.fillWidth: true
+
+                enabled: true
+                text: qsTr("Kill Switch Exceptions")
+                descriptionText: qsTr("IP addresses that will remain accessible even when Kill Switch is activated")
+                rightImageSource: "qrc:/images/controls/chevron-right.svg"
+
+                clickedFunction: function() {
+                    PageController.goToPage(PageEnum.PageSettingsKillSwitchExceptions)
+                }
+            }
         }
     }
 } 

@@ -38,7 +38,8 @@ namespace PageLoader
         PageSettingsApiInstructions,
         PageSettingsApiNativeConfigs,
         PageSettingsApiDevices,
-
+        PageSettingsKillSwitchExceptions,
+        
         PageServiceSftpSettings,
         PageServiceTorWebsiteSettings,
         PageServiceDnsSettings,

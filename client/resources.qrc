@@ -129,6 +129,7 @@
         <file>ui/qml/Components/SettingsContainersListView.qml</file>
         <file>ui/qml/Components/ShareConnectionDrawer.qml</file>
         <file>ui/qml/Components/TransportProtoSelector.qml</file>
+        <file>ui/qml/Components/AddSitePanel.qml</file>
         <file>ui/qml/Config/GlobalConfig.qml</file>
         <file>ui/qml/Config/qmldir</file>
         <file>ui/qml/Controls2/BackButtonType.qml</file>
@@ -202,6 +203,7 @@
         <file>ui/qml/Pages2/PageSettingsConnection.qml</file>
         <file>ui/qml/Pages2/PageSettingsDns.qml</file>
         <file>ui/qml/Pages2/PageSettingsKillSwitch.qml</file>
+        <file>ui/qml/Pages2/PageSettingsKillSwitchExceptions.qml</file>
         <file>ui/qml/Pages2/PageSettingsLogging.qml</file>
         <file>ui/qml/Pages2/PageSettingsServerData.qml</file>
         <file>ui/qml/Pages2/PageSettingsServerInfo.qml</file>
