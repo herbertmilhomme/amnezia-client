@@ -42,8 +42,8 @@ PageType {
             Layout.fillWidth: true
             Layout.leftMargin: 16
 
-            headerText: qsTr("Kill Switch Exceptions")
-            descriptionText: qsTr("Addresses from the list will remain accessible when Kill Switch is triggered")
+            headerText: qsTr("DNS Exceptions")
+            descriptionText: qsTr("DNS servers from the list will remain accessible when Kill Switch is triggered")
         }
     }
 

@@ -56,7 +56,7 @@ bool KillSwitch::refresh(bool enabled)
 {
 #ifdef Q_OS_WIN
     QSettings RegHLM("HKEY_LOCAL_MACHINE\\Software\\" + QString(ORGANIZATION_NAME)
-                               + "\\" + QString(APPLICATION_NAME), QSettings::NativeFormat);
+                             + "\\" + QString(APPLICATION_NAME), QSettings::NativeFormat);
     RegHLM.setValue("strictKillSwitchEnabled", enabled);
 #endif
 

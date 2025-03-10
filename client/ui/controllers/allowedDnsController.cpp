@@ -11,8 +11,8 @@
 #include "core/defs.h"
 
 AllowedDnsController::AllowedDnsController(const std::shared_ptr<Settings> &settings,
-                                         const QSharedPointer<AllowedDnsModel> &allowedDnsModel, 
-                                         QObject *parent)
+                                           const QSharedPointer<AllowedDnsModel> &allowedDnsModel,
+                                           QObject *parent)
     : QObject(parent), m_settings(settings), m_allowedDnsModel(allowedDnsModel)
 {
 }

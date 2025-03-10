@@ -34,4 +34,4 @@ private:
     QStringList m_dnsServers;
 };
 
-#endif // ALLOWEDDNSMODEL_H 
+#endif // ALLOWEDDNSMODEL_H

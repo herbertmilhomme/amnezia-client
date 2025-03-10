@@ -11,8 +11,8 @@ class AllowedDnsController : public QObject
     Q_OBJECT
 public:
     explicit AllowedDnsController(const std::shared_ptr<Settings> &settings,
-                                 const QSharedPointer<AllowedDnsModel> &allowedDnsModel, 
-                                 QObject *parent = nullptr);
+                                  const QSharedPointer<AllowedDnsModel> &allowedDnsModel,
+                                  QObject *parent = nullptr);
 
 public slots:
     void addDns(QString ip);

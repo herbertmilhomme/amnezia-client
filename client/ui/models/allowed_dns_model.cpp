@@ -83,4 +83,4 @@ QHash<int, QByteArray> AllowedDnsModel::roleNames() const
 void AllowedDnsModel::fillDnsServers()
 {
     m_dnsServers = m_settings->allowedDnsServers();
-} 
+}
