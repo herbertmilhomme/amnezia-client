@@ -7,7 +7,7 @@
 #include <QString>
 #include <QTemporaryDir>
 #include <QTemporaryFile>
-#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS) || defined(MACOS_NE)
+#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
     #include <QGuiApplication>
 #else
     #include <QApplication>
