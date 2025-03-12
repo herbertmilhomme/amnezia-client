@@ -212,6 +212,7 @@ if(LINUX)
         ${CMAKE_CURRENT_SOURCE_DIR}/../../client/platforms/linux/linuxnetworkwatcher.h
         ${CMAKE_CURRENT_SOURCE_DIR}/../../client/platforms/linux/linuxnetworkwatcherworker.h
         ${CMAKE_CURRENT_SOURCE_DIR}/../../client/platforms/linux/linuxdependencies.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../client/platforms/linux/linuxpingsender.h 
         ${CMAKE_CURRENT_SOURCE_DIR}/../../client/platforms/linux/daemon/iputilslinux.h
         ${CMAKE_CURRENT_SOURCE_DIR}/../../client/platforms/linux/daemon/dbustypeslinux.h
         ${CMAKE_CURRENT_SOURCE_DIR}/../../client/platforms/linux/daemon/linuxdaemon.h
@@ -226,6 +227,7 @@ if(LINUX)
         ${CMAKE_CURRENT_SOURCE_DIR}/../../client/platforms/linux/linuxnetworkwatcher.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../../client/platforms/linux/linuxnetworkwatcherworker.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../../client/platforms/linux/linuxdependencies.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../client/platforms/linux/linuxpingsender.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../../client/platforms/linux/daemon/dnsutilslinux.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../../client/platforms/linux/daemon/iputilslinux.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../../client/platforms/linux/daemon/linuxdaemon.cpp

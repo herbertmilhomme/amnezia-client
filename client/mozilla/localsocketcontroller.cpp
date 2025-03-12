@@ -13,6 +13,7 @@
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QStandardPaths>
+#include <QThread>
 
 #include "ipaddress.h"
 #include "leakdetector.h"
@@ -48,6 +49,15 @@ LocalSocketController::LocalSocketController() {
   m_initializingTimer.setSingleShot(true);
   connect(&m_initializingTimer, &QTimer::timeout, this,
           &LocalSocketController::initializeInternal);
+
+  connect(&m_pingHelper, &PingHelper::connectionLose, this, [this]() {
+      logger.debug() << "Connection Lose";
+      m_pingHelper.stop();
+      this->deactivate();
+      QThread::msleep(3000);
+      this->activate(m_RawConfig);
+  });
+
 }
 
 LocalSocketController::~LocalSocketController() {
@@ -115,6 +125,8 @@ void LocalSocketController::daemonConnected() {
 }
 
 void LocalSocketController::activate(const QJsonObject &rawConfig) {
+
+  m_RawConfig = rawConfig;
 
   QString protocolName = rawConfig.value("protocol").toString();
 
@@ -258,6 +270,7 @@ void LocalSocketController::activate(const QJsonObject &rawConfig) {
     json.insert(amnezia::config_key::transportPacketMagicHeader, wgConfig.value(amnezia::config_key::transportPacketMagicHeader));
   }
 
+
   write(json);
 }
 
@@ -362,6 +375,8 @@ void LocalSocketController::parseCommand(const QByteArray& command) {
     return;
   }
 
+  qDebug() << command;
+
   QJsonObject obj = json.object();
   QJsonValue typeValue = obj.value("type");
   if (!typeValue.isString()) {
@@ -406,6 +421,7 @@ void LocalSocketController::parseCommand(const QByteArray& command) {
   }
 
   if (type == "status") {
+
     QJsonValue serverIpv4Gateway = obj.value("serverIpv4Gateway");
     if (!serverIpv4Gateway.isString()) {
       logger.error() << "Unexpected serverIpv4Gateway value";
@@ -417,6 +433,8 @@ void LocalSocketController::parseCommand(const QByteArray& command) {
       logger.error() << "Unexpected deviceIpv4Address value";
       return;
     }
+
+    m_pingHelper.start(serverIpv4Gateway.toString(), deviceIpv4Address.toString());
 
     QJsonValue txBytes = obj.value("txBytes");
     if (!txBytes.isDouble()) {
@@ -451,6 +469,7 @@ void LocalSocketController::parseCommand(const QByteArray& command) {
     logger.debug() << "Handshake completed with:"
                    << pubkey.toString();
     emit connected(pubkey.toString());
+    checkStatus();
     return;
   }
 
