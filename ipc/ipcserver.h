@@ -6,6 +6,7 @@
 #include <QRemoteObjectNode>
 #include <QJsonObject>
 #include "../client/daemon/interfaceconfig.h"
+#include "../client/mozilla/pinghelper.h"
 
 #include "ipc.h"
 #include "ipcserverprocess.h"
@@ -38,6 +39,11 @@ public:
     virtual bool enableKillSwitch(const QJsonObject &excludeAddr, int vpnAdapterIndex) override;
     virtual bool disableKillSwitch() override;
     virtual bool updateResolvers(const QString& ifname, const QList<QHostAddress>& resolvers) override;
+    virtual bool startNetworkCheck(const QString& serverIpv4Gateway, const QString& deviceIpv4Address) override;
+    virtual bool stopNetworkCheck() override;
+
+signals:
+    void ConnectionLose();
 
 private:
     int m_localpid = 0;
@@ -57,6 +63,8 @@ private:
     };
 
     QMap<int, ProcessDescriptor> m_processes;
+    PingHelper m_pingHelper;
+
 };
 
 #endif // IPCSERVER_H

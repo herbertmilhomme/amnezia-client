@@ -33,14 +33,9 @@ set(HEADERS ${HEADERS}
 # Mozilla headres
 set(HEADERS ${HEADERS}
     ${CLIENT_ROOT_DIR}/mozilla/models/server.h
-    ${CLIENT_ROOT_DIR}/mozilla/dnspingsender.h
-    ${CLIENT_ROOT_DIR}/mozilla/pinghelper.h
-    ${CLIENT_ROOT_DIR}/mozilla/pingsender.h
-    ${CLIENT_ROOT_DIR}/mozilla/pingsenderfactory.h
     ${CLIENT_ROOT_DIR}/mozilla/shared/ipaddress.h
     ${CLIENT_ROOT_DIR}/mozilla/shared/leakdetector.h
     ${CLIENT_ROOT_DIR}/mozilla/controllerimpl.h
-    ${CLIENT_ROOT_DIR}/mozilla/localsocketcontroller.h
 )
 
 if(NOT IOS)
@@ -88,13 +83,8 @@ set(SOURCES ${SOURCES}
 # Mozilla sources
 set(SOURCES ${SOURCES}
     ${CLIENT_ROOT_DIR}/mozilla/models/server.cpp
-    ${CLIENT_ROOT_DIR}/mozilla/dnspingsender.cpp
-    ${CLIENT_ROOT_DIR}/mozilla/pinghelper.cpp
-    ${CLIENT_ROOT_DIR}/mozilla/pingsender.cpp
-    ${CLIENT_ROOT_DIR}/mozilla/pingsenderfactory.cpp
     ${CLIENT_ROOT_DIR}/mozilla/shared/ipaddress.cpp
     ${CLIENT_ROOT_DIR}/mozilla/shared/leakdetector.cpp
-    ${CLIENT_ROOT_DIR}/mozilla/localsocketcontroller.cpp
 )
 
 if(NOT IOS)
@@ -155,39 +145,17 @@ set(SOURCES ${SOURCES}
     ${UI_CONTROLLERS_CPP}
 )
 
-if (LINUX)
-    set(HEADERS ${HEADERS}
-        ${CLIENT_ROOT_DIR}/platforms/linux/linuxpingsender.h
-    )
-
-    set(SOURCES ${SOURCES}
-        ${CLIENT_ROOT_DIR}/platforms/linux/linuxpingsender.cpp
-    )
-endif()
-
 if(WIN32)
     set(HEADERS ${HEADERS}
         ${CLIENT_ROOT_DIR}/protocols/ikev2_vpn_protocol_windows.h
-        ${CLIENT_ROOT_DIR}/platforms/windows/windowspingsender.h
     )
 
     set(SOURCES ${SOURCES}
         ${CLIENT_ROOT_DIR}/protocols/ikev2_vpn_protocol_windows.cpp
-        ${CLIENT_ROOT_DIR}/platforms/windows/windowspingsender.cpp
     )
 
     set(RESOURCES ${RESOURCES}
         ${CMAKE_CURRENT_BINARY_DIR}/amneziavpn.rc
-    )
-endif()
-
-if (APPLE AND NOT IOS AND NOT MACOS_NE)
-    set(HEADERS ${HEADERS}
-        ${CLIENT_ROOT_DIR}/platforms/macos/macospingsender.h
-    )
-
-    set(SOURCES ${SOURCES}
-        ${CLIENT_ROOT_DIR}/platforms/macos/macosspingsender.cpp
     )
 endif()
 
@@ -205,11 +173,13 @@ if(WIN32 OR (APPLE AND NOT IOS) OR (LINUX AND NOT ANDROID))
         ${CLIENT_ROOT_DIR}/protocols/wireguardprotocol.h
         ${CLIENT_ROOT_DIR}/protocols/xrayprotocol.h
         ${CLIENT_ROOT_DIR}/protocols/awgprotocol.h
+        ${CLIENT_ROOT_DIR}/mozilla/localsocketcontroller.h
     )
 
     set(SOURCES ${SOURCES}
         ${CLIENT_ROOT_DIR}/core/ipcclient.cpp
         ${CLIENT_ROOT_DIR}/core/privileged_process.cpp
+        ${CLIENT_ROOT_DIR}/mozilla/localsocketcontroller.cpp
         ${CLIENT_ROOT_DIR}/ui/systemtray_notificationhandler.cpp
         ${CLIENT_ROOT_DIR}/protocols/openvpnprotocol.cpp
         ${CLIENT_ROOT_DIR}/protocols/openvpnovercloakprotocol.cpp

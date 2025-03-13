@@ -56,7 +56,6 @@ set(HEADERS ${HEADERS}
 
     ${CMAKE_CURRENT_LIST_DIR}/../../client/mozilla/controllerimpl.h
     ${CMAKE_CURRENT_LIST_DIR}/../../client/mozilla/dnspingsender.h
-    ${CMAKE_CURRENT_LIST_DIR}/../../client/mozilla/localsocketcontroller.h
     ${CMAKE_CURRENT_LIST_DIR}/../../client/mozilla/networkwatcher.h
     ${CMAKE_CURRENT_LIST_DIR}/../../client/mozilla/networkwatcherimpl.h
     ${CMAKE_CURRENT_LIST_DIR}/../../client/mozilla/pinghelper.h
@@ -80,7 +79,6 @@ set(SOURCES ${SOURCES}
     ${CMAKE_CURRENT_LIST_DIR}/../../client/mozilla/shared/leakdetector.cpp
 
     ${CMAKE_CURRENT_LIST_DIR}/../../client/mozilla/dnspingsender.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/../../client/mozilla/localsocketcontroller.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../../client/mozilla/networkwatcher.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../../client/mozilla/pinghelper.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../../client/mozilla/pingsender.cpp

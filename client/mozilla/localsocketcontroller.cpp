@@ -21,6 +21,8 @@
 #include "models/server.h"
 #include "daemon/daemonerrors.h"
 
+#include "core/ipcclient.h"
+
 #include "protocols/protocols_defs.h"
 
 // How many times do we try to reconnect.
@@ -39,7 +41,7 @@ LocalSocketController::LocalSocketController() {
   m_socket = new QLocalSocket(this);
   connect(m_socket, &QLocalSocket::connected, this,
           &LocalSocketController::daemonConnected);
-  connect(m_socket, &QLocalSocket::disconnected, this, 
+  connect(m_socket, &QLocalSocket::disconnected, this,
           [&] { errorOccurred(QLocalSocket::PeerClosedError); });
   connect(m_socket, &QLocalSocket::errorOccurred, this,
           &LocalSocketController::errorOccurred);
@@ -50,11 +52,12 @@ LocalSocketController::LocalSocketController() {
   connect(&m_initializingTimer, &QTimer::timeout, this,
           &LocalSocketController::initializeInternal);
 
-  connect(&m_pingHelper, &PingHelper::connectionLose, this, [this]() {
+  connect(IpcClient::Interface().data(), &IpcInterfaceReplica::connectionLose,
+          this, [this]() {
       logger.debug() << "Connection Lose";
-      m_pingHelper.stop();
+      auto result = IpcClient::Interface()->stopNetworkCheck();
+      result.waitForFinished(3000);
       this->deactivate();
-      QThread::msleep(3000);
       this->activate(m_RawConfig);
   });
 
@@ -145,11 +148,14 @@ void LocalSocketController::activate(const QJsonObject &rawConfig) {
   json.insert("deviceIpv4Address", wgConfig.value(amnezia::config_key::client_ip));
 
   // set up IPv6 unique-local-address, ULA, with "fd00::/8" prefix, not globally routable.
-  // this will be default IPv6 gateway, OS recognizes that IPv6 link is local and switches to IPv4.
-  // Otherwise some OSes (Linux) try IPv6 forever and hang. 
+  // this will be default IPv6 gateway, OS recognizes that IPv6 link
+  // is local and switches to IPv4.
+  // Otherwise some OSes (Linux) try IPv6 forever and hang.
   // https://en.wikipedia.org/wiki/Unique_local_address (RFC 4193)
   // https://man7.org/linux/man-pages/man5/gai.conf.5.html
-  json.insert("deviceIpv6Address", "fd58:baa6:dead::1"); // simply "dead::1" is globally-routable, don't use it
+
+  // simply "dead::1" is globally-routable, don't use it
+  json.insert("deviceIpv6Address", "fd58:baa6:dead::1");
 
   json.insert("serverPublicKey", wgConfig.value(amnezia::config_key::server_pub_key));
   json.insert("serverPskKey", wgConfig.value(amnezia::config_key::psk_key));
@@ -286,6 +292,8 @@ void LocalSocketController::deactivate() {
   QJsonObject json;
   json.insert("type", "deactivate");
   write(json);
+  auto result = IpcClient::Interface()->stopNetworkCheck();
+  result.waitForFinished(3000);
   emit disconnected();
 }
 
@@ -375,8 +383,6 @@ void LocalSocketController::parseCommand(const QByteArray& command) {
     return;
   }
 
-  qDebug() << command;
-
   QJsonObject obj = json.object();
   QJsonValue typeValue = obj.value("type");
   if (!typeValue.isString()) {
@@ -434,7 +440,8 @@ void LocalSocketController::parseCommand(const QByteArray& command) {
       return;
     }
 
-    m_pingHelper.start(serverIpv4Gateway.toString(), deviceIpv4Address.toString());
+    IpcClient::Interface()->startNetworkCheck(serverIpv4Gateway.toString(),
+                                              deviceIpv4Address.toString());
 
     QJsonValue txBytes = obj.value("txBytes");
     if (!txBytes.isDouble()) {

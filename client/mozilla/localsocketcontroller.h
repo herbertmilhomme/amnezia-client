@@ -11,7 +11,6 @@
 #include <functional>
 
 #include "controllerimpl.h"
-#include "mozilla/pinghelper.h"
 #include "qjsonobject.h"
 
 
@@ -64,7 +63,6 @@ class LocalSocketController final : public ControllerImpl {
   std::function<void(const QString&)> m_logCallback = nullptr;
 
   QJsonObject m_RawConfig;
-  PingHelper m_pingHelper;
 
   QTimer m_initializingTimer;
   QTimer m_statusTimer;

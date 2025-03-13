@@ -25,8 +25,8 @@
 #endif
 
 IpcServer::IpcServer(QObject *parent) : IpcInterfaceSource(parent)
-
 {
+    connect(&m_pingHelper, &PingHelper::connectionLose, this, &IpcServer::connectionLose);
 }
 
 int IpcServer::createPrivilegedProcess()
@@ -186,6 +186,20 @@ void IpcServer::setLogsEnabled(bool enabled)
     } else {
         Logger::deInit();
     }
+}
+
+bool IpcServer::startNetworkCheck(const QString& serverIpv4Gateway, const QString& deviceIpv4Address)
+{
+    m_pingHelper.start(serverIpv4Gateway, deviceIpv4Address);
+    return true;
+}
+
+bool IpcServer::stopNetworkCheck()
+{
+
+    qDebug() << "stopNetworkCheck";
+    m_pingHelper.stop();
+    return true;
 }
 
 bool IpcServer::enableKillSwitch(const QJsonObject &configStr, int vpnAdapterIndex)
