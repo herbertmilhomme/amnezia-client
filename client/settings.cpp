@@ -558,3 +558,13 @@ void Settings::disableHomeAdLabel()
 {
     setValue("Conf/homeAdLabelVisible", false);
 }
+
+QStringList Settings::allowedDnsServers() const
+{
+    return value("Conf/allowedDnsServers").toStringList();
+}
+
+void Settings::setAllowedDnsServers(const QStringList &servers)
+{
+    setValue("Conf/allowedDnsServers", servers);
+}

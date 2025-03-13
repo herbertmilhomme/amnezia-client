@@ -229,6 +229,9 @@ public:
     bool isHomeAdLabelVisible();
     void disableHomeAdLabel();
 
+    QStringList allowedDnsServers() const;
+    void setAllowedDnsServers(const QStringList &servers);
+
 signals:
     void saveLogsChanged(bool enabled);
     void screenshotsEnabledChanged(bool enabled);

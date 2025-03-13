@@ -93,6 +93,20 @@ PageType {
             }
 
             DividerType {}
+            
+            LabelWithButtonType {
+                Layout.topMargin: 32
+                Layout.fillWidth: true
+
+                enabled: true
+                text: qsTr("DNS Exceptions")
+                descriptionText: qsTr("DNS servers from the list will remain accessible when Kill Switch is triggered")
+                rightImageSource: "qrc:/images/controls/chevron-right.svg"
+
+                clickedFunction: function() {
+                    PageController.goToPage(PageEnum.PageSettingsKillSwitchExceptions)
+                }
+            }
         }
     }
 } 
