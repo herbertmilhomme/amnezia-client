@@ -37,7 +37,7 @@ PageType {
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
 
-                headerText: qsTr("Kill Switch")
+                headerText: qsTr("KillSwitch")
                 descriptionText: qsTr("Enable to ensure network traffic goes through a secure VPN tunnel, preventing accidental exposure of your IP and DNS queries if the connection drops")
 
                 showSwitcher: true
@@ -65,7 +65,7 @@ PageType {
                 enabled: SettingsController.isKillSwitchEnabled && !ConnectionController.isConnected
                 checked: !SettingsController.strictKillSwitchEnabled
 
-                text: qsTr("Soft Kill Switch")
+                text: qsTr("Soft KillSwitch")
                 descriptionText: qsTr("Internet connection is blocked if VPN connection drops accidentally")
 
                 onClicked: {
@@ -84,7 +84,7 @@ PageType {
                 enabled: SettingsController.isKillSwitchEnabled && !ConnectionController.isConnected
                 checked: SettingsController.strictKillSwitchEnabled
 
-                text: qsTr("Strict Kill Switch")
+                text: qsTr("Strict KillSwitch")
                 descriptionText: qsTr("Internet connection is blocked even if VPN was turned off manually or not started")
 
                 onClicked: {

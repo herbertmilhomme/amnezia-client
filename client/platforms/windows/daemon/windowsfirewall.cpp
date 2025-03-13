@@ -192,7 +192,7 @@ bool WindowsFirewall::enableInterface(int vpnAdapterIndex) {
     }
     IPAddress allv6("::/0");
     if (!blockTrafficTo(allv6, MED_WEIGHT,
-                    "Block Internet", "killswitch")) {
+                        "Block Internet", "killswitch")) {
       return false;
     }
   } else
@@ -203,8 +203,8 @@ bool WindowsFirewall::enableInterface(int vpnAdapterIndex) {
   FW_OK(allowTrafficForAppOnAll(getCurrentPath(), MAX_WEIGHT,
                                 "Allow all for AmneziaVPN.exe"));
   FW_OK(blockTrafficOnPort(53, MED_WEIGHT, "Block all DNS"));
-  FW_OK(
-      allowLoopbackTraffic(MED_WEIGHT, "Allow Loopback traffic on device %1"));
+  FW_OK(allowLoopbackTraffic(MED_WEIGHT,
+                             "Allow Loopback traffic on device %1"));
 
   logger.debug() << "Killswitch on! Rules:" << m_activeRules.length();
   return true;
@@ -290,7 +290,7 @@ bool WindowsFirewall::enablePeerTraffic(const InterfaceConfig& config) {
       logger.debug() << "excludedAddresses range: " << i;
 
       if (!allowTrafficTo(i, HIGH_WEIGHT,
-                               "Allow Ecxlude route", config.m_serverPublicKey)) {
+                          "Allow Ecxlude route", config.m_serverPublicKey)) {
         return false;
       }
     }
