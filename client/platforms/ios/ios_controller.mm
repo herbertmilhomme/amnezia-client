@@ -216,6 +216,12 @@ bool IosController::connectVpn(amnezia::Proto proto, const QJsonObject& configur
     if (proto == amnezia::Proto::Awg) {
         return setupAwg();
     }
+    if (proto == amnezia::Proto::Xray) {
+        return setupXray();
+    }
+    if (proto == amnezia::Proto::SSXray) {
+        return setupSSXray();
+    }
 
     return false;
 }
@@ -345,8 +351,6 @@ void IosController::vpnStatusDidChange(void *pNotification)
                                 }
                             }
                         }
-                    } else {
-                        qDebug() << "Disconnect error is absent";
                     }
                 }];
             } else {
@@ -495,10 +499,60 @@ bool IosController::setupWireGuard()
         wgConfig.insert(config_key::persistent_keep_alive, "25");
     }
 
+    if (config.contains(config_key::isObfuscationEnabled) && config.value(config_key::isObfuscationEnabled).toBool()) {
+        wgConfig.insert(config_key::initPacketMagicHeader, config[config_key::initPacketMagicHeader]);
+        wgConfig.insert(config_key::responsePacketMagicHeader, config[config_key::responsePacketMagicHeader]);
+        wgConfig.insert(config_key::underloadPacketMagicHeader, config[config_key::underloadPacketMagicHeader]);
+        wgConfig.insert(config_key::transportPacketMagicHeader, config[config_key::transportPacketMagicHeader]);
+
+        wgConfig.insert(config_key::initPacketJunkSize, config[config_key::initPacketJunkSize]);
+        wgConfig.insert(config_key::responsePacketJunkSize, config[config_key::responsePacketJunkSize]);
+
+        wgConfig.insert(config_key::junkPacketCount, config[config_key::junkPacketCount]);
+        wgConfig.insert(config_key::junkPacketMinSize, config[config_key::junkPacketMinSize]);
+        wgConfig.insert(config_key::junkPacketMaxSize, config[config_key::junkPacketMaxSize]);
+    }
+
     QJsonDocument wgConfigDoc(wgConfig);
     QString wgConfigDocStr(wgConfigDoc.toJson(QJsonDocument::Compact));
 
     return startWireGuard(wgConfigDocStr);
+}
+
+bool IosController::setupXray()
+{
+    QJsonObject config = m_rawConfig[ProtocolProps::key_proto_config_data(amnezia::Proto::Xray)].toObject();
+    QJsonDocument xrayConfigDoc(config);
+
+    QString xrayConfigStr(xrayConfigDoc.toJson(QJsonDocument::Compact));
+
+    QJsonObject finalConfig;
+    finalConfig.insert(config_key::dns1, m_rawConfig[config_key::dns1].toString());
+    finalConfig.insert(config_key::dns2, m_rawConfig[config_key::dns2].toString());
+    finalConfig.insert(config_key::config, xrayConfigStr);
+
+    QJsonDocument finalConfigDoc(finalConfig);
+    QString finalConfigStr(finalConfigDoc.toJson(QJsonDocument::Compact));
+
+    return startXray(finalConfigStr);
+}
+
+bool IosController::setupSSXray()
+{
+    QJsonObject config = m_rawConfig[ProtocolProps::key_proto_config_data(amnezia::Proto::SSXray)].toObject();
+    QJsonDocument ssXrayConfigDoc(config);
+
+    QString ssXrayConfigStr(ssXrayConfigDoc.toJson(QJsonDocument::Compact));
+
+    QJsonObject finalConfig;
+    finalConfig.insert(config_key::dns1, m_rawConfig[config_key::dns1]);
+    finalConfig.insert(config_key::dns2, m_rawConfig[config_key::dns2]);
+    finalConfig.insert(config_key::config, ssXrayConfigStr);
+
+    QJsonDocument finalConfigDoc(finalConfig);
+    QString finalConfigStr(finalConfigDoc.toJson(QJsonDocument::Compact));
+
+    return startXray(finalConfigStr);
 }
 
 bool IosController::setupAwg()
@@ -583,6 +637,20 @@ bool IosController::startWireGuard(const QString &config)
     NETunnelProviderProtocol *tunnelProtocol = [[NETunnelProviderProtocol alloc] init];
     tunnelProtocol.providerBundleIdentifier = [NSString stringWithUTF8String:VPN_NE_BUNDLEID];
     tunnelProtocol.providerConfiguration = @{@"wireguard": [[NSString stringWithUTF8String:config.toStdString().c_str()] dataUsingEncoding:NSUTF8StringEncoding]};
+    tunnelProtocol.serverAddress = m_serverAddress;
+
+    m_currentTunnel.protocolConfiguration = tunnelProtocol;
+
+    startTunnel();
+}
+
+bool IosController::startXray(const QString &config)
+{
+    qDebug() << "IosController::startXray";
+
+    NETunnelProviderProtocol *tunnelProtocol = [[NETunnelProviderProtocol alloc] init];
+    tunnelProtocol.providerBundleIdentifier = [NSString stringWithUTF8String:VPN_NE_BUNDLEID];
+    tunnelProtocol.providerConfiguration = @{@"xray": [[NSString stringWithUTF8String:config.toStdString().c_str()] dataUsingEncoding:NSUTF8StringEncoding]};
     tunnelProtocol.serverAddress = m_serverAddress;
 
     m_currentTunnel.protocolConfiguration = tunnelProtocol;
@@ -779,7 +847,7 @@ QString IosController::openFile() {
 
 void IosController::requestInetAccess() {
     NSURL *url = [NSURL URLWithString:@"http://captive.apple.com/generate_204"];
-    if (url) {
+    if (!url) {
         qDebug() << "IosController::requestInetAccess URL error";
         return;
     }
@@ -791,7 +859,6 @@ void IosController::requestInetAccess() {
         } else {
             NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
             QString responseBody = QString::fromUtf8((const char*)data.bytes, data.length);
-            qDebug() << "IosController::requestInetAccess server response:" << httpResponse.statusCode << "\n\n" <<responseBody;
         }
     }];
     [task resume];

@@ -9,11 +9,8 @@
 #include <QStandardPaths>
 
 #include "core/controllers/vpnConfigurationController.h"
+#include "core/qrCodeUtils.h"
 #include "systemController.h"
-#ifdef Q_OS_ANDROID
-    #include "platforms/android/android_utils.h"
-#endif
-#include "qrcodegen.hpp"
 
 ExportController::ExportController(const QSharedPointer<ServersModel> &serversModel, const QSharedPointer<ContainersModel> &containersModel,
                                    const QSharedPointer<ClientManagementModel> &clientManagementModel,
@@ -24,12 +21,6 @@ ExportController::ExportController(const QSharedPointer<ServersModel> &serversMo
       m_clientManagementModel(clientManagementModel),
       m_settings(settings)
 {
-#ifdef Q_OS_ANDROID
-    m_authResultNotifier.reset(new AuthResultNotifier);
-    m_authResultReceiver.reset(new AuthResultReceiver(m_authResultNotifier));
-    connect(m_authResultNotifier.get(), &AuthResultNotifier::authFailed, this, [this]() { emit exportErrorOccurred(tr("Access error!")); });
-    connect(m_authResultNotifier.get(), &AuthResultNotifier::authSuccessful, this, &ExportController::generateFullAccessConfig);
-#endif
 }
 
 void ExportController::generateFullAccessConfig()
@@ -59,29 +50,9 @@ void ExportController::generateFullAccessConfig()
     compressedConfig = qCompress(compressedConfig, 8);
     m_config = QString("vpn://%1").arg(QString(compressedConfig.toBase64(QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals)));
 
-    m_qrCodes = generateQrCodeImageSeries(compressedConfig);
+    m_qrCodes = qrCodeUtils::generateQrCodeImageSeries(compressedConfig);
     emit exportConfigChanged();
 }
-
-#if defined(Q_OS_ANDROID)
-void ExportController::generateFullAccessConfigAndroid()
-{
-    /* We use builtin keyguard for ssh key export protection on Android */
-    QJniObject activity = AndroidUtils::getActivity();
-    auto appContext = activity.callObjectMethod("getApplicationContext", "()Landroid/content/Context;");
-    if (appContext.isValid()) {
-        auto intent = QJniObject::callStaticObjectMethod("org/amnezia/vpn/AuthHelper", "getAuthIntent",
-                                                         "(Landroid/content/Context;)Landroid/content/Intent;", appContext.object());
-        if (intent.isValid()) {
-            if (intent.object<jobject>() != nullptr) {
-                QtAndroidPrivate::startActivity(intent.object<jobject>(), 1, m_authResultReceiver.get());
-            }
-        } else {
-            generateFullAccessConfig();
-        }
-    }
-}
-#endif
 
 void ExportController::generateConnectionConfig(const QString &clientName)
 {
@@ -121,7 +92,7 @@ void ExportController::generateConnectionConfig(const QString &clientName)
     compressedConfig = qCompress(compressedConfig, 8);
     m_config = QString("vpn://%1").arg(QString(compressedConfig.toBase64(QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals)));
 
-    m_qrCodes = generateQrCodeImageSeries(compressedConfig);
+    m_qrCodes = qrCodeUtils::generateQrCodeImageSeries(compressedConfig);
     emit exportConfigChanged();
 }
 
@@ -133,7 +104,7 @@ ErrorCode ExportController::generateNativeConfig(const DockerContainer container
     int serverIndex = m_serversModel->getProcessedServerIndex();
     ServerCredentials credentials = m_serversModel->getServerCredentials(serverIndex);
     auto dns = m_serversModel->getDnsPair(serverIndex);
-    bool isApiConfig = qvariant_cast<bool>(m_serversModel->data(serverIndex, ServersModel::IsServerFromApiRole));
+    bool isApiConfig = qvariant_cast<bool>(m_serversModel->data(serverIndex, ServersModel::IsServerFromTelegramApiRole));
 
     QJsonObject containerConfig = m_containersModel->getContainerConfig(container);
     containerConfig.insert(config_key::container, ContainerProps::containerToString(container));
@@ -150,9 +121,8 @@ ErrorCode ExportController::generateNativeConfig(const DockerContainer container
 
     jsonNativeConfig = QJsonDocument::fromJson(protocolConfigString.toUtf8()).object();
 
-    if (protocol == Proto::OpenVpn || protocol == Proto::WireGuard || protocol == Proto::Awg) {
-        auto clientId = jsonNativeConfig.value(config_key::clientId).toString();
-        errorCode = m_clientManagementModel->appendClient(clientId, clientName, container, credentials, serverController);
+    if (protocol == Proto::OpenVpn || protocol == Proto::WireGuard || protocol == Proto::Awg || protocol == Proto::Xray) {
+        errorCode = m_clientManagementModel->appendClient(jsonNativeConfig, clientName, container, credentials, serverController);
     }
     return errorCode;
 }
@@ -179,7 +149,7 @@ void ExportController::generateOpenVpnConfig(const QString &clientName)
         m_config.append(line + "\n");
     }
 
-    m_qrCodes = generateQrCodeImageSeries(m_config.toUtf8());
+    m_qrCodes = qrCodeUtils::generateQrCodeImageSeries(m_config.toUtf8());
     emit exportConfigChanged();
 }
 
@@ -197,8 +167,8 @@ void ExportController::generateWireGuardConfig(const QString &clientName)
         m_config.append(line + "\n");
     }
 
-    qrcodegen::QrCode qr = qrcodegen::QrCode::encodeText(m_config.toUtf8(), qrcodegen::QrCode::Ecc::LOW);
-    m_qrCodes << svgToBase64(QString::fromStdString(toSvgString(qr, 1)));
+    auto qr = qrCodeUtils::generateQrCode(m_config.toUtf8());
+    m_qrCodes << qrCodeUtils::svgToBase64(QString::fromStdString(toSvgString(qr, 1)));
 
     emit exportConfigChanged();
 }
@@ -217,8 +187,8 @@ void ExportController::generateAwgConfig(const QString &clientName)
         m_config.append(line + "\n");
     }
 
-    qrcodegen::QrCode qr = qrcodegen::QrCode::encodeText(m_config.toUtf8(), qrcodegen::QrCode::Ecc::LOW);
-    m_qrCodes << svgToBase64(QString::fromStdString(toSvgString(qr, 1)));
+    auto qr = qrCodeUtils::generateQrCode(m_config.toUtf8());
+    m_qrCodes << qrCodeUtils::svgToBase64(QString::fromStdString(toSvgString(qr, 1)));
 
     emit exportConfigChanged();
 }
@@ -251,8 +221,8 @@ void ExportController::generateShadowSocksConfig()
 
     m_nativeConfigString = "ss://" + m_nativeConfigString.toUtf8().toBase64();
 
-    qrcodegen::QrCode qr = qrcodegen::QrCode::encodeText(m_nativeConfigString.toUtf8(), qrcodegen::QrCode::Ecc::LOW);
-    m_qrCodes << svgToBase64(QString::fromStdString(toSvgString(qr, 1)));
+    auto qr = qrCodeUtils::generateQrCode(m_nativeConfigString.toUtf8());
+    m_qrCodes << qrCodeUtils::svgToBase64(QString::fromStdString(toSvgString(qr, 1)));
 
     emit exportConfigChanged();
 }
@@ -277,10 +247,10 @@ void ExportController::generateCloakConfig()
     emit exportConfigChanged();
 }
 
-void ExportController::generateXrayConfig()
+void ExportController::generateXrayConfig(const QString &clientName)
 {
     QJsonObject nativeConfig;
-    ErrorCode errorCode = generateNativeConfig(DockerContainer::Xray, "", Proto::Xray, nativeConfig);
+    ErrorCode errorCode = generateNativeConfig(DockerContainer::Xray, clientName, Proto::Xray, nativeConfig);
     if (errorCode) {
         emit exportErrorOccurred(errorCode);
         return;
@@ -340,32 +310,6 @@ void ExportController::renameClient(const int row, const QString &clientName, co
     if (errorCode != ErrorCode::NoError) {
         emit exportErrorOccurred(errorCode);
     }
-}
-
-QList<QString> ExportController::generateQrCodeImageSeries(const QByteArray &data)
-{
-    double k = 850;
-
-    quint8 chunksCount = std::ceil(data.size() / k);
-    QList<QString> chunks;
-    for (int i = 0; i < data.size(); i = i + k) {
-        QByteArray chunk;
-        QDataStream s(&chunk, QIODevice::WriteOnly);
-        s << amnezia::qrMagicCode << chunksCount << (quint8)std::round(i / k) << data.mid(i, k);
-
-        QByteArray ba = chunk.toBase64(QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals);
-
-        qrcodegen::QrCode qr = qrcodegen::QrCode::encodeText(ba, qrcodegen::QrCode::Ecc::LOW);
-        QString svg = QString::fromStdString(toSvgString(qr, 1));
-        chunks.append(svgToBase64(svg));
-    }
-
-    return chunks;
-}
-
-QString ExportController::svgToBase64(const QString &image)
-{
-    return "data:image/svg;base64," + QString::fromLatin1(image.toUtf8().toBase64().data());
 }
 
 int ExportController::getQrCodesCount()

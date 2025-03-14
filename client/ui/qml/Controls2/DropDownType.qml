@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+import Style 1.0
+
 import "TextTypes"
 import "../Config"
 
@@ -9,31 +11,31 @@ Item {
     id: root
 
     property string text
-    property string textColor: "#d7d8db"
-    property string textDisabledColor: "#878B91"
+    property string textColor: AmneziaStyle.color.paleGray
+    property string textDisabledColor: AmneziaStyle.color.mutedGray
     property int textMaximumLineCount: 2
     property int textElide: Qt.ElideRight
 
     property string descriptionText
-    property string descriptionTextColor: "#878B91"
-    property string descriptionTextDisabledColor: "#494B50"
+    property string descriptionTextColor: AmneziaStyle.color.mutedGray
+    property string descriptionTextDisabledColor: AmneziaStyle.color.charcoalGray
 
     property string headerText
     property string headerBackButtonImage
 
     property var rootButtonClickedFunction
     property string rootButtonImage: "qrc:/images/controls/chevron-down.svg"
-    property string rootButtonImageColor: "#D7D8DB"
-    property string rootButtonBackgroundColor: "#1C1D21"
-    property string rootButtonBackgroundHoveredColor: "#1C1D21"
-    property string rootButtonBackgroundPressedColor: "#1C1D21"
+    property string rootButtonImageColor: AmneziaStyle.color.paleGray
+    property string rootButtonBackgroundColor: AmneziaStyle.color.onyxBlack
+    property string rootButtonBackgroundHoveredColor: AmneziaStyle.color.onyxBlack
+    property string rootButtonBackgroundPressedColor: AmneziaStyle.color.onyxBlack
 
-    property string borderFocusedColor: "#D7D8DB"
+    property string borderFocusedColor: AmneziaStyle.color.paleGray
     property int borderFocusedWidth: 1
 
-    property string rootButtonHoveredBorderColor: "#494B50"
-    property string rootButtonDefaultBorderColor: "#2C2D30"
-    property string rootButtonPressedBorderColor: "#D7D8DB"
+    property string rootButtonHoveredBorderColor: AmneziaStyle.color.charcoalGray
+    property string rootButtonDefaultBorderColor: AmneziaStyle.color.slateGray
+    property string rootButtonPressedBorderColor: AmneziaStyle.color.paleGray
 
     property int rootButtonTextLeftMargins: 16
     property int rootButtonTextTopMargin: 16
@@ -43,40 +45,63 @@ Item {
     property Item drawerParent
     property Component listView
 
-    signal open
-    signal close
+    signal openTriggered
+    signal closeTriggered
 
-    function popupClosedFunc() {
-        if (!GC.isMobile()) {
-            this.forceActiveFocus()
-        }
+    readonly property bool isFocusable: true
+
+    Keys.onTabPressed: {
+        FocusController.nextKeyTabItem()
     }
 
-    property var parentFlickable
-    onFocusChanged: {
-        if (root.activeFocus) {
-            if (root.parentFlickable) {
-                root.parentFlickable.ensureVisible(root)
-            }
-        }
+    Keys.onBacktabPressed: {
+        FocusController.previousKeyTabItem()
+    }
+
+    Keys.onUpPressed: {
+        FocusController.nextKeyUpItem()
+    }
+    
+    Keys.onDownPressed: {
+        FocusController.nextKeyDownItem()
+    }
+    
+    Keys.onLeftPressed: {
+        FocusController.nextKeyLeftItem()
+    }
+
+    Keys.onRightPressed: {
+        FocusController.nextKeyRightItem()
     }
 
     implicitWidth: rootButtonContent.implicitWidth
     implicitHeight: rootButtonContent.implicitHeight
 
-    onOpen: {
-        menu.open()
+    onOpenTriggered: {
+        menu.openTriggered()
     }
 
-    onClose: {
-        menu.close()
+    onCloseTriggered: {
+        menu.closeTriggered()
+    }
+
+    Keys.onEnterPressed: {
+        if (menu.isClosed) {
+            menu.openTriggered()
+        }
+    }
+
+    Keys.onReturnPressed: {
+        if (menu.isClosed) {
+            menu.openTriggered()
+        }
     }
 
     Rectangle {
         id: focusBorder
 
-        color: "transparent"
-        border.color: root.activeFocus ? root.borderFocusedColor : "transparent"
+        color: AmneziaStyle.color.transparent
+        border.color: root.activeFocus ? root.borderFocusedColor : AmneziaStyle.color.transparent
         border.width: root.activeFocus ? root.borderFocusedWidth : 0
         anchors.fill: rootButtonContent
         radius: 16
@@ -96,7 +121,7 @@ Item {
                     }
                     return root.hovered ? root.rootButtonBackgroundHoveredColor : root.rootButtonBackgroundColor
                 } else {
-                    return "transparent"
+                    return AmneziaStyle.color.transparent
                 }
             }
 
@@ -171,7 +196,7 @@ Item {
             if (rootButtonClickedFunction && typeof rootButtonClickedFunction === "function") {
                 rootButtonClickedFunction()
             } else {
-                menu.open()
+                menu.openTriggered()
             }
         }
     }
@@ -184,93 +209,38 @@ Item {
         anchors.fill: parent
         expandedHeight: drawerParent.height * drawerHeight
 
-        onClosed: {
-            root.popupClosedFunc()
-        }
-
-        expandedContent: Item {
+        expandedStateContent: Item {
             id: container
             implicitHeight: menu.expandedHeight
-
-            Connections {
-                target: menu
-                enabled: !GC.isMobile()
-                function onOpened() {
-                    focusItem.forceActiveFocus()
-                }
-            }
-
-            Item {
-                id: focusItem
-                KeyNavigation.tab: backButton
-            }
 
             ColumnLayout {
                 id: header
 
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
+                anchors.fill: parent
                 anchors.topMargin: 16
 
                 BackButtonType {
                     id: backButton
                     backButtonImage: root.headerBackButtonImage
-                    backButtonFunction: function() { menu.close() }
-                    KeyNavigation.tab: listViewLoader.item
+                    backButtonFunction: function() { menu.closeTriggered() }
+                }
+
+                Header2Type {
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    Layout.bottomMargin: 16
+                    Layout.fillWidth: true
+
+                    headerText: root.headerText
+                }
+
+                Loader {
+                    id: listViewLoader
+                    sourceComponent: root.listView
+
+                    Layout.fillHeight: true
                 }
             }
-
-            FlickableType {
-                id: flickable
-                anchors.top: header.bottom
-                anchors.topMargin: 16
-                contentHeight: col.implicitHeight
-
-                Column {
-                    id: col
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-
-                    spacing: 16
-
-                    Header2Type {
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.leftMargin: 16
-                        anchors.rightMargin: 16
-
-                        headerText: root.headerText
-
-                        width: parent.width
-                    }
-
-                    Loader {
-                        id: listViewLoader
-                        sourceComponent: root.listView
-
-                        onLoaded: {
-                            listViewLoader.item.parentFlickable = flickable
-                            listViewLoader.item.lastItemTabClicked = function() {
-                                focusItem.forceActiveFocus()
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    Keys.onEnterPressed: {
-        if (menu.isClosed) {
-            menu.open()
-        }
-    }
-
-    Keys.onReturnPressed: {
-        if (menu.isClosed) {
-            menu.open()
         }
     }
 }

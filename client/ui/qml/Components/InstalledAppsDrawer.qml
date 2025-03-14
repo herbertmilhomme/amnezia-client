@@ -8,6 +8,7 @@ import "../Controls2/TextTypes"
 import SortFilterProxyModel 0.2
 
 import InstalledAppsModel 1.0
+import Style 1.0
 
 DrawerType2 {
     id: root
@@ -25,7 +26,7 @@ DrawerType2 {
         id: installedAppsModel
     }
 
-    expandedContent: Item {
+    expandedStateContent: Item {
         id: container
 
         implicitHeight: expandedHeight
@@ -42,7 +43,7 @@ DrawerType2 {
             BackButtonType {
                 backButtonImage: "qrc:/images/controls/arrow-left.svg"
                 backButtonFunction: function() {
-                    root.close()
+                    root.closeTriggered()
                 }
             }
 
@@ -68,6 +69,8 @@ DrawerType2 {
                 clip: true
                 interactive: true
 
+                property bool isFocusable: true
+
                 model: SortFilterProxyModel {
                     id: proxyInstalledAppsModel
                     sourceModel: installedAppsModel
@@ -78,10 +81,7 @@ DrawerType2 {
                     }
                 }
 
-                ScrollBar.vertical: ScrollBar {
-                    id: scrollBar
-                    policy: ScrollBar.AlwaysOn
-                }
+                ScrollBar.vertical: ScrollBarType {}
 
                 ButtonGroup {
                     id: buttonGroup
@@ -133,9 +133,9 @@ DrawerType2 {
             anchors.rightMargin: 16
             anchors.leftMargin: 16
 
-            backgroundColor: "#2C2D30"
+            backgroundColor: AmneziaStyle.color.slateGray
 
-            textFieldPlaceholderText: qsTr("application name")
+            textField.placeholderText: qsTr("application name")
         }
 
         BasicButtonType {
@@ -154,7 +154,7 @@ DrawerType2 {
                 PageController.showBusyIndicator(true)
                 AppSplitTunnelingController.addApps(installedAppsModel.getSelectedAppsInfo())
                 PageController.showBusyIndicator(false)
-                root.close()
+                root.closeTriggered()
             }
         }
     }

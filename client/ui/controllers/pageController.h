@@ -31,6 +31,12 @@ namespace PageLoader
         PageSettingsLogging,
         PageSettingsSplitTunneling,
         PageSettingsAppSplitTunneling,
+        PageSettingsApiServerInfo,
+        PageSettingsApiAvailableCountries,
+        PageSettingsApiSupport,
+        PageSettingsApiInstructions,
+        PageSettingsApiNativeConfigs,
+        PageSettingsApiDevices,
 
         PageServiceSftpSettings,
         PageServiceTorWebsiteSettings,
@@ -47,17 +53,24 @@ namespace PageLoader
         PageSetupWizardTextKey,
         PageSetupWizardViewConfig,
         PageSetupWizardQrReader,
+        PageSetupWizardApiServicesList,
+        PageSetupWizardApiServiceInfo,
 
         PageProtocolOpenVpnSettings,
         PageProtocolShadowSocksSettings,
         PageProtocolCloakSettings,
-        PageProtocolXraySettings,        
+        PageProtocolXraySettings,
         PageProtocolWireGuardSettings,
         PageProtocolAwgSettings,
         PageProtocolIKev2Settings,
         PageProtocolRaw,
 
-        PageShareFullAccess
+        PageProtocolWireGuardClientSettings,
+        PageProtocolAwgClientSettings,
+
+        PageShareFullAccess,
+
+        PageDevMenu
     };
     Q_ENUM_NS(PageEnum)
 
@@ -75,7 +88,7 @@ public:
                             QObject *parent = nullptr);
 
 public slots:
-    QString getInitialPage();
+    bool isStartPageVisible();
     QString getPagePath(PageLoader::PageEnum page);
 
     void closeWindow();
@@ -93,9 +106,11 @@ public slots:
     void closeApplication();
 
     void setDrawerDepth(const int depth);
-    int getDrawerDepth();
+    int getDrawerDepth() const;
+    int incrementDrawerDepth();
+    int decrementDrawerDepth();
 
-  private slots:
+private slots:
     void onShowErrorMessage(amnezia::ErrorCode errorCode);
 
 signals:
@@ -110,7 +125,6 @@ signals:
     void closePage();
 
     void restorePageHomeState(bool isContainerInstalled = false);
-    void replaceStartPage();
 
     void showErrorMessage(amnezia::ErrorCode);
     void showErrorMessage(const QString &errorMessage);
@@ -128,9 +142,6 @@ signals:
 
     void escapePressed();
     void closeTopDrawer();
-
-    void forceTabBarActiveFocus();
-    void forceStackActiveFocus();
 
 private:
     QSharedPointer<ServersModel> m_serversModel;

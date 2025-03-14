@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 
 import PageEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -15,13 +16,6 @@ PageType {
 
     property bool showContent: false
 
-    defaultActiveFocusItem: focusItem
-
-    Item {
-        id: focusItem
-        KeyNavigation.tab: backButton
-    }
-
     BackButtonType {
         id: backButton
 
@@ -29,14 +23,12 @@ PageType {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.topMargin: 20
-
-        KeyNavigation.tab: showContentButton
     }
 
     Connections {
         target: ImportController
 
-        function onImportErrorOccurred(errorMessage, goToPageHome) {
+        function onImportErrorOccurred(error, goToPageHome) {
             if (goToPageHome) {
                 PageController.goToStartPage()
             } else {
@@ -50,10 +42,7 @@ PageType {
                 ServersModel.processedIndex = ServersModel.defaultIndex
             }
 
-            PageController.goToStartPage()
-            if (stackView.currentItem.objectName === PageController.getPagePath(PageEnum.PageSetupWizardStart)) {
-                PageController.replaceStartPage()
-            }
+            PageController.goToPageHome()
         }
     }
 
@@ -102,14 +91,15 @@ PageType {
                 Layout.leftMargin: -8
                 implicitHeight: 32
 
-                defaultColor: "transparent"
-                hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                disabledColor: "#878B91"
-                textColor: "#FBB26A"
+                defaultColor: AmneziaStyle.color.transparent
+                hoveredColor: AmneziaStyle.color.translucentWhite
+                pressedColor: AmneziaStyle.color.sheerWhite
+                disabledColor: AmneziaStyle.color.mutedGray
+                textColor: AmneziaStyle.color.goldenApricot
 
                 text: showContent ? qsTr("Collapse content") : qsTr("Show content")
-                KeyNavigation.tab: connectButton
+
+                parentFlickable: fl
 
                 clickedFunc: function() {
                     showContent = !showContent
@@ -135,8 +125,8 @@ PageType {
 
                 iconPath: "qrc:/images/controls/alert-circle.svg"
 
-                textColor: "#EB5757"
-                imageColor: "#EB5757"
+                textColor: AmneziaStyle.color.vibrantRed
+                imageColor: AmneziaStyle.color.vibrantRed
             }
 
             WarningType {
@@ -155,7 +145,7 @@ PageType {
                 implicitHeight: configContent.implicitHeight
 
                 radius: 10
-                color: "#1C1D21"
+                color: AmneziaStyle.color.onyxBlack
 
                 visible: showContent
 
@@ -176,7 +166,7 @@ PageType {
     Rectangle {
         anchors.fill: columnContent
         anchors.bottomMargin: -24
-        color: "#0E0E11"
+        color: AmneziaStyle.color.midnightBlack
         opacity: 0.8
     }
 
@@ -187,8 +177,6 @@ PageType {
         anchors.right: parent.right
         anchors.rightMargin: 16
         anchors.leftMargin: 16
-
-        Keys.onTabPressed: lastItemTabClicked(focusItem)
 
         BasicButtonType {
             id: connectButton

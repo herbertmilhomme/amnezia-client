@@ -5,6 +5,7 @@ import android.net.VpnService.Builder
 import java.io.File
 import java.io.IOException
 import go.Seq
+import org.amnezia.vpn.protocol.BadConfigException
 import org.amnezia.vpn.protocol.Protocol
 import org.amnezia.vpn.protocol.ProtocolState.CONNECTED
 import org.amnezia.vpn.protocol.ProtocolState.DISCONNECTED
@@ -16,71 +17,9 @@ import org.amnezia.vpn.protocol.xray.libXray.Logger
 import org.amnezia.vpn.protocol.xray.libXray.Tun2SocksConfig
 import org.amnezia.vpn.util.Log
 import org.amnezia.vpn.util.net.InetNetwork
+import org.amnezia.vpn.util.net.ip
 import org.amnezia.vpn.util.net.parseInetAddress
 import org.json.JSONObject
-
-/**
- *    Config example:
- * {
- *     "appSplitTunnelType": 0,
- *     "config_version": 0,
- *     "description": "Server 1",
- *     "dns1": "1.1.1.1",
- *     "dns2": "1.0.0.1",
- *     "hostName": "100.100.100.0",
- *     "protocol": "xray",
- *     "splitTunnelApps": [],
- *     "splitTunnelSites": [],
- *     "splitTunnelType": 0,
- *     "xray_config_data": {
- *         "inbounds": [
- *             {
- *                 "listen": "127.0.0.1",
- *                 "port": 8080,
- *                 "protocol": "socks",
- *                 "settings": {
- *                     "udp": true
- *                 }
- *             }
- *         ],
- *         "log": {
- *             "loglevel": "error"
- *         },
- *         "outbounds": [
- *             {
- *                 "protocol": "vless",
- *                 "settings": {
- *                     "vnext": [
- *                         {
- *                             "address": "100.100.100.0",
- *                             "port": 443,
- *                             "users": [
- *                                 {
- *                                     "encryption": "none",
- *                                     "flow": "xtls-rprx-vision",
- *                                     "id": "id"
- *                                 }
- *                             ]
- *                         }
- *                     ]
- *                 },
- *                 "streamSettings": {
- *                     "network": "tcp",
- *                     "realitySettings": {
- *                         "fingerprint": "chrome",
- *                         "publicKey": "publicKey",
- *                         "serverName": "google.com",
- *                         "shortId": "id",
- *                         "spiderX": ""
- *                     },
- *                     "security": "reality"
- *                 }
- *             }
- *         ]
- *     }
- * }
- *
- */
 
 private const val TAG = "Xray"
 private const val LIBXRAY_TAG = "libXray"
@@ -108,25 +47,30 @@ class Xray : Protocol() {
         }
     }
 
-    override fun startVpn(config: JSONObject, vpnBuilder: Builder, protect: (Int) -> Boolean) {
+    override suspend fun startVpn(config: JSONObject, vpnBuilder: Builder, protect: (Int) -> Boolean) {
         if (isRunning) {
             Log.w(TAG, "XRay already running")
             return
         }
 
-        val xrayJsonConfig = config.getJSONObject("xray_config_data")
+        val xrayJsonConfig = config.optJSONObject("xray_config_data")
+            ?: config.optJSONObject("ssxray_config_data")
+            ?: throw BadConfigException("config_data not found")
         val xrayConfig = parseConfig(config, xrayJsonConfig)
 
-        // for debug
-        // xrayJsonConfig.getJSONObject("log").put("loglevel", "debug")
-        xrayJsonConfig.getJSONObject("log").put("loglevel", "warning")
-        // disable access log
-        xrayJsonConfig.getJSONObject("log").put("access", "none")
+        (xrayJsonConfig.optJSONObject("log") ?: JSONObject().also { xrayJsonConfig.put("log", it) })
+            .put("loglevel", "warning")
+            .put("access", "none") // disable access log
 
-        // replace socks address
-        // (xrayJsonConfig.getJSONArray("inbounds")[0] as JSONObject).put("listen", "::1")
+        var xrayJsonConfigString = xrayJsonConfig.toString()
+        config.getString("hostName").let { hostName ->
+            val ipAddress = parseInetAddress(hostName).ip
+            if (hostName != ipAddress) {
+                xrayJsonConfigString = xrayJsonConfigString.replace(hostName, ipAddress)
+            }
+        }
 
-        start(xrayConfig, xrayJsonConfig.toString(), vpnBuilder, protect)
+        start(xrayConfig, xrayJsonConfigString, vpnBuilder, protect)
         state.value = CONNECTED
         isRunning = true
     }
@@ -186,8 +130,8 @@ class Xray : Protocol() {
             LibXray.initXray(assetsPath)
             val geoDir = File(assetsPath, "geo").absolutePath
             val configPath = File(context.cacheDir, "config.json")
-            Log.d(TAG, "xray.location.asset: $geoDir")
-            Log.d(TAG, "config: $configPath")
+            Log.v(TAG, "xray.location.asset: $geoDir")
+            Log.v(TAG, "config: $configPath")
             try {
                 configPath.writeText(configJson)
             } catch (e: IOException) {
@@ -227,6 +171,10 @@ class Xray : Protocol() {
         LibXray.startTun2Socks(tun2SocksConfig, fd.toLong()).isNotNullOrBlank { err ->
             throw VpnStartException("Failed to start tun2socks: $err")
         }
+    }
+
+    companion object {
+        val instance: Xray by lazy { Xray() }
     }
 }
 

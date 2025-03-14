@@ -6,6 +6,7 @@ import SortFilterProxyModel 0.2
 
 import PageEnum 1.0
 import ProtocolEnum 1.0
+import Style 1.0
 
 import "../Controls2"
 import "../Controls2/TextTypes"
@@ -33,16 +34,6 @@ PageType {
             }
 
             PageController.showErrorMessage(message)
-        }
-
-        function onRemoveProcessedServerFinished(finishedMessage) {
-            if (!ServersModel.getServersCount()) {
-                PageController.replaceStartPage()
-            } else {
-                PageController.goToStartPage()
-                PageController.goToPage(PageEnum.PageSettingsServersList)
-            }
-            PageController.showNotificationMessage(finishedMessage)
         }
 
         function onRebootProcessedServerFinished(finishedMessage) {
@@ -99,8 +90,6 @@ PageType {
                 text: qsTr("Check the server for previously installed Amnezia services")
                 descriptionText: qsTr("Add them to the application if they were not displayed")
 
-                KeyNavigation.tab: labelWithButton2
-
                 clickedFunction: function() {
                     PageController.showBusyIndicator(true)
                     InstallController.scanServerForInstalledContainers()
@@ -118,9 +107,7 @@ PageType {
                 Layout.fillWidth: true
 
                 text: qsTr("Reboot server")
-                textColor: "#EB5757"
-
-                KeyNavigation.tab: labelWithButton3
+                textColor: AmneziaStyle.color.vibrantRed
 
                 clickedFunction: function() {
                     var headerText = qsTr("Do you want to reboot the server?")
@@ -159,17 +146,7 @@ PageType {
                 Layout.fillWidth: true
 
                 text: qsTr("Remove server from application")
-                textColor: "#EB5757"
-
-                Keys.onTabPressed: {
-                    if (content.isServerWithWriteAccess) {
-                        labelWithButton4.forceActiveFocus()
-                    } else {
-                        labelWithButton5.visible ?
-                            labelWithButton5.forceActiveFocus() :
-                            lastItemTabClickedSignal()
-                    }
-                }
+                textColor: AmneziaStyle.color.vibrantRed
 
                 clickedFunction: function() {
                     var headerText = qsTr("Do you want to remove the server from application?")
@@ -207,11 +184,7 @@ PageType {
                 Layout.fillWidth: true
 
                 text: qsTr("Clear server from Amnezia software")
-                textColor: "#EB5757"
-
-                Keys.onTabPressed: labelWithButton5.visible ?
-                                    labelWithButton5.forceActiveFocus() :
-                                    root.lastItemTabClickedSignal()
+                textColor: AmneziaStyle.color.vibrantRed
 
                 clickedFunction: function() {
                     var headerText = qsTr("Do you want to clear server from Amnezia software?")
@@ -246,13 +219,11 @@ PageType {
 
             LabelWithButtonType {
                 id: labelWithButton5
-                visible: ServersModel.getProcessedServerData("isServerFromApi")
+                visible: ServersModel.getProcessedServerData("isServerFromTelegramApi")
                 Layout.fillWidth: true
 
                 text: qsTr("Reset API config")
-                textColor: "#EB5757"
-
-                Keys.onTabPressed: root.lastItemTabClickedSignal()
+                textColor: AmneziaStyle.color.vibrantRed
 
                 clickedFunction: function() {
                     var headerText = qsTr("Do you want to reset API config?")
@@ -284,7 +255,7 @@ PageType {
             }
 
             DividerType {
-                visible: ServersModel.getProcessedServerData("isServerFromApi")
+                visible: ServersModel.getProcessedServerData("isServerFromTelegramApi")
             }
         }
     }

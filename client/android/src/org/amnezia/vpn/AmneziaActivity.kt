@@ -1,8 +1,10 @@
 package org.amnezia.vpn
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.NotificationManager
+import android.content.ActivityNotFoundException
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Intent
@@ -11,6 +13,7 @@ import android.content.Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.net.Uri
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
@@ -19,7 +22,13 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.Message
 import android.os.Messenger
+import android.os.ParcelFileDescriptor
+import android.os.SystemClock
+import android.provider.OpenableColumns
 import android.provider.Settings
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager.LayoutParams
 import android.webkit.MimeTypeMap
 import android.widget.Toast
@@ -28,6 +37,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import java.io.IOException
 import kotlin.LazyThreadSafetyMode.NONE
+import kotlin.coroutines.CoroutineContext
 import kotlin.text.RegexOption.IGNORE_CASE
 import AppListProvider
 import kotlinx.coroutines.CompletableDeferred
@@ -42,6 +52,7 @@ import kotlinx.coroutines.withContext
 import org.amnezia.vpn.protocol.getStatistics
 import org.amnezia.vpn.protocol.getStatus
 import org.amnezia.vpn.qt.QtAndroidController
+import org.amnezia.vpn.util.LibraryLoader.loadSharedLibrary
 import org.amnezia.vpn.util.Log
 import org.amnezia.vpn.util.Prefs
 import org.json.JSONException
@@ -68,6 +79,7 @@ class AmneziaActivity : QtActivity() {
     private var isInBoundState = false
     private var notificationStateReceiver: BroadcastReceiver? = null
     private lateinit var vpnServiceMessenger: IpcMessenger
+    private var pfd: ParcelFileDescriptor? = null
 
     private val actionResultHandlers = mutableMapOf<Int, ActivityResultHandler>()
     private val permissionRequestHandlers = mutableMapOf<Int, PermissionRequestHandler>()
@@ -156,7 +168,12 @@ class AmneziaActivity : QtActivity() {
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d(TAG, "Create Amnezia activity: $intent")
+        Log.d(TAG, "Create Amnezia activity")
+        loadLibs()
+        window.apply {
+            addFlags(LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+            statusBarColor = getColor(R.color.black)
+        }
         mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         val proto = mainScope.async(Dispatchers.IO) {
             VpnStateStore.getVpnState().vpnProto
@@ -174,6 +191,17 @@ class AmneziaActivity : QtActivity() {
         runBlocking { vpnProto = proto.await() }
     }
 
+    private fun loadLibs() {
+        listOf(
+            "rsapss",
+            "crypto_3",
+            "ssl_3",
+            "ssh"
+        ).forEach {
+            loadSharedLibrary(this.applicationContext, it)
+        }
+    }
+
     private fun registerBroadcastReceivers() {
         notificationStateReceiver = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             registerBroadcastReceiver(
@@ -182,7 +210,7 @@ class AmneziaActivity : QtActivity() {
                     NotificationManager.ACTION_APP_BLOCK_STATE_CHANGED
                 )
             ) {
-                Log.d(
+                Log.v(
                     TAG, "Notification state changed: ${it?.action}, blocked = " +
                         "${it?.getBooleanExtra(NotificationManager.EXTRA_BLOCKED_STATE, false)}"
                 )
@@ -196,7 +224,7 @@ class AmneziaActivity : QtActivity() {
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        Log.d(TAG, "onNewIntent: $intent")
+        Log.v(TAG, "onNewIntent: $intent")
         intent?.let(::processIntent)
     }
 
@@ -230,7 +258,10 @@ class AmneziaActivity : QtActivity() {
     override fun onStop() {
         Log.d(TAG, "Stop Amnezia activity")
         doUnbindService()
-        QtAndroidController.onServiceDisconnected()
+        mainScope.launch {
+            qtInitialized.await()
+            QtAndroidController.onServiceDisconnected()
+        }
         super.onStop()
     }
 
@@ -382,9 +413,10 @@ class AmneziaActivity : QtActivity() {
     @MainThread
     private fun startVpn(vpnConfig: String) {
         getVpnProto(vpnConfig)?.let { proto ->
-            Log.d(TAG, "Proto from config: $proto, current proto: $vpnProto")
+            Log.v(TAG, "Proto from config: $proto, current proto: $vpnProto")
             if (isServiceConnected) {
-                if (proto == vpnProto) {
+                if (proto.serviceClass == vpnProto?.serviceClass) {
+                    vpnProto = proto
                     connectToVpn(vpnConfig)
                     return
                 }
@@ -491,21 +523,25 @@ class AmneziaActivity : QtActivity() {
                 type = "text/*"
                 putExtra(Intent.EXTRA_TITLE, fileName)
             }.also {
-                startActivityForResult(it, CREATE_FILE_ACTION_CODE, ActivityResultHandler(
-                    onSuccess = {
-                        it?.data?.let { uri ->
-                            Log.d(TAG, "Save file to $uri")
-                            try {
-                                contentResolver.openOutputStream(uri)?.use { os ->
-                                    os.bufferedWriter().use { it.write(data) }
+                try {
+                    startActivityForResult(it, CREATE_FILE_ACTION_CODE, ActivityResultHandler(
+                        onSuccess = {
+                            it?.data?.let { uri ->
+                                Log.v(TAG, "Save file to $uri")
+                                try {
+                                    contentResolver.openOutputStream(uri)?.use { os ->
+                                        os.bufferedWriter().use { it.write(data) }
+                                    }
+                                } catch (e: IOException) {
+                                    Log.e(TAG, "Failed to save file $uri: $e")
+                                    // todo: send error to Qt
                                 }
-                            } catch (e: IOException) {
-                                Log.e(TAG, "Failed to save file $uri: $e")
-                                // todo: send error to Qt
                             }
                         }
-                    }
-                ))
+                    ))
+                } catch (_: ActivityNotFoundException) {
+                    Toast.makeText(this@AmneziaActivity, "Unsupported", Toast.LENGTH_LONG).show()
+                }
             }
         }
     }
@@ -514,48 +550,121 @@ class AmneziaActivity : QtActivity() {
     fun openFile(filter: String?) {
         Log.v(TAG, "Open file with filter: $filter")
         mainScope.launch {
-            val mimeTypes = if (!filter.isNullOrEmpty()) {
-                val extensionRegex = "\\*\\.([a-z0-9]+)".toRegex(IGNORE_CASE)
-                val mime = MimeTypeMap.getSingleton()
-                extensionRegex.findAll(filter).map {
-                    it.groups[1]?.value?.let { mime.getMimeTypeFromExtension(it) } ?: "*/*"
-                }.toSet()
-            } else emptySet()
+            val intent = if (!isOnTv()) {
+                val mimeTypes = if (!filter.isNullOrEmpty()) {
+                    val extensionRegex = "\\*\\.([a-z0-9]+)".toRegex(IGNORE_CASE)
+                    val mime = MimeTypeMap.getSingleton()
+                    extensionRegex.findAll(filter).map {
+                        it.groups[1]?.value?.let { mime.getMimeTypeFromExtension(it) } ?: "*/*"
+                    }.toSet()
+                } else emptySet()
 
-            Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                addCategory(Intent.CATEGORY_OPENABLE)
-                Log.v(TAG, "File mimyType filter: $mimeTypes")
-                if ("*/*" in mimeTypes) {
-                    type = "*/*"
-                } else {
-                    when (mimeTypes.size) {
-                        1 -> type = mimeTypes.first()
+                Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    Log.v(TAG, "File mimyType filter: $mimeTypes")
+                    if ("*/*" in mimeTypes) {
+                        type = "*/*"
+                    } else {
+                        when (mimeTypes.size) {
+                            1 -> type = mimeTypes.first()
 
-                        in 2..Int.MAX_VALUE -> {
-                            type = "*/*"
-                            putExtra(EXTRA_MIME_TYPES, mimeTypes.toTypedArray())
+                            in 2..Int.MAX_VALUE -> {
+                                type = "*/*"
+                                putExtra(EXTRA_MIME_TYPES, mimeTypes.toTypedArray())
+                            }
+
+                            else -> type = "*/*"
                         }
-
-                        else -> type = "*/*"
                     }
                 }
-            }.also {
-                startActivityForResult(it, OPEN_FILE_ACTION_CODE, ActivityResultHandler(
-                    onSuccess = {
-                        val uri = it?.data?.toString() ?: ""
-                        Log.d(TAG, "Open file: $uri")
+            } else {
+                Intent(this@AmneziaActivity, TvFilePicker::class.java)
+            }
+
+            try {
+                startActivityForResult(intent, OPEN_FILE_ACTION_CODE, ActivityResultHandler(
+                    onAny = {
+                        if (isOnTv() && it?.hasExtra("activityNotFound") == true) {
+                            showNoFileBrowserAlertDialog()
+                        }
+                        val uri = it?.data?.apply {
+                            grantUriPermission(packageName, this, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }?.toString() ?: ""
+                        Log.v(TAG, "Open file: $uri")
                         mainScope.launch {
                             qtInitialized.await()
                             QtAndroidController.onFileOpened(uri)
                         }
                     }
                 ))
+            } catch (_: ActivityNotFoundException) {
+                showNoFileBrowserAlertDialog()
+                mainScope.launch {
+                    qtInitialized.await()
+                    QtAndroidController.onFileOpened("")
+                }
+            }
+        }
+    }
+
+    private fun showNoFileBrowserAlertDialog() {
+        AlertDialog.Builder(this)
+            .setMessage(R.string.tvNoFileBrowser)
+            .setCancelable(false)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                try {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://webstoreredirect")))
+                } catch (_: Throwable) {}
+            }
+            .show()
+    }
+
+    @Suppress("unused")
+    fun getFd(fileName: String): Int {
+        Log.v(TAG, "Get fd for $fileName")
+        return blockingCall {
+            try {
+                pfd = contentResolver.openFileDescriptor(Uri.parse(fileName), "r")
+                pfd?.fd ?: -1
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to get fd: $e")
+                -1
             }
         }
     }
 
     @Suppress("unused")
+    fun closeFd() {
+        Log.v(TAG, "Close fd")
+        mainScope.launch {
+            pfd?.close()
+            pfd = null
+        }
+    }
+
+    @Suppress("unused")
+    fun getFileName(uri: String): String {
+        Log.v(TAG, "Get file name for uri: $uri")
+        return blockingCall {
+            try {
+                contentResolver.query(Uri.parse(uri), arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst() && !cursor.isNull(0)) {
+                        return@blockingCall cursor.getString(0) ?: ""
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to get file name: $e")
+            }
+            ""
+        }
+    }
+
+    @Suppress("unused")
+    @SuppressLint("UnsupportedChromeOsCameraSystemFeature")
     fun isCameraPresent(): Boolean = applicationContext.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA)
+
+    @Suppress("unused")
+    fun isOnTv(): Boolean = applicationContext.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
 
     @Suppress("unused")
     fun startQrCodeReader() {
@@ -598,6 +707,14 @@ class AmneziaActivity : QtActivity() {
         mainScope.launch {
             val flag = if (enabled) 0 else LayoutParams.FLAG_SECURE
             window.setFlags(flag, LayoutParams.FLAG_SECURE)
+        }
+    }
+
+    @Suppress("unused")
+    fun setNavigationBarColor(color: Int) {
+        Log.v(TAG, "Change navigation bar color: ${"#%08X".format(color)}")
+        mainScope.launch {
+            window.navigationBarColor = color
         }
     }
 
@@ -675,9 +792,132 @@ class AmneziaActivity : QtActivity() {
             .show()
     }
 
+    @Suppress("unused")
+    fun requestAuthentication() {
+        Log.v(TAG, "Request authentication")
+        mainScope.launch {
+            qtInitialized.await()
+            Intent(this@AmneziaActivity, AuthActivity::class.java).also {
+                startActivity(it)
+            }
+        }
+    }
+
+    // method to workaround Qt's problem with calling the keyboard on TVs
+    @Suppress("unused")
+    fun sendTouch(x: Float, y: Float) {
+        Log.v(TAG, "Send touch: $x, $y")
+        blockingCall {
+            findQtWindow(window.decorView)?.let {
+                Log.v(TAG, "Send touch to $it")
+                it.dispatchTouchEvent(createEvent(x, y, SystemClock.uptimeMillis(), MotionEvent.ACTION_DOWN))
+                it.dispatchTouchEvent(createEvent(x, y, SystemClock.uptimeMillis(), MotionEvent.ACTION_UP))
+            }
+        }
+    }
+
+    private fun findQtWindow(view: View): View? {
+        Log.v(TAG, "findQtWindow: process $view")
+        if (view::class.simpleName == "QtWindow") return view
+        else if (view is ViewGroup) {
+            for (i in 0 until view.childCount) {
+                val result = findQtWindow(view.getChildAt(i))
+                if (result != null) return result
+            }
+            return null
+        } else return null
+    }
+
+    private fun createEvent(x: Float, y: Float, eventTime: Long, action: Int): MotionEvent =
+        MotionEvent.obtain(
+            eventTime,
+            eventTime,
+            action,
+            1,
+            arrayOf(MotionEvent.PointerProperties().apply {
+                id = 0
+                toolType = MotionEvent.TOOL_TYPE_FINGER
+            }),
+            arrayOf(MotionEvent.PointerCoords().apply {
+                this.x = x
+                this.y = y
+                pressure = 1f
+                size = 1f
+            }),
+            0, 0, 1.0f, 1.0f, 0, 0, 0,0
+        )
+
+    // workaround for a bug in Qt that causes the mouse click event not to be handled
+    // also disable right-click, as it causes the application to crash
+    private var lastButtonState = 0
+    private fun MotionEvent.fixCopy(): MotionEvent = MotionEvent.obtain(
+        downTime,
+        eventTime,
+        action,
+        pointerCount,
+        (0 until pointerCount).map { i ->
+            MotionEvent.PointerProperties().apply {
+                getPointerProperties(i, this)
+            }
+        }.toTypedArray(),
+        (0 until pointerCount).map { i ->
+            MotionEvent.PointerCoords().apply {
+                getPointerCoords(i, this)
+            }
+        }.toTypedArray(),
+        metaState,
+        MotionEvent.BUTTON_PRIMARY,
+        xPrecision,
+        yPrecision,
+        deviceId,
+        edgeFlags,
+        source,
+        flags
+    )
+
+    private fun handleMouseEvent(ev: MotionEvent, superDispatch: (MotionEvent?) -> Boolean): Boolean {
+        when (ev.action) {
+            MotionEvent.ACTION_DOWN -> {
+                lastButtonState = ev.buttonState
+                if (ev.buttonState == MotionEvent.BUTTON_SECONDARY) return true
+            }
+
+            MotionEvent.ACTION_UP -> {
+                when (lastButtonState) {
+                    MotionEvent.BUTTON_SECONDARY -> return true
+                    MotionEvent.BUTTON_PRIMARY -> {
+                        val modEvent = ev.fixCopy()
+                        return superDispatch(modEvent).apply { modEvent.recycle() }
+                    }
+                }
+            }
+        }
+        return superDispatch(ev)
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+        Log.v(TAG, "dispatchTouch: $ev")
+        if (ev != null && ev.getToolType(0) == MotionEvent.TOOL_TYPE_MOUSE) {
+            return handleMouseEvent(ev) { super.dispatchTouchEvent(it) }
+        }
+        return super.dispatchTouchEvent(ev)
+    }
+
+    override fun dispatchTrackballEvent(ev: MotionEvent?): Boolean {
+        ev?.let { return handleMouseEvent(ev) { super.dispatchTrackballEvent(it) }}
+        return super.dispatchTrackballEvent(ev)
+    }
+
     /**
      * Utils methods
      */
+    private fun <T> blockingCall(
+        context: CoroutineContext = Dispatchers.Main.immediate,
+        block: suspend () -> T
+    ) = runBlocking {
+        mainScope.async(context) { block() }.await()
+    }
+
     companion object {
         private fun actionCodeToString(actionCode: Int): String =
             when (actionCode) {

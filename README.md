@@ -1,25 +1,51 @@
 # Amnezia VPN
-## _The best client for self-hosted VPN_
+
+### _The best client for self-hosted VPN_
+
 
 [![Build Status](https://github.com/amnezia-vpn/amnezia-client/actions/workflows/deploy.yml/badge.svg?branch=dev)](https://github.com/amnezia-vpn/amnezia-client/actions/workflows/deploy.yml?query=branch:dev)
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/amnezia-vpn/amnezia-client)
 
-Amnezia is an open-source VPN client, with a key feature that enables you to deploy your own VPN server on your server.
+### [English]([https://github.com/amnezia-vpn/amnezia-client/blob/dev/README_RU.md](https://github.com/amnezia-vpn/amnezia-client/tree/dev?tab=readme-ov-file#)) | [Русский](https://github.com/amnezia-vpn/amnezia-client/blob/dev/README_RU.md)
+
+
+[Amnezia](https://amnezia.org) is an open-source VPN client, with a key feature that enables you to deploy your own VPN server on your server.
+
+[![Image](https://github.com/amnezia-vpn/amnezia-client/blob/dev/metadata/img-readme/uipic4.png)](https://amnezia.org)
+
+### [Website](https://amnezia.org) | [Alt website link](https://storage.googleapis.com/amnezia/amnezia.org) | [Documentation](https://docs.amnezia.org) | [Troubleshooting](https://docs.amnezia.org/troubleshooting)
+
+> [!TIP]
+> If the [Amnezia website](https://amnezia.org) is blocked in your region, you can use an [Alternative website link](https://storage.googleapis.com/amnezia/amnezia.org ).
+
+<a href="https://amnezia.org/downloads"><img src="https://github.com/amnezia-vpn/amnezia-client/blob/dev/metadata/img-readme/download-website.svg" width="150" style="max-width: 100%; margin-right: 10px"></a>
+<a href="https://storage.googleapis.com/amnezia/q9p19109"><img src="https://github.com/amnezia-vpn/amnezia-client/blob/dev/metadata/img-readme/download-alt.svg" width="150" style="max-width: 100%;"></a>
+
+[All releases](https://github.com/amnezia-vpn/amnezia-client/releases)
+
+<br/>
+
+<a href="https://www.testiny.io"><img src="https://github.com/amnezia-vpn/amnezia-client/blob/dev/metadata/img-readme/testiny.png" height="28px"></a>
 
 ## Features
 
-- Very easy to use - enter your IP address, SSH login, and password, and Amnezia will automatically install VPN docker containers to your server and connect to the VPN.
-- OpenVPN, Shadowsocks, WireGuard, and IKEv2 protocols support.
-- Masking VPN with OpenVPN over Cloak plugin
-- Split tunneling support - add any sites to the client to enable VPN only for them (only for desktops)
+- Very easy to use - enter your IP address, SSH login, password and Amnezia will automatically install VPN docker containers to your server and connect to the VPN.
+- Classic VPN-protocols: OpenVPN, WireGuard and IKEv2 protocols.
+- Protocols with traffic Masking (Obfuscation): OpenVPN over [Cloak](https://github.com/cbeuw/Cloak) plugin, Shadowsocks (OpenVPN over Shadowsocks), [AmneziaWG](https://docs.amnezia.org/documentation/amnezia-wg/) and XRay.
+- Split tunneling support - add any sites to the client to enable VPN only for them or add Apps (only for Android and Desktop).
 - Windows, MacOS, Linux, Android, iOS releases.
+- Support for AmneziaWG protocol configuration on [Keenetic beta firmware](https://docs.keenetic.com/ua/air/kn-1611/en/6319-latest-development-release.html#UUID-186c4108-5afd-c10b-f38a-cdff6c17fab3_section-idm33192196168192-improved).
 
 ## Links
 
-[https://amnezia.org](https://amnezia.org) - project website  
-[https://www.reddit.com/r/AmneziaVPN](https://www.reddit.com/r/AmneziaVPN) - Reddit  
-[https://t.me/amnezia_vpn_en](https://t.me/amnezia_vpn_en) - Telegram support channel (English)  
-[https://t.me/amnezia_vpn](https://t.me/amnezia_vpn) - Telegram support channel (Russian)  
+- [https://amnezia.org](https://amnezia.org) - Project website | [Alternative link (mirror)](https://storage.googleapis.com/kldscp/amnezia.org)
+- [https://docs.amnezia.org](https://docs.amnezia.org) - Documentation
+- [https://www.reddit.com/r/AmneziaVPN](https://www.reddit.com/r/AmneziaVPN) - Reddit  
+- [https://t.me/amnezia_vpn_en](https://t.me/amnezia_vpn_en) - Telegram support channel (English) 
+- [https://t.me/amnezia_vpn_ir](https://t.me/amnezia_vpn_ir) - Telegram support channel (Farsi) 
+- [https://t.me/amnezia_vpn_mm](https://t.me/amnezia_vpn_mm) - Telegram support channel (Myanmar)  
+- [https://t.me/amnezia_vpn](https://t.me/amnezia_vpn) - Telegram support channel (Russian)
+- [https://vpnpay.io/en/amnezia-premium/](https://vpnpay.io/en/amnezia-premium/) - Amnezia Premium
 
 ## Tech
 
@@ -44,6 +70,19 @@ git submodule update --init --recursive
 
 Want to contribute? Welcome!
 
+### Help with translations
+
+Download the most actual translation files.
+
+Go to ["Actions" tab](https://github.com/amnezia-vpn/amnezia-client/actions?query=is%3Asuccess+branch%3Adev), click on the first line.
+Then scroll down to the "Artifacts" section and download "AmneziaVPN_translations".
+
+Unzip this file.
+Each *.ts file contains strings for one corresponding language.
+
+Translate or correct some strings in one or multiple *.ts files and commit them back to this repository into the ``client/translations`` folder.
+You can do it via a web-interface or any other method you're familiar with.
+
 ### Building sources and deployment
 
 Check deploy folder for build scripts. 
@@ -52,7 +91,7 @@ Check deploy folder for build scripts.
 
 1. First, make sure you have [XCode](https://developer.apple.com/xcode/) installed, at least version 14 or higher.
 
-2. We use QT to generate the XCode project. We need QT version 6.6.1. Install QT for MacOS [here](https://doc.qt.io/qt-6/macos.html) or [QT Online Installer](https://www.qt.io/download-open-source). Required modules:
+2. We use QT to generate the XCode project. We need QT version 6.6.2. Install QT for MacOS [here](https://doc.qt.io/qt-6/macos.html) or [QT Online Installer](https://www.qt.io/download-open-source). Required modules:
    - MacOS
    - iOS
    - Qt 5 Compatibility Module
@@ -119,9 +158,11 @@ The Android app has the following requirements:
 * Android platform SDK 33
 * CMake 3.25.0
 
-After you have installed QT, QT Creator, and Android Studio, you need to configure QT Creator correctly. Click in the top menu bar on `QT Creator` -> `Preferences` -> `Devices` and select the tab `Android`. 
-    * set path to JDK 11
-    * set path to Android SDK ($ANDROID_HOME)
+After you have installed QT, QT Creator, and Android Studio, you need to configure QT Creator correctly.
+
+- Click in the top menu bar on `QT Creator` -> `Preferences` -> `Devices` and select the tab `Android`.
+- Set path to JDK 11
+- Set path to Android SDK (`$ANDROID_HOME`)
 
 In case you get errors regarding missing SDK or 'SDK manager not running', you cannot fix them by correcting the paths. If you have some spare GBs on your disk, you can let QT Creator install all requirements by choosing an empty folder for `Android SDK location` and clicking on `Set Up SDK`. Be aware: This will install a second Android SDK and NDK on your machine! 
 Double-check that the right CMake version is configured:  Click on `QT Creator` -> `Preferences` and click on the side menu on `Kits`. Under the center content view's `Kits` tab, you'll find an entry for `CMake Tool`. If the default selected CMake version is lower than 3.25.0, install on your system CMake >= 3.25.0 and choose `System CMake at <path>` from the drop-down list. If this entry is missing, you either have not installed CMake yet or QT Creator hasn't found the path to it. In that case, click in the preferences window on the side menu item `CMake`, then on the tab `Tools` in the center content view, and finally on the button `Add` to set the path to your installed CMake. 
@@ -142,11 +183,13 @@ GPL v3.0
 
 ## Donate
 
-Bitcoin: bc1qn9rhsffuxwnhcuuu4qzrwp4upkrq94xnh8r26u  
-XMR: 48spms39jt1L2L5vyw2RQW6CXD6odUd4jFu19GZcDyKKQV9U88wsJVjSbL4CfRys37jVMdoaWVPSvezCQPhHXUW5UKLqUp3  
-payeer.com: P2561305  
-ko-fi.com: [https://ko-fi.com/amnezia_vpn](https://ko-fi.com/amnezia_vpn)  
+Patreon: [https://www.patreon.com/amneziavpn](https://www.patreon.com/amneziavpn)
 
+Bitcoin: bc1qmhtgcf9637rl3kqyy22r2a8wa8laka4t9rx2mf <br>
+USDT BEP20: 0x6abD576765a826f87D1D95183438f9408C901bE4 <br>
+USDT TRC20: TELAitazF1MZGmiNjTcnxDjEiH5oe7LC9d <br>
+XMR: 48spms39jt1L2L5vyw2RQW6CXD6odUd4jFu19GZcDyKKQV9U88wsJVjSbL4CfRys37jVMdoaWVPSvezCQPhHXUW5UKLqUp3 <br> 
+TON: UQDpU1CyKRmg7L8mNScKk9FRc2SlESuI7N-Hby4nX-CcVmns
 ## Acknowledgments
 
 This project is tested with BrowserStack.

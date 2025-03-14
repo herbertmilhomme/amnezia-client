@@ -22,6 +22,7 @@ import androidx.annotation.MainThread
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
+import java.net.UnknownHostException
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.LazyThreadSafetyMode.NONE
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -31,6 +32,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
@@ -39,7 +41,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.amnezia.vpn.protocol.BadConfigException
-import org.amnezia.vpn.protocol.LoadLibraryException
 import org.amnezia.vpn.protocol.ProtocolState.CONNECTED
 import org.amnezia.vpn.protocol.ProtocolState.CONNECTING
 import org.amnezia.vpn.protocol.ProtocolState.DISCONNECTED
@@ -49,6 +50,7 @@ import org.amnezia.vpn.protocol.ProtocolState.UNKNOWN
 import org.amnezia.vpn.protocol.VpnException
 import org.amnezia.vpn.protocol.VpnStartException
 import org.amnezia.vpn.protocol.putStatus
+import org.amnezia.vpn.util.LoadLibraryException
 import org.amnezia.vpn.util.Log
 import org.amnezia.vpn.util.Prefs
 import org.amnezia.vpn.util.net.NetworkState
@@ -111,6 +113,10 @@ open class AmneziaVpnService : VpnService() {
         get() = clientMessengers.any { it.value.name == ACTIVITY_MESSENGER_NAME }
 
     private val connectionExceptionHandler = CoroutineExceptionHandler { _, e ->
+        connectionJob?.cancel()
+        connectionJob = null
+        disconnectionJob?.cancel()
+        disconnectionJob = null
         protocolState.value = DISCONNECTED
         when (e) {
             is IllegalArgumentException,
@@ -121,6 +127,8 @@ open class AmneziaVpnService : VpnService() {
             is BadConfigException -> onError("VPN config format error: ${e.message}")
 
             is LoadLibraryException -> onError("${e.message}. Caused: ${e.cause?.message}")
+
+            is UnknownHostException -> onError("Unknown host")
 
             else -> throw e
         }
@@ -292,7 +300,7 @@ open class AmneziaVpnService : VpnService() {
             arrayOf(ACTION_CONNECT, ACTION_DISCONNECT), ContextCompat.RECEIVER_NOT_EXPORTED
         ) {
             it?.action?.let { action ->
-                Log.d(TAG, "Broadcast request received: $action")
+                Log.v(TAG, "Broadcast request received: $action")
                 when (action) {
                     ACTION_CONNECT -> connect()
                     ACTION_DISCONNECT -> disconnect()
@@ -309,7 +317,7 @@ open class AmneziaVpnService : VpnService() {
                 )
             ) {
                 val state = it?.getBooleanExtra(NotificationManager.EXTRA_BLOCKED_STATE, false)
-                Log.d(TAG, "Notification state changed: ${it?.action}, blocked = $state")
+                Log.v(TAG, "Notification state changed: ${it?.action}, blocked = $state")
                 if (state == false) {
                     enableNotification()
                 } else {
@@ -442,7 +450,7 @@ open class AmneziaVpnService : VpnService() {
             serviceNotification.isNotificationEnabled() &&
             getSystemService<PowerManager>()?.isInteractive != false
         ) {
-            Log.d(TAG, "Launch traffic stats update")
+            Log.v(TAG, "Launch traffic stats update")
             trafficStats.reset()
             startTrafficStatsUpdateJob()
         }
@@ -531,7 +539,7 @@ open class AmneziaVpnService : VpnService() {
         protocolState.value = DISCONNECTING
 
         disconnectionJob = connectionScope.launch {
-            connectionJob?.join()
+            connectionJob?.cancelAndJoin()
             connectionJob = null
 
             vpnProto?.protocol?.stopVpn()

@@ -8,6 +8,7 @@ import PageEnum 1.0
 import ProtocolEnum 1.0
 import ContainerEnum 1.0
 import ContainerProps 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -17,13 +18,6 @@ import "../Components"
 
 PageType {
     id: root
-
-    defaultActiveFocusItem: focusItem
-
-    Item {
-        id: focusItem
-        KeyNavigation.tab: backButton
-    }
 
     ColumnLayout {
         id: header
@@ -36,7 +30,6 @@ PageType {
 
         BackButtonType {
             id: backButton
-            KeyNavigation.tab: listView
         }
 
         HeaderType {
@@ -74,13 +67,6 @@ PageType {
                 activeFocusOnTab: true
                 focus: true
 
-                onActiveFocusChanged: {
-                    if (focus) {
-                        listView.currentIndex = 0
-                        listView.currentItem.focusItem.forceActiveFocus()
-                    }
-                }
-
                 delegate: Item {
                     implicitWidth: parent.width
                     implicitHeight: delegateContent.implicitHeight
@@ -100,10 +86,8 @@ PageType {
                             text: qsTr("Show connection options")
 
                             clickedFunction: function() {
-                                configContentDrawer.open()
+                                configContentDrawer.openTriggered()
                             }
-
-                            KeyNavigation.tab: removeButton
 
                             MouseArea {
                                 anchors.fill: button
@@ -119,30 +103,11 @@ PageType {
 
                             expandedHeight: root.height * 0.9
 
-                            onClosed: {
-                                if (!GC.isMobile()) {
-                                    defaultActiveFocusItem.forceActiveFocus()
-                                }
-                            }
-
                             parent: root
                             anchors.fill: parent
 
-                            expandedContent: Item {
+                            expandedStateContent: Item {
                                 implicitHeight: configContentDrawer.expandedHeight
-
-                                Connections {
-                                    target: configContentDrawer
-                                    enabled: !GC.isMobile()
-                                    function onOpened() {
-                                        focusItem1.forceActiveFocus()
-                                    }
-                                }
-
-                                Item {
-                                    id: focusItem1
-                                    KeyNavigation.tab: backButton1
-                                }
 
                                 BackButtonType {
                                     id: backButton1
@@ -153,10 +118,8 @@ PageType {
                                     anchors.topMargin: 16
 
                                     backButtonFunction: function() {
-                                        configContentDrawer.close()
+                                        configContentDrawer.closeTriggered()
                                     }
-
-                                    KeyNavigation.tab: focusItem1
                                 }
 
                                 FlickableType {
@@ -191,9 +154,9 @@ PageType {
                                             leftPadding: 0
                                             height: 24
 
-                                            color: "#D7D8DB"
-                                            selectionColor:  "#633303"
-                                            selectedTextColor: "#D7D8DB"
+                                            color: AmneziaStyle.color.paleGray
+                                            selectionColor: AmneziaStyle.color.richBrown
+                                            selectedTextColor: AmneziaStyle.color.paleGray
 
                                             font.pixelSize: 16
                                             font.weight: Font.Medium
@@ -204,7 +167,7 @@ PageType {
                                             wrapMode: Text.Wrap
 
                                             background: Rectangle {
-                                                color: "transparent"
+                                                color: AmneziaStyle.color.transparent
                                             }
                                         }
                                     }
@@ -223,9 +186,8 @@ PageType {
                 visible: ServersModel.isProcessedServerHasWriteAccess()
 
                 text: qsTr("Remove ") + ContainersModel.getProcessedContainerName()
-                textColor: "#EB5757"
+                textColor: AmneziaStyle.color.vibrantRed
 
-                Keys.onTabPressed: lastItemTabClicked(focusItem)
                 clickedFunction: function() {
                     var headerText = qsTr("Remove %1 from server?").arg(ContainersModel.getProcessedContainerName())
                     var descriptionText = qsTr("All users with whom you shared a connection with will no longer be able to connect to it.")

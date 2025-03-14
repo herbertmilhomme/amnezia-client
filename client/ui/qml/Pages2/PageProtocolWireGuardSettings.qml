@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import SortFilterProxyModel 0.2
 
 import PageEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -14,13 +15,6 @@ import "../Components"
 
 PageType {
     id: root
-
-    defaultActiveFocusItem: listview
-
-    Item {
-        id: focusItem
-        KeyNavigation.tab: backButton
-    }
 
     ColumnLayout {
         id: backButtonLayout
@@ -33,7 +27,6 @@ PageType {
 
         BackButtonType {
             id: backButton
-            KeyNavigation.tab: listview
         }
     }
 
@@ -63,15 +56,11 @@ PageType {
 
                 model: WireGuardConfigModel
 
-                activeFocusOnTab: true
-                onActiveFocusChanged: {
-                    if (activeFocus) {
-                        listview.itemAtIndex(0)?.focusItemId.forceActiveFocus()
-                    }
-                }
-
                 delegate: Item {
-                    property alias focusItemId: portTextField.textField
+                    id: delegateItem
+
+                    property alias focusItemId: vpnAddressSubnetTextField
+                    property bool isEnabled: ServersModel.isProcessedServerHasWriteAccess()
 
                     implicitWidth: listview.width
                     implicitHeight: col.implicitHeight
@@ -94,20 +83,18 @@ PageType {
                         }
 
                         TextFieldWithHeaderType {
-                            id: portTextField
+                            id: vpnAddressSubnetTextField
                             Layout.fillWidth: true
                             Layout.topMargin: 40
 
-                            headerText: qsTr("Port")
-                            textFieldText: port
-                            textField.maximumLength: 5
-                            textField.validator: IntValidator { bottom: 1; top: 65535 }
+                            enabled: delegateItem.isEnabled
 
-                            KeyNavigation.tab: mtuTextField.textField
+                            headerText: qsTr("VPN address subnet")
+                            textField.text: subnetAddress
 
                             textField.onEditingFinished: {
-                                if (textFieldText !== port) {
-                                    port = textFieldText
+                                if (textField.text !== subnetAddress) {
+                                    subnetAddress = textField.text
                                 }
                             }
 
@@ -115,24 +102,23 @@ PageType {
                         }
 
                         TextFieldWithHeaderType {
-                            id: mtuTextField
+                            id: portTextField
                             Layout.fillWidth: true
                             Layout.topMargin: 16
 
-                            headerText: qsTr("MTU")
-                            textFieldText: mtu
-                            textField.validator: IntValidator { bottom: 576; top: 65535 }
+                            enabled: delegateItem.isEnabled
 
-                            KeyNavigation.tab: saveButton
+                            headerText: qsTr("Port")
+                            textField.text: port
+                            textField.maximumLength: 5
+                            textField.validator: IntValidator { bottom: 1; top: 65535 }
 
                             textField.onEditingFinished: {
-                                if (textFieldText === "") {
-                                    textFieldText = "0"
-                                }
-                                if (textFieldText !== mtu) {
-                                    mtu = textFieldText
+                                if (textField.text !== port) {
+                                    port = textField.text
                                 }
                             }
+
                             checkEmptyText: true
                         }
 
@@ -142,24 +128,34 @@ PageType {
                             Layout.topMargin: 24
                             Layout.bottomMargin: 24
 
-                            enabled: mtuTextField.errorText === "" &&
-                                     portTextField.errorText === ""
+                            enabled: portTextField.errorText === "" &&
+                                     vpnAddressSubnetTextField.errorText === ""
 
                             text: qsTr("Save")
 
-                            Keys.onTabPressed: lastItemTabClicked(focusItem)
-
-                            onClicked: {
+                            onClicked: function() {
                                 forceActiveFocus()
 
-                                if (ConnectionController.isConnected && ServersModel.getDefaultServerData("defaultContainer") === ContainersModel.getProcessedContainerIndex()) {
-                                    PageController.showNotificationMessage(qsTr("Unable change settings while there is an active connection"))
-                                    return
-                                }
+                                var headerText = qsTr("Save settings?")
+                                var descriptionText = qsTr("All users with whom you shared a connection with will no longer be able to connect to it.")
+                                var yesButtonText = qsTr("Continue")
+                                var noButtonText = qsTr("Cancel")
 
-                                PageController.goToPage(PageEnum.PageSetupWizardInstalling);
-                                InstallController.updateContainer(WireGuardConfigModel.getConfig())
-                                focusItem.forceActiveFocus()
+                                var yesButtonFunction = function() {
+                                    if (ConnectionController.isConnected && ServersModel.getDefaultServerData("defaultContainer") === ContainersModel.getProcessedContainerIndex()) {
+                                        PageController.showNotificationMessage(qsTr("Unable change settings while there is an active connection"))
+                                        return
+                                    }
+
+                                    PageController.goToPage(PageEnum.PageSetupWizardInstalling);
+                                    InstallController.updateContainer(WireGuardConfigModel.getConfig())
+                                }
+                                var noButtonFunction = function() {
+                                    if (!GC.isMobile()) {
+                                        saveRestartButton.forceActiveFocus()
+                                    }
+                                }
+                                showQuestionDrawer(headerText, descriptionText, yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
                             }
 
                             Keys.onEnterPressed: saveButton.clicked()

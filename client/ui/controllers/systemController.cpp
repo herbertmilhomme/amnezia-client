@@ -24,7 +24,7 @@ SystemController::SystemController(const std::shared_ptr<Settings> &settings, QO
 {
 }
 
-void SystemController::saveFile(QString fileName, const QString &data)
+void SystemController::saveFile(const QString &fileName, const QString &data)
 {
 #if defined Q_OS_ANDROID
     AndroidController::instance()->saveFile(fileName, data);
@@ -60,6 +60,31 @@ void SystemController::saveFile(QString fileName, const QString &data)
 
     QDesktopServices::openUrl(url);
 #endif
+}
+
+bool SystemController::readFile(const QString &fileName, QByteArray &data)
+{
+#ifdef Q_OS_ANDROID
+    int fd = AndroidController::instance()->getFd(fileName);
+    if (fd == -1) return false;
+    QFile file;
+    if(!file.open(fd, QIODevice::ReadOnly)) return false;
+    data = file.readAll();
+    AndroidController::instance()->closeFd();
+#else
+    QFile file(fileName);
+    if (!file.open(QIODevice::ReadOnly)) return false;
+    data = file.readAll();
+#endif
+    return true;
+}
+
+bool SystemController::readFile(const QString &fileName, QString &data)
+{
+    QByteArray byteArray;
+    if(!readFile(fileName, byteArray)) return false;
+    data = byteArray;
+    return true;
 }
 
 QString SystemController::getFileName(const QString &acceptLabel, const QString &nameFilter,
@@ -124,4 +149,20 @@ QString SystemController::getFileName(const QString &acceptLabel, const QString 
 void SystemController::setQmlRoot(QObject *qmlRoot)
 {
     m_qmlRoot = qmlRoot;
+}
+
+bool SystemController::isAuthenticated()
+{
+#ifdef Q_OS_ANDROID
+    return AndroidController::instance()->requestAuthentication();
+#else
+    return true;
+#endif
+}
+
+void SystemController::sendTouch(float x, float y)
+{
+#ifdef Q_OS_ANDROID
+    AndroidController::instance()->sendTouch(x, y);
+#endif
 }

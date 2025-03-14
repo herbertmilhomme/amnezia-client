@@ -98,6 +98,7 @@ bool AndroidController::initialize()
         {"onStatisticsUpdate", "(JJ)V", reinterpret_cast<void *>(onStatisticsUpdate)},
         {"onFileOpened", "(Ljava/lang/String;)V", reinterpret_cast<void *>(onFileOpened)},
         {"onConfigImported", "(Ljava/lang/String;)V", reinterpret_cast<void *>(onConfigImported)},
+        {"onAuthResult", "(Z)V", reinterpret_cast<void *>(onAuthResult)},
         {"decodeQrCode", "(Ljava/lang/String;)Z", reinterpret_cast<bool *>(decodeQrCode)}
     };
 
@@ -162,9 +163,7 @@ QString AndroidController::openFile(const QString &filter)
     QString fileName;
     connect(this, &AndroidController::fileOpened, this,
             [&fileName, &wait](const QString &uri) {
-                qDebug() << "Android event: file opened; uri:" << uri;
-                fileName = QQmlFile::urlToLocalFileOrQrc(uri);
-                qDebug() << "Android opened filename:" << fileName;
+                fileName = uri;
                 wait.quit();
             },
             static_cast<Qt::ConnectionType>(Qt::QueuedConnection | Qt::SingleShotConnection));
@@ -174,9 +173,33 @@ QString AndroidController::openFile(const QString &filter)
     return fileName;
 }
 
+int AndroidController::getFd(const QString &fileName)
+{
+    return callActivityMethod<jint>("getFd", "(Ljava/lang/String;)I",
+                                    QJniObject::fromString(fileName).object<jstring>());
+}
+
+void AndroidController::closeFd()
+{
+    callActivityMethod("closeFd", "()V");
+}
+
+QString AndroidController::getFileName(const QString &uri)
+{
+    auto fileName = callActivityMethod<jstring, jstring>("getFileName", "(Ljava/lang/String;)Ljava/lang/String;",
+                                                         QJniObject::fromString(uri).object<jstring>());
+    QJniEnvironment env;
+    return AndroidUtils::convertJString(env.jniEnv(), fileName.object<jstring>());
+}
+
 bool AndroidController::isCameraPresent()
 {
     return callActivityMethod<jboolean>("isCameraPresent", "()Z");
+}
+
+bool AndroidController::isOnTv()
+{
+    return callActivityMethod<jboolean>("isOnTv", "()Z");
 }
 
 void AndroidController::startQrReaderActivity()
@@ -203,6 +226,11 @@ void AndroidController::clearLogs()
 void AndroidController::setScreenshotsEnabled(bool enabled)
 {
     callActivityMethod("setScreenshotsEnabled", "(Z)V", enabled);
+}
+
+void AndroidController::setNavigationBarColor(unsigned int color)
+{
+    callActivityMethod("setNavigationBarColor", "(I)V", color);
 }
 
 void AndroidController::minimizeApp()
@@ -258,6 +286,27 @@ bool AndroidController::isNotificationPermissionGranted()
 void AndroidController::requestNotificationPermission()
 {
     callActivityMethod("requestNotificationPermission", "()V");
+}
+
+bool AndroidController::requestAuthentication()
+{
+    QEventLoop wait;
+    bool result;
+    connect(this, &AndroidController::authenticationResult, this,
+            [&result, &wait](const bool &authResult){
+                qDebug() << "Android authentication result:" << authResult;
+                result = authResult;
+                wait.quit();
+            },
+            static_cast<Qt::ConnectionType>(Qt::QueuedConnection | Qt::SingleShotConnection));
+    callActivityMethod("requestAuthentication", "()V");
+    wait.exec();
+    return result;
+}
+
+void AndroidController::sendTouch(float x, float y)
+{
+    callActivityMethod("sendTouch", "(FF)V", x, y);
 }
 
 // Moving log processing to the Android side
@@ -455,6 +504,14 @@ void AndroidController::onConfigImported(JNIEnv *env, jobject thiz, jstring data
     Q_UNUSED(thiz);
 
     emit AndroidController::instance()->configImported(AndroidUtils::convertJString(env, data));
+}
+
+// static
+void AndroidController::onAuthResult(JNIEnv *env, jobject thiz, jboolean result)
+{
+    Q_UNUSED(thiz);
+
+    emit AndroidController::instance()->authenticationResult(result);
 }
 
 // static

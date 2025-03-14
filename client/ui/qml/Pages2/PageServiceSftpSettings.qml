@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import SortFilterProxyModel 0.2
 
 import PageEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -15,19 +16,12 @@ import "../Components"
 PageType {
     id: root
 
-    defaultActiveFocusItem: focusItem
-
     Connections {
         target: InstallController
 
         function onUpdateContainerFinished() {
             PageController.showNotificationMessage(qsTr("Settings updated successfully"))
         }
-    }
-
-    Item {
-        id: focusItem
-        KeyNavigation.tab: backButton
     }
 
     ColumnLayout {
@@ -41,7 +35,6 @@ PageType {
 
         BackButtonType {
             id: backButton
-            KeyNavigation.tab: listview
         }
     }
 
@@ -73,7 +66,7 @@ PageType {
 
                 onFocusChanged: {
                     if (focus) {
-                        listview.currentItem.focusItem.forceActiveFocus()
+                        listview.currentItem.listViewFocusItem.forceActiveFocus()
                     }
                 }
 
@@ -81,7 +74,7 @@ PageType {
                     implicitWidth: listview.width
                     implicitHeight: col.implicitHeight
 
-                    property alias focusItem: hostLabel.rightButton
+                    property alias listViewFocusItem: hostLabel.rightButton
 
                     ColumnLayout {
                         id: col
@@ -106,7 +99,6 @@ PageType {
                             Layout.topMargin: 32
 
                             parentFlickable: fl
-                            KeyNavigation.tab: portLabel.rightButton
 
                             text: qsTr("Host")
                             descriptionText: ServersModel.getProcessedServerData("hostName")
@@ -114,7 +106,7 @@ PageType {
                             descriptionOnTop: true
 
                             rightImageSource: "qrc:/images/controls/copy.svg"
-                            rightImageColor: "#D7D8DB"
+                            rightImageColor: AmneziaStyle.color.paleGray
 
                             clickedFunction: function() {
                                 GC.copyToClipBoard(descriptionText)
@@ -135,10 +127,9 @@ PageType {
                             descriptionOnTop: true
 
                             parentFlickable: fl
-                            KeyNavigation.tab: usernameLabel.rightButton
 
                             rightImageSource: "qrc:/images/controls/copy.svg"
-                            rightImageColor: "#D7D8DB"
+                            rightImageColor: AmneziaStyle.color.paleGray
 
                             clickedFunction: function() {
                                 GC.copyToClipBoard(descriptionText)
@@ -159,10 +150,9 @@ PageType {
                             descriptionOnTop: true
 
                             parentFlickable: fl
-                            KeyNavigation.tab: passwordLabel.eyeButton
 
                             rightImageSource: "qrc:/images/controls/copy.svg"
-                            rightImageColor: "#D7D8DB"
+                            rightImageColor: AmneziaStyle.color.paleGray
 
                             clickedFunction: function() {
                                 GC.copyToClipBoard(descriptionText)
@@ -183,17 +173,9 @@ PageType {
                             descriptionOnTop: true
 
                             parentFlickable: fl
-                            eyeButton.KeyNavigation.tab: passwordLabel.rightButton
-                            rightButton.Keys.onTabPressed: {
-                                if (mountButton.visible) {
-                                    mountButton.forceActiveFocus()
-                                } else {
-                                    detailedInstructionsButton.forceActiveFocus()
-                                }
-                            }
 
                             rightImageSource: "qrc:/images/controls/copy.svg"
-                            rightImageColor: "#D7D8DB"
+                            rightImageColor: AmneziaStyle.color.paleGray
 
                             buttonImageSource: hideDescription ? "qrc:/images/controls/eye.svg" : "qrc:/images/controls/eye-off.svg"
 
@@ -216,15 +198,14 @@ PageType {
                             Layout.leftMargin: 16
                             Layout.rightMargin: 16
 
-                            defaultColor: "transparent"
-                            hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                            pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                            disabledColor: "#878B91"
-                            textColor: "#D7D8DB"
+                            defaultColor: AmneziaStyle.color.transparent
+                            hoveredColor: AmneziaStyle.color.translucentWhite
+                            pressedColor: AmneziaStyle.color.sheerWhite
+                            disabledColor: AmneziaStyle.color.mutedGray
+                            textColor: AmneziaStyle.color.paleGray
                             borderWidth: 1
 
                             parentFlickable: fl
-                            KeyNavigation.tab: detailedInstructionsButton
 
                             text: qsTr("Mount folder on device")
 
@@ -232,7 +213,7 @@ PageType {
                                 PageController.showBusyIndicator(true)
                                 InstallController.mountSftpDrive(port, password, username)
                                 PageController.showBusyIndicator(false)
-                                }
+                            }
                         }
 
                         ParagraphTextType {
@@ -280,55 +261,18 @@ PageType {
                             Layout.leftMargin: 8
                             implicitHeight: 32
 
-                            defaultColor: "transparent"
-                            hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                            pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                            disabledColor: "#878B91"
-                            textColor: "#FBB26A"
+                            defaultColor: AmneziaStyle.color.transparent
+                            hoveredColor: AmneziaStyle.color.translucentWhite
+                            pressedColor: AmneziaStyle.color.sheerWhite
+                            disabledColor: AmneziaStyle.color.mutedGray
+                            textColor: AmneziaStyle.color.goldenApricot
 
                             text: qsTr("Detailed instructions")
 
                             parentFlickable: fl
-                            KeyNavigation.tab: removeButton
 
                             clickedFunc: function() {
 //                                Qt.openUrlExternally("https://github.com/amnezia-vpn/desktop-client/releases/latest")
-                            }
-                        }
-
-                        BasicButtonType {
-                            id: removeButton
-                            Layout.topMargin: 24
-                            Layout.bottomMargin: 16
-                            Layout.leftMargin: 8
-                            implicitHeight: 32
-
-                            defaultColor: "transparent"
-                            hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                            pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                            textColor: "#EB5757"
-
-                            parentFlickable: fl
-                            Keys.onTabPressed: lastItemTabClicked()
-
-                            text: qsTr("Remove SFTP and all data stored there")
-
-                            clickedFunc: function() {
-                                var headerText = qsTr("Remove SFTP and all data stored there?")
-                                var yesButtonText = qsTr("Continue")
-                                var noButtonText = qsTr("Cancel")
-
-                                var yesButtonFunction = function() {
-                                    PageController.goToPage(PageEnum.PageDeinstalling)
-                                    InstallController.removeProcessedContainer()
-                                }
-                                var noButtonFunction = function() {
-                                    if (!GC.isMobile()) {
-                                        removeButton.forceActiveFocus()
-                                    }
-                                }
-
-                                showQuestionDrawer(headerText, "", yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
                             }
                         }
                     }

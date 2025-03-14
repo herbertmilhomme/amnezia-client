@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 import PageEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -11,14 +12,7 @@ import "../Config"
 PageType {
     id: root
 
-    defaultActiveFocusItem: focusItem
-
     property bool isAppSplitTinnelingEnabled: Qt.platform.os === "windows" || Qt.platform.os === "android"
-
-    Item {
-        id: focusItem
-        KeyNavigation.tab: backButton
-    }
 
     BackButtonType {
         id: backButton
@@ -27,8 +21,6 @@ PageType {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.topMargin: 20
-
-        KeyNavigation.tab: amneziaDnsSwitch
     }
 
     FlickableType {
@@ -66,8 +58,6 @@ PageType {
                         SettingsController.toggleAmneziaDns(checked)
                     }
                 }
-
-                KeyNavigation.tab: dnsServersButton.rightButton
             }
 
             DividerType {}
@@ -80,11 +70,11 @@ PageType {
                 descriptionText: qsTr("When AmneziaDNS is not used or installed")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
 
+                parentFlickable: fl
+
                 clickedFunction: function() {
                     PageController.goToPage(PageEnum.PageSettingsDns)
                 }
-
-                KeyNavigation.tab: splitTunnelingButton.rightButton
             }
 
             DividerType {}
@@ -97,18 +87,10 @@ PageType {
                 descriptionText: qsTr("Allows you to select which sites you want to access through the VPN")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
 
+                parentFlickable: fl
+
                 clickedFunction: function() {
                     PageController.goToPage(PageEnum.PageSettingsSplitTunneling)
-                }
-
-                Keys.onTabPressed: {
-                    if (splitTunnelingButton2.visible) {
-                        return splitTunnelingButton2.rightButton.forceActiveFocus()
-                    } else if (killSwitchSwitcher.visible) {
-                        return killSwitchSwitcher.forceActiveFocus()
-                    } else {
-                        lastItemTabClicked()
-                    }
                 }
             }
 
@@ -126,16 +108,10 @@ PageType {
                 descriptionText: qsTr("Allows you to use the VPN only for certain Apps")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
 
+                parentFlickable: fl
+
                 clickedFunction: function() {
                     PageController.goToPage(PageEnum.PageSettingsAppSplitTunneling)
-                }
-
-                Keys.onTabPressed: {
-                    if (killSwitchSwitcher.visible) {
-                        return killSwitchSwitcher.forceActiveFocus()
-                    } else {
-                        lastItemTabClicked()
-                    }
                 }
             }
 
@@ -153,6 +129,8 @@ PageType {
                 text: qsTr("KillSwitch")
                 descriptionText: qsTr("Disables your internet if your encrypted VPN connection drops out for any reason.")
 
+                parentFlickable: fl
+
                 checked: SettingsController.isKillSwitchEnabled()
                 checkable: !ConnectionController.isConnected
                 onCheckedChanged: {
@@ -162,11 +140,9 @@ PageType {
                 }
                 onClicked: {
                     if (!checkable) {
-                        PageController.showNotificationMessage(qsTr("Cannot change killSwitch settings during active connection"))
+                        PageController.showNotificationMessage(qsTr("Cannot change KillSwitch settings during active connection"))
                     }
                 }
-
-                Keys.onTabPressed: lastItemTabClicked()
             }
 
             DividerType {

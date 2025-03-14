@@ -1,6 +1,8 @@
 import QtQuick
 import QtQuick.Layouts
 
+import Style 1.0
+
 import "TextTypes"
 
 Item {
@@ -16,8 +18,6 @@ Item {
     property int headerTextElide: Qt.ElideRight
 
     property string descriptionText
-
-    focus: true
 
     implicitWidth: content.implicitWidth
     implicitHeight: content.implicitHeight
@@ -46,7 +46,7 @@ Item {
                 Layout.alignment: Qt.AlignRight
 
                 image: root.actionButtonImage
-                imageColor: "#D7D8DB"
+                imageColor: AmneziaStyle.color.paleGray
 
                 visible: image ? true : false
 
@@ -66,7 +66,7 @@ Item {
 
             text: root.descriptionText
 
-            color: "#878B91"
+            color: AmneziaStyle.color.mutedGray
 
             visible: root.descriptionText !== ""
         }

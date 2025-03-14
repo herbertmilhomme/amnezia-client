@@ -1,8 +1,9 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#include "protocols/protocols_defs.h"
 #include "localsocketcontroller.h"
+
+#include <stdint.h>
 
 #include <QDir>
 #include <QFileInfo>
@@ -17,6 +18,9 @@
 #include "leakdetector.h"
 #include "logger.h"
 #include "models/server.h"
+#include "daemon/daemonerrors.h"
+
+#include "protocols/protocols_defs.h"
 
 // How many times do we try to reconnect.
 constexpr int MAX_CONNECTION_RETRY = 10;
@@ -34,8 +38,8 @@ LocalSocketController::LocalSocketController() {
   m_socket = new QLocalSocket(this);
   connect(m_socket, &QLocalSocket::connected, this,
           &LocalSocketController::daemonConnected);
-  connect(m_socket, &QLocalSocket::disconnected, this,
-          &LocalSocketController::disconnected);
+  connect(m_socket, &QLocalSocket::disconnected, this, 
+          [&] { errorOccurred(QLocalSocket::PeerClosedError); });
   connect(m_socket, &QLocalSocket::errorOccurred, this,
           &LocalSocketController::errorOccurred);
   connect(m_socket, &QLocalSocket::readyRead, this,
@@ -149,7 +153,7 @@ void LocalSocketController::activate(const QJsonObject &rawConfig) {
   QJsonArray jsAllowedIPAddesses;
 
   QJsonArray plainAllowedIP = wgConfig.value(amnezia::config_key::allowed_ips).toArray();
-  QJsonArray defaultAllowedIP = QJsonArray::fromStringList(QString("0.0.0.0/0, ::/0").split(","));
+  QJsonArray defaultAllowedIP = { "0.0.0.0/0", "::/0" };
 
   if (plainAllowedIP != defaultAllowedIP && !plainAllowedIP.isEmpty()) {
     // Use AllowedIP list from WG config because of higher priority
@@ -451,8 +455,39 @@ void LocalSocketController::parseCommand(const QByteArray& command) {
   }
 
   if (type == "backendFailure") {
-    qCritical() << "backendFailure";
-    return;
+    if (!obj.contains("errorCode")) {
+      // report a generic error if we dont know what it is.
+      logger.error() << "generic backend failure error";
+      // REPORTERROR(ErrorHandler::ControllerError, "controller");
+      return;
+    }
+    auto errorCode = static_cast<uint8_t>(obj["errorCode"].toInt());
+    if (errorCode >= (uint8_t)DaemonError::DAEMON_ERROR_MAX) {
+      // Also report a generic error if the code is invalid.
+      logger.error() << "invalid backend failure error code";
+      // REPORTERROR(ErrorHandler::ControllerError, "controller");
+      return;
+    }
+    switch (static_cast<DaemonError>(errorCode)) {
+      case DaemonError::ERROR_NONE:
+        [[fallthrough]];
+      case DaemonError::ERROR_FATAL:
+        logger.error() << "generic backend failure error (fatal or error none)";
+        // REPORTERROR(ErrorHandler::ControllerError, "controller");
+        break;
+      case DaemonError::ERROR_SPLIT_TUNNEL_INIT_FAILURE:
+        [[fallthrough]];
+      case DaemonError::ERROR_SPLIT_TUNNEL_START_FAILURE:
+        [[fallthrough]];
+      case DaemonError::ERROR_SPLIT_TUNNEL_EXCLUDE_FAILURE:
+        logger.error() << "split tunnel backend failure error";
+        //REPORTERROR(ErrorHandler::SplitTunnelError, "controller");
+        break;
+      case DaemonError::DAEMON_ERROR_MAX:
+        // We should not get here.
+        Q_ASSERT(false);
+        break;
+    }
   }
 
   if (type == "logs") {

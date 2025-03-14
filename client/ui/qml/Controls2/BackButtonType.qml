@@ -2,7 +2,9 @@ import QtQuick
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 
-Item {
+import Style 1.0
+
+FocusScope {
     id: root
 
     property string backButtonImage: "qrc:/images/controls/arrow-left.svg"
@@ -13,12 +15,6 @@ Item {
 
     visible: backButtonImage !== ""
 
-    onActiveFocusChanged: {
-        if (activeFocus) {
-            backButton.forceActiveFocus()
-        }
-    }
-
     RowLayout {
         id: content
 
@@ -28,7 +24,7 @@ Item {
         ImageButtonType {
             id: backButton
             image: backButtonImage
-            imageColor: "#D7D8DB"
+            imageColor: AmneziaStyle.color.paleGray
 
             implicitWidth: 40
             implicitHeight: 40
@@ -46,7 +42,7 @@ Item {
             id: background
             Layout.fillWidth: true
 
-            color: "transparent"
+            color: AmneziaStyle.color.transparent
         }
     }
 

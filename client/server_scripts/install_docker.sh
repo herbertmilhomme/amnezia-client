@@ -24,6 +24,9 @@ if [ -n "$(sudo docker --version 2>&1 | grep moby-engine)" ]; then echo "Docker 
 elif [ -n "$(sudo docker --version 2>&1 | grep podman)" ]; then check_srv="podman.socket podman"; docker_pkg="podman-docker";\
   if [ -n "$(sudo docker --version 2>&1 | grep /etc/containers/nodocker)" ]; then sudo touch /etc/containers/nodocker; fi;\
 fi;\
+if [ "$(cat /sys/module/apparmor/parameters/enabled 2>/dev/null)" = "Y" ]; then \
+  if ! command -v apparmor_parser > /dev/null 2>&1; then sudo $pm $check_pkgs; sudo $pm $silent_inst apparmor; fi;\
+fi;\
 if [ "$(systemctl is-active $check_srv | head -n1)" != "active" ]; then \
   sudo $pm $check_pkgs; sudo $pm $silent_inst $docker_pkg;\
   sleep 5; sudo systemctl start $check_srv; sleep 5;\

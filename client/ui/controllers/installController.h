@@ -50,6 +50,8 @@ public slots:
 
     void addEmptyServer();
 
+    bool isConfigValid();
+
 signals:
     void installContainerFinished(const QString &finishMessage, bool isServiceInstall);
     void installServerFinished(const QString &finishMessage);
@@ -63,8 +65,8 @@ signals:
     void removeAllContainersFinished(const QString &finishedMessage);
     void removeProcessedContainerFinished(const QString &finishedMessage);
 
-    void installationErrorOccurred(const QString &errorMessage);
     void installationErrorOccurred(ErrorCode errorCode);
+    void wrongInstallationUser(const QString &message);
 
     void serverAlreadyExists(int serverIndex);
 
@@ -77,6 +79,9 @@ signals:
     void currentContainerUpdated();
 
     void cachedProfileCleared(const QString &message);
+    void apiConfigRemoved(const QString &message);
+
+    void noInstalledContainers();
 
 private:
     void installServer(const DockerContainer container, const QMap<DockerContainer, QJsonObject> &installedContainers,
@@ -95,6 +100,7 @@ private:
     QSharedPointer<ContainersModel> m_containersModel;
     QSharedPointer<ProtocolsModel> m_protocolModel;
     QSharedPointer<ClientManagementModel> m_clientManagementModel;
+
     std::shared_ptr<Settings> m_settings;
 
     ServerCredentials m_processedServerCredentials;
