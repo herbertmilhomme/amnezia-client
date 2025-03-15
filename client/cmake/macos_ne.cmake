@@ -152,7 +152,8 @@ set(CMAKE_XCODE_ATTRIBUTE_FRAMEWORK_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/3rd
 target_link_libraries("networkextension" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/3rd-prebuilt/3rd-prebuilt/openvpn/apple/OpenVPNAdapter-macos/OpenVPNAdapter.framework")
 
 add_custom_command(TARGET ${PROJECT} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory
-            $<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks
-    COMMAND ${QT_BIN_DIR_DETECTED}/macdeployqt $<TARGET_BUNDLE_DIR:AmneziaVPN> -appstore-compliant -qmldir=${CMAKE_CURRENT_SOURCE_DIR}
+    COMMAND /usr/bin/find "$<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks/OpenVPNAdapter.framework" -name "*.sha256" -delete
+    COMMAND /usr/bin/codesign --force --sign "Apple Distribution"
+            "$<TARGET_BUNDLE_DIR:AmneziaVPN>/Contents/Frameworks//OpenVPNAdapter.framework/Versions/Current/OpenVPNAdapter"
+    COMMENT "Signing OpenVPNAdapter framework"
 )

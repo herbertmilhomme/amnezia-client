@@ -226,7 +226,3 @@ endif()
 
 target_sources(${PROJECT} PRIVATE ${SOURCES} ${HEADERS} ${RESOURCES} ${QRC} ${I18NQRC})
 qt_finalize_target(${PROJECT})
-
-if(APPLE)
-    set_target_properties(${PROJECT} PROPERTIES XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "--deep")
-endif()
