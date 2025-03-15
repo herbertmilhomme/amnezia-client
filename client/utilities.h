@@ -4,9 +4,11 @@
 #include <QRegExp>
 #include <QRegularExpression>
 #include <QString>
+#include <QJsonDocument>
 
 #ifdef Q_OS_WIN
-    #include "Windows.h"
+#include <windows.h>
+#include <tlhelp32.h>
 #endif
 
 class Utils : public QObject
@@ -15,63 +17,30 @@ class Utils : public QObject
 
 public:
     static QString getRandomString(int len);
-
+    static QString SafeBase64Decode(QString string);
+    static QString VerifyJsonString(const QString &source);
+    static QString JsonToString(const QJsonObject &json, QJsonDocument::JsonFormat format);
+    static QString JsonToString(const QJsonArray &array, QJsonDocument::JsonFormat format);
+    static QJsonObject JsonFromString(const QString &string);
     static QString executable(const QString &baseName, bool absPath);
     static QString usrExecutable(const QString &baseName);
-    static QString systemLogPath();
     static bool createEmptyFile(const QString &path);
     static bool initializePath(const QString &path);
 
-    static QString getIPAddress(const QString &host);
-    static QString getStringBetween(const QString &s, const QString &a, const QString &b);
-    static bool checkIPv4Format(const QString &ip);
-    static bool checkIpSubnetFormat(const QString &ip);
-    static QRegularExpression ipAddressRegExp()
-    {
-        return QRegularExpression("^((25[0-5]|(2[0-4]|1[0-9]|[1-9]|)[0-9])(\\.(?!$)|$)){4}$");
-    }
-    static QRegularExpression ipAddressPortRegExp()
-    {
-        return QRegularExpression("^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}"
-                                  "(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])(\\:[0-9]{1,5}){0,1}$");
-    }
-
-    static QRegExp ipAddressWithSubnetRegExp()
-    {
-        return QRegExp("(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}"
-                       "(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])(\\/[0-9]{1,2}){0,1}");
-    }
-
-    static QRegExp ipNetwork24RegExp()
-    {
-        return QRegExp("^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}"
-                       "0$");
-    }
-
-    static QRegExp ipPortRegExp()
-    {
-        return QRegExp("^()([1-9]|[1-5]?[0-9]{2,4}|6[1-4][0-9]{3}|65[1-4][0-9]{2}|655[1-2][0-9]|6553[1-5])$");
-    }
-
-    static QRegExp domainRegExp()
-    {
-        return QRegExp("(((?!\\-))(xn\\-\\-)?[a-z0-9\\-_]{0,61}[a-z0-9]{1,1}\\.)*(xn\\-\\-)?([a-z0-9\\-]{1,61}|[a-z0-"
-                       "9\\-]{1,30})\\.[a-z]{2,}");
-    }
-    static bool processIsRunning(const QString &fileName);
-    static void killProcessByName(const QString &name);
-
-    static QString netMaskFromIpWithSubnet(const QString ip);
-    static QString ipAddressFromIpWithSubnet(const QString ip);
-
-    static QStringList summarizeRoutes(const QStringList &ips, const QString cidr);
+    static bool processIsRunning(const QString &fileName, const bool fullFlag = false);
+    static bool killProcessByName(const QString &name);
 
     static QString openVpnExecPath();
     static QString wireguardExecPath();
     static QString certUtilPath();
+    static QString tun2socksPath();
+
+    static void logException(const std::exception &e);
+    static void logException(const std::exception_ptr &eptr = std::current_exception());
 
 #ifdef Q_OS_WIN
     static bool signalCtrl(DWORD dwProcessId, DWORD dwCtrlEvent);
+    static QString getNextDriverLetter();
 #endif
 };
 

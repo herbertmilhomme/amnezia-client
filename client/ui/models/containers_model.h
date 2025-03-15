@@ -31,7 +31,9 @@ public:
         IsCurrentlyProcessedRole,
         IsDefaultRole,
         IsSupportedRole,
-        IsShareableRole
+        IsShareableRole,
+
+        InstallPageOrderRole
     };
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -42,12 +44,18 @@ public:
 public slots:
     void updateModel(const QJsonArray &containers);
 
-    void setCurrentlyProcessedContainerIndex(int containerIndex);
-    int getCurrentlyProcessedContainerIndex();
+    void setProcessedContainerIndex(int containerIndex);
+    int getProcessedContainerIndex();
 
-    QString getCurrentlyProcessedContainerName();
+    QString getProcessedContainerName();
 
     QJsonObject getContainerConfig(const int containerIndex);
+
+    bool isSupportedByCurrentPlatform(const int containerIndex);
+    bool isServiceContainer(const int containerIndex);
+
+    bool hasInstalledServices();
+    bool hasInstalledProtocols();
 
 protected:
     QHash<int, QByteArray> roleNames() const override;
@@ -58,7 +66,7 @@ signals:
 private:
     QMap<DockerContainer, QJsonObject> m_containers;
 
-    int m_currentlyProcessedContainerIndex;
+    int m_processedContainerIndex;
 };
 
 #endif // CONTAINERS_MODEL_H

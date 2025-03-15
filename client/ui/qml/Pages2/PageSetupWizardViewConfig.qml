@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 
 import PageEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -15,16 +16,24 @@ PageType {
 
     property bool showContent: false
 
+    BackButtonType {
+        id: backButton
+
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.topMargin: 20
+    }
+
     Connections {
         target: ImportController
 
-        function onImportErrorOccurred(errorMessage, goToPageHome) {
+        function onImportErrorOccurred(error, goToPageHome) {
             if (goToPageHome) {
                 PageController.goToStartPage()
             } else {
                 PageController.closePage()
             }
-            PageController.showErrorMessage(errorMessage)
         }
 
         function onImportFinished() {
@@ -33,20 +42,8 @@ PageType {
                 ServersModel.processedIndex = ServersModel.defaultIndex
             }
 
-            PageController.goToStartPage()
-            if (stackView.currentItem.objectName === PageController.getPagePath(PageEnum.PageSetupWizardStart)) {
-                PageController.replaceStartPage()
-            }
+            PageController.goToPageHome()
         }
-    }
-
-    BackButtonType {
-        id: backButton
-
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.topMargin: 20
     }
 
     FlickableType {
@@ -75,7 +72,7 @@ PageType {
                 visible: fileName.text !== ""
 
                 Image {
-                    source: "qrc:/images/controls/file-cog-2.svg"
+                    source: "qrc:/images/controls/file-check-2.svg"
                 }
 
                 Header2TextType {
@@ -88,40 +85,67 @@ PageType {
                 }
             }
 
-            CaptionTextType {
-                Layout.fillWidth: true
-                Layout.topMargin: 16
-
-                text: qsTr("Do not use connection codes from untrusted sources, as they may be created to intercept your data.")
-                color: "#878B91"
-            }
-
             BasicButtonType {
+                id: showContentButton
                 Layout.topMargin: 16
                 Layout.leftMargin: -8
                 implicitHeight: 32
 
-                defaultColor: "transparent"
-                hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                disabledColor: "#878B91"
-                textColor: "#FBB26A"
+                defaultColor: AmneziaStyle.color.transparent
+                hoveredColor: AmneziaStyle.color.translucentWhite
+                pressedColor: AmneziaStyle.color.sheerWhite
+                disabledColor: AmneziaStyle.color.mutedGray
+                textColor: AmneziaStyle.color.goldenApricot
 
                 text: showContent ? qsTr("Collapse content") : qsTr("Show content")
+
+                parentFlickable: fl
 
                 clickedFunc: function() {
                     showContent = !showContent
                 }
             }
 
+            CheckBoxType {
+                id: cloakingCheckBox
+
+                visible: ImportController.isNativeWireGuardConfig()
+
+                Layout.fillWidth: true
+                text: qsTr("Enable WireGuard obfuscation. It may be useful if WireGuard is blocked on your provider.")
+            }
+
+            WarningType {
+                Layout.topMargin: 16
+                Layout.fillWidth: true
+
+                textString: ImportController.getMaliciousWarningText()
+                textFormat: Qt.RichText
+                visible: textString !== ""
+
+                iconPath: "qrc:/images/controls/alert-circle.svg"
+
+                textColor: AmneziaStyle.color.vibrantRed
+                imageColor: AmneziaStyle.color.vibrantRed
+            }
+
+            WarningType {
+                Layout.topMargin: 16
+                Layout.fillWidth: true
+
+                textString: qsTr("Use connection codes only from sources you trust. Codes from public sources may have been created to intercept your data.")
+
+                iconPath: "qrc:/images/controls/alert-circle.svg"
+            }
+
             Rectangle {
                 Layout.fillWidth: true
-                Layout.bottomMargin: 16
+                Layout.bottomMargin: 48
 
                 implicitHeight: configContent.implicitHeight
 
                 radius: 10
-                color: "#1C1D21"
+                color: AmneziaStyle.color.onyxBlack
 
                 visible: showContent
 
@@ -131,15 +155,23 @@ PageType {
                     anchors.fill: parent
                     anchors.margins: 16
 
+                    wrapMode: Text.Wrap
+
                     text: ImportController.getConfig()
                 }
             }
         }
     }
 
-    ColumnLayout {
-        id: connectButton
+    Rectangle {
+        anchors.fill: columnContent
+        anchors.bottomMargin: -24
+        color: AmneziaStyle.color.midnightBlack
+        opacity: 0.8
+    }
 
+    ColumnLayout {
+        id: columnContent
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
@@ -147,11 +179,15 @@ PageType {
         anchors.leftMargin: 16
 
         BasicButtonType {
+            id: connectButton
             Layout.fillWidth: true
             Layout.bottomMargin: 32
 
             text: qsTr("Connect")
             clickedFunc: function() {
+                if (cloakingCheckBox.checked) {
+                    ImportController.processNativeWireGuardConfig()
+                }
                 ImportController.importConfig()
             }
         }

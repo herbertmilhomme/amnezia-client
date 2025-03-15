@@ -15,7 +15,7 @@
 #endif
 
 #ifdef Q_OS_IOS
-    #include "platforms/ios/MobileUtils.h"
+    #include "platforms/ios/ios_controller.h"
     #include <CoreFoundation/CoreFoundation.h>
 #endif
 
@@ -24,7 +24,7 @@ SystemController::SystemController(const std::shared_ptr<Settings> &settings, QO
 {
 }
 
-void SystemController::saveFile(QString fileName, const QString &data)
+void SystemController::saveFile(const QString &fileName, const QString &data)
 {
 #if defined Q_OS_ANDROID
     AndroidController::instance()->saveFile(fileName, data);
@@ -46,14 +46,45 @@ void SystemController::saveFile(QString fileName, const QString &data)
 #ifdef Q_OS_IOS
     QStringList filesToSend;
     filesToSend.append(fileUrl.toString());
-    MobileUtils mobileUtils;
     // todo check if save successful
-    mobileUtils.shareText(filesToSend);
+    IosController::Instance()->shareText(filesToSend);
     return;
 #else
     QFileInfo fi(fileName);
-    QDesktopServices::openUrl(fi.absoluteDir().absolutePath());
+
+#ifdef Q_OS_MAC
+    const auto url = "file://" + fi.absoluteDir().absolutePath();
+#else
+    const auto url = fi.absoluteDir().absolutePath();
 #endif
+
+    QDesktopServices::openUrl(url);
+#endif
+}
+
+bool SystemController::readFile(const QString &fileName, QByteArray &data)
+{
+#ifdef Q_OS_ANDROID
+    int fd = AndroidController::instance()->getFd(fileName);
+    if (fd == -1) return false;
+    QFile file;
+    if(!file.open(fd, QIODevice::ReadOnly)) return false;
+    data = file.readAll();
+    AndroidController::instance()->closeFd();
+#else
+    QFile file(fileName);
+    if (!file.open(QIODevice::ReadOnly)) return false;
+    data = file.readAll();
+#endif
+    return true;
+}
+
+bool SystemController::readFile(const QString &fileName, QString &data)
+{
+    QByteArray byteArray;
+    if(!readFile(fileName, byteArray)) return false;
+    data = byteArray;
+    return true;
 }
 
 QString SystemController::getFileName(const QString &acceptLabel, const QString &nameFilter,
@@ -67,8 +98,7 @@ QString SystemController::getFileName(const QString &acceptLabel, const QString 
 
 #ifdef Q_OS_IOS
 
-    MobileUtils mobileUtils;
-    fileName = mobileUtils.openFile();
+    fileName = IosController::Instance()->openFile();
     if (fileName.isEmpty()) {
         return fileName;
     }
@@ -119,4 +149,20 @@ QString SystemController::getFileName(const QString &acceptLabel, const QString 
 void SystemController::setQmlRoot(QObject *qmlRoot)
 {
     m_qmlRoot = qmlRoot;
+}
+
+bool SystemController::isAuthenticated()
+{
+#ifdef Q_OS_ANDROID
+    return AndroidController::instance()->requestAuthentication();
+#else
+    return true;
+#endif
+}
+
+void SystemController::sendTouch(float x, float y)
+{
+#ifdef Q_OS_ANDROID
+    AndroidController::instance()->sendTouch(x, y);
+#endif
 }

@@ -6,6 +6,7 @@ import QtQuick.Dialogs
 import QtCore
 
 import PageEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -25,7 +26,6 @@ PageType {
 
         function onRestoreBackupFinished() {
             PageController.showNotificationMessage(qsTr("Settings restored from backup file"))
-            //goToStartPage()
             PageController.goToPageHome()
         }
 
@@ -63,22 +63,18 @@ PageType {
             HeaderType {
                 Layout.fillWidth: true
 
-                headerText: qsTr("Backup")
+                headerText: qsTr("Back up your configuration")
+                descriptionText: qsTr("You can save your settings to a backup file to restore them the next time you install the application.")
             }
 
-            ListItemTitleType {
+            WarningType {
+                Layout.topMargin: 16
                 Layout.fillWidth: true
-                Layout.topMargin: 10
 
-                text: qsTr("Configuration backup")
-            }
+                textString: qsTr("The backup will contain your passwords and private keys for all servers added " +
+                                            "to AmneziaVPN. Keep this information in a secure place.")
 
-            CaptionTextType {
-                Layout.fillWidth: true
-                Layout.topMargin: -12
-
-                text: qsTr("You can save your settings to a backup file to restore them the next time you install the application.")
-                color: "#878B91"
+                iconPath: "qrc:/images/controls/alert-circle.svg"
             }
 
             BasicButtonType {
@@ -87,6 +83,8 @@ PageType {
                 Layout.topMargin: 14
 
                 text: qsTr("Make a backup")
+
+                parentFlickable: fl
 
                 clickedFunc: function() {
                     var fileName = ""
@@ -109,17 +107,20 @@ PageType {
             }
 
             BasicButtonType {
+                id: restoreBackupButton
                 Layout.fillWidth: true
                 Layout.topMargin: -8
 
-                defaultColor: "transparent"
-                hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                disabledColor: "#878B91"
-                textColor: "#D7D8DB"
+                defaultColor: AmneziaStyle.color.transparent
+                hoveredColor: AmneziaStyle.color.translucentWhite
+                pressedColor: AmneziaStyle.color.sheerWhite
+                disabledColor: AmneziaStyle.color.mutedGray
+                textColor: AmneziaStyle.color.paleGray
                 borderWidth: 1
 
                 text: qsTr("Restore from backup")
+
+                parentFlickable: fl
 
                 clickedFunc: function() {
                     var filePath = SystemController.getFileName(qsTr("Open backup file"),
@@ -139,9 +140,13 @@ PageType {
         var noButtonText = qsTr("Cancel")
 
         var yesButtonFunction = function() {
-            PageController.showBusyIndicator(true)
-            SettingsController.restoreAppConfig(filePath)
-            PageController.showBusyIndicator(false)
+            if (ConnectionController.isConnected) {
+                PageController.showNotificationMessage(qsTr("Cannot restore backup settings during active connection"))
+            } else {
+                PageController.showBusyIndicator(true)
+                SettingsController.restoreAppConfig(filePath)
+                PageController.showBusyIndicator(false)
+            }
         }
         var noButtonFunction = function() {
         }

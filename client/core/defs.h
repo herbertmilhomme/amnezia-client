@@ -6,9 +6,6 @@
 
 namespace amnezia
 {
-
-    constexpr const qint16 qrMagicCode = 1984;
-
     struct ServerCredentials
     {
         QString hostName;
@@ -22,12 +19,32 @@ namespace amnezia
         }
     };
 
-    enum ErrorCode {
+    struct InstalledAppInfo {
+        QString appName;
+        QString packageName;
+        QString appPath;
+
+        bool operator==(const InstalledAppInfo& other) const {
+            if (!packageName.isEmpty()) {
+                return packageName == other.packageName;
+            } else {
+                return appPath == other.appPath;
+            }
+        }
+    };
+
+    namespace error_code_ns
+    {
+      Q_NAMESPACE
+      // TODO: change to enum class
+      enum ErrorCode {
         // General error codes
         NoError = 0,
         UnknownError = 100,
         InternalError = 101,
         NotImplementedError = 102,
+        AmneziaServiceNotRunning = 103,
+        NotSupportedOnThisPlatform = 104,
 
         // Server errors
         ServerCheckFailed = 200,
@@ -37,7 +54,11 @@ namespace amnezia
         ServerCancelInstallation = 204,
         ServerUserNotInSudo = 205,
         ServerPacketManagerError = 206,
-        ServerDockerVersionError = 207,
+        SudoPackageIsNotPreinstalled = 207,
+        ServerUserDirectoryNotAccessible = 208,
+        ServerUserNotAllowedInSudoers = 209,
+        ServerUserPasswordRequired = 210,
+        ServerDockerVersionError = 211,
 
         // Ssh connection errors
         SshRequestDeniedError = 300,
@@ -60,6 +81,8 @@ namespace amnezia
         CloakExecutableMissing = 602,
         AmneziaServiceConnectionFailed = 603,
         ExecutableMissing = 604,
+        XrayExecutableMissing = 605,
+        Tun2SockExecutableMissing = 606,
 
         // VPN errors
         OpenVpnAdaptersInUseError = 700,
@@ -71,9 +94,13 @@ namespace amnezia
         OpenSslFailed = 800,
         ShadowSocksExecutableCrashed = 801,
         CloakExecutableCrashed = 802,
+        XrayExecutableCrashed = 803,
+        Tun2SockExecutableCrashed = 804,
 
         // import and install errors
         ImportInvalidConfigError = 900,
+        ImportOpenConfigError = 901,
+        NoInstalledContainersError = 902,
 
         // Android errors
         AndroidError = 1000,
@@ -81,6 +108,14 @@ namespace amnezia
         // Api errors
         ApiConfigDownloadError = 1100,
         ApiConfigAlreadyAdded = 1101,
+        ApiConfigEmptyError = 1102,
+        ApiConfigTimeoutError = 1103,
+        ApiConfigSslError = 1104,
+        ApiMissingAgwPublicKey = 1105,
+        ApiConfigDecryptionError = 1106,
+        ApiServicesMissingError = 1107,
+        ApiConfigLimitError = 1108,
+        ApiNotFoundError = 1109,
 
         // QFile errors
         OpenError = 1200,
@@ -89,7 +124,11 @@ namespace amnezia
         UnspecifiedError = 1203,
         FatalError = 1204,
         AbortError = 1205
-    };
+      };
+      Q_ENUM_NS(ErrorCode)
+    }
+
+    using ErrorCode = error_code_ns::ErrorCode;
 
 } // namespace amnezia
 

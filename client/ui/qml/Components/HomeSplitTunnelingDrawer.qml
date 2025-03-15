@@ -11,10 +11,12 @@ import "../Config"
 DrawerType2 {
     id: root
 
-    anchors.fill: parent
-    expandedHeight: parent.height * 0.7
+    property bool isAppSplitTinnelingEnabled: Qt.platform.os === "windows" || Qt.platform.os === "android"
 
-    expandedContent: ColumnLayout {
+    anchors.fill: parent
+    expandedHeight: parent.height * 0.9
+
+    expandedStateContent: ColumnLayout {
         id: content
 
         anchors.top: parent.top
@@ -34,30 +36,30 @@ DrawerType2 {
         }
 
         LabelWithButtonType {
+            id: splitTunnelingSwitch
             Layout.fillWidth: true
             Layout.topMargin: 16
 
-            visible: ServersModel.isDefaultServerDefaultContainerHasSplitTunneling && ServersModel.getDefaultServerData("isServerFromApi")
+            visible: ServersModel.isDefaultServerDefaultContainerHasSplitTunneling
 
             text: qsTr("Split tunneling on the server")
             descriptionText: qsTr("Enabled \nCan't be disabled for current server")
             rightImageSource: "qrc:/images/controls/chevron-right.svg"
 
             clickedFunction: function() {
-//                PageController.goToPage(PageEnum.PageSettingsSplitTunneling)
-//                root.close()
+               PageController.goToPage(PageEnum.PageSettingsSplitTunneling)
+               root.closeTriggered()
             }
         }
 
         DividerType {
-            visible: ServersModel.isDefaultServerDefaultContainerHasSplitTunneling && ServersModel.getDefaultServerData("isServerFromApi")
+            visible: ServersModel.isDefaultServerDefaultContainerHasSplitTunneling
         }
 
         LabelWithButtonType {
+            id: siteBasedSplitTunnelingSwitch
             Layout.fillWidth: true
             Layout.topMargin: 16
-
-            enabled: ! ServersModel.isDefaultServerDefaultContainerHasSplitTunneling || !ServersModel.getDefaultServerData("isServerFromApi")
 
             text: qsTr("Site-based split tunneling")
             descriptionText: enabled && SitesModel.isTunnelingEnabled ? qsTr("Enabled") : qsTr("Disabled")
@@ -65,7 +67,7 @@ DrawerType2 {
 
             clickedFunction: function() {
                 PageController.goToPage(PageEnum.PageSettingsSplitTunneling)
-                root.close()
+                root.closeTriggered()
             }
         }
 
@@ -73,20 +75,23 @@ DrawerType2 {
         }
 
         LabelWithButtonType {
+            id: appSplitTunnelingSwitch
+            visible: isAppSplitTinnelingEnabled
+
             Layout.fillWidth: true
-            visible: false
 
             text: qsTr("App-based split tunneling")
+            descriptionText: AppSplitTunnelingModel.isTunnelingEnabled ? qsTr("Enabled") : qsTr("Disabled")
             rightImageSource: "qrc:/images/controls/chevron-right.svg"
 
             clickedFunction: function() {
-//                PageController.goToPage(PageEnum.PageSetupWizardConfigSource)
-                root.close()
+                PageController.goToPage(PageEnum.PageSettingsAppSplitTunneling)
+                root.closeTriggered()
             }
         }
 
         DividerType {
-            visible: false
+            visible: isAppSplitTinnelingEnabled
         }
     }
 }

@@ -65,6 +65,7 @@ namespace amnezia
         constexpr char last_config[] = "last_config";
 
         constexpr char isThirdPartyConfig[] = "isThirdPartyConfig";
+        constexpr char isObfuscationEnabled[] = "isObfuscationEnabled";
 
         constexpr char junkPacketCount[] = "Jc";
         constexpr char junkPacketMinSize[] = "Jmin";
@@ -82,13 +83,23 @@ namespace amnezia
         constexpr char cloak[] = "cloak";
         constexpr char sftp[] = "sftp";
         constexpr char awg[] = "awg";
+        constexpr char xray[] = "xray";
+        constexpr char ssxray[] = "ssxray";
+        constexpr char socks5proxy[] = "socks5proxy";
 
         constexpr char configVersion[] = "config_version";
 
         constexpr char splitTunnelSites[] = "splitTunnelSites";
         constexpr char splitTunnelType[] = "splitTunnelType";
 
+        constexpr char splitTunnelApps[] = "splitTunnelApps";
+        constexpr char appSplitTunnelType[] = "appSplitTunnelType";
+
+        constexpr char killSwitchOption[] = "killSwitchOption";
+
         constexpr char crc[] = "crc";
+
+        constexpr char clientId[] = "clientId";
 
     }
 
@@ -134,6 +145,20 @@ namespace amnezia
             constexpr char defaultCipher[] = "chacha20-ietf-poly1305";
         }
 
+        namespace xray
+        {
+            constexpr char serverConfigPath[] = "/opt/amnezia/xray/server.json";
+            constexpr char uuidPath[] = "/opt/amnezia/xray/xray_uuid.key";
+            constexpr char PublicKeyPath[] = "/opt/amnezia/xray/xray_public.key";
+            constexpr char PrivateKeyPath[] = "/opt/amnezia/xray/xray_private.key";
+            constexpr char shortidPath[] = "/opt/amnezia/xray/xray_short_id.key";
+            constexpr char defaultSite[] = "www.googletagmanager.com";
+
+            constexpr char defaultPort[] = "443";
+            constexpr char defaultLocalProxyPort[] = "10808";
+            constexpr char defaultLocalAddr[] = "10.33.0.2";
+        }
+
         namespace cloak
         {
             constexpr char ckPublicKeyPath[] = "/opt/amnezia/cloak/cloak_public.key";
@@ -142,7 +167,6 @@ namespace amnezia
             constexpr char defaultPort[] = "443";
             constexpr char defaultRedirSite[] = "tile.openstreetmap.org";
             constexpr char defaultCipher[] = "chacha20-poly1305";
-
         }
 
         namespace wireguard
@@ -152,7 +176,12 @@ namespace amnezia
             constexpr char defaultSubnetCidr[] = "24";
 
             constexpr char defaultPort[] = "51820";
-            constexpr char defaultMtu[] = "1420";
+
+#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
+            constexpr char defaultMtu[] = "1280";
+#else
+            constexpr char defaultMtu[] = "1376";
+#endif
             constexpr char serverConfigPath[] = "/opt/amnezia/wireguard/wg0.conf";
             constexpr char serverPublicKeyPath[] = "/opt/amnezia/wireguard/wireguard_server_public_key.key";
             constexpr char serverPskKeyPath[] = "/opt/amnezia/wireguard/wireguard_psk.key";
@@ -168,7 +197,11 @@ namespace amnezia
         namespace awg
         {
             constexpr char defaultPort[] = "55424";
-            constexpr char defaultMtu[] = "1420";
+#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
+            constexpr char defaultMtu[] = "1280";
+#else
+            constexpr char defaultMtu[] = "1376";
+#endif
 
             constexpr char serverConfigPath[] = "/opt/amnezia/awg/wg0.conf";
             constexpr char serverPublicKeyPath[] = "/opt/amnezia/awg/wireguard_server_public_key.key";
@@ -185,6 +218,14 @@ namespace amnezia
             constexpr char defaultUnderloadPacketMagicHeader[] = "1766607858";
         }
 
+        namespace socks5Proxy
+        {
+            constexpr char defaultUserName[] = "proxy_user";
+            constexpr char defaultPort[] = "38080";
+
+            constexpr char proxyConfigPath[] = "/usr/local/3proxy/conf/3proxy.cfg";
+        }
+
     } // namespace protocols
 
     namespace ProtocolEnumNS
@@ -193,7 +234,8 @@ namespace amnezia
 
         enum TransportProto {
             Udp,
-            Tcp
+            Tcp,
+            TcpAndUdp
         };
         Q_ENUM_NS(TransportProto)
 
@@ -206,11 +248,14 @@ namespace amnezia
             Awg,
             Ikev2,
             L2tp,
+            Xray,
+            SSXray,
 
             // non-vpn
             TorWebSite,
             Dns,
-            Sftp
+            Sftp,
+            Socks5Proxy
         };
         Q_ENUM_NS(Proto)
 

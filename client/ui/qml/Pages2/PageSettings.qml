@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 
 import PageEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -29,6 +30,7 @@ PageType {
             spacing: 0
 
             HeaderType {
+                id: header
                 Layout.fillWidth: true
                 Layout.topMargin: 24
                 Layout.rightMargin: 16
@@ -38,6 +40,7 @@ PageType {
             }
 
             LabelWithButtonType {
+                id: account
                 Layout.fillWidth: true
                 Layout.topMargin: 16
 
@@ -53,6 +56,7 @@ PageType {
             DividerType {}
 
             LabelWithButtonType {
+                id: connection
                 Layout.fillWidth: true
 
                 text: qsTr("Connection")
@@ -67,6 +71,7 @@ PageType {
             DividerType {}
 
             LabelWithButtonType {
+                id: application
                 Layout.fillWidth: true
 
                 text: qsTr("Application")
@@ -81,6 +86,7 @@ PageType {
             DividerType {}
 
             LabelWithButtonType {
+                id: backup
                 Layout.fillWidth: true
 
                 text: qsTr("Backup")
@@ -110,6 +116,25 @@ PageType {
             DividerType {}
 
             LabelWithButtonType {
+                id: devConsole
+                visible: SettingsController.isDevModeEnabled
+                Layout.fillWidth: true
+
+                text: qsTr("Dev console")
+                rightImageSource: "qrc:/images/controls/chevron-right.svg"
+                leftImageSource: "qrc:/images/controls/bug.svg"
+
+                clickedFunction: function() {
+                    PageController.goToPage(PageEnum.PageDevMenu)
+                }
+            }
+
+            DividerType {
+                visible: SettingsController.isDevModeEnabled
+            }
+
+            LabelWithButtonType {
+                id: close
                 visible: GC.isDesktop()
                 Layout.fillWidth: true
                 Layout.preferredHeight: about.height

@@ -7,6 +7,7 @@ import SortFilterProxyModel 0.2
 import PageEnum 1.0
 import ProtocolEnum 1.0
 import ContainerProps 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -27,6 +28,7 @@ PageType {
         anchors.topMargin: 20
 
         BackButtonType {
+            id: backButton
         }
 
         HeaderType {
@@ -38,63 +40,76 @@ PageType {
         }
     }
 
-    FlickableType {
+    ListView {
+        id: servers
+        objectName: "servers"
+
+        width: parent.width
         anchors.top: header.bottom
         anchors.topMargin: 16
-        contentHeight: col.implicitHeight
+        anchors.left: parent.left
+        anchors.right: parent.right
 
-        Column {
-            id: col
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
+        height: 500
 
-            ListView {
-                id: servers
-                width: parent.width
-                height: servers.contentItem.height
+        property bool isFocusable: true
 
-                model: ServersModel
+        model: ServersModel
 
-                clip: true
-                interactive: false
+        clip: true
+        reuseItems: true
 
-                delegate: Item {
-                    implicitWidth: servers.width
-                    implicitHeight: delegateContent.implicitHeight
+        delegate: Item {
+            implicitWidth: servers.width
+            implicitHeight: delegateContent.implicitHeight
 
-                    ColumnLayout {
-                        id: delegateContent
+            ColumnLayout {
+                id: delegateContent
 
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
 
-                        LabelWithButtonType {
-                            id: server
-                            Layout.fillWidth: true
+                LabelWithButtonType {
+                    id: server
+                    Layout.fillWidth: true
 
-                            text: name
-                            descriptionText: {
-                                var servicesNameString = ""
-                                var servicesName = ServersModel.getAllInstalledServicesName(index)
-                                for (var i = 0; i < servicesName.length; i++) {
-                                    servicesNameString += servicesName[i] + " · "
-                                }
+                    text: name
 
-                                return servicesNameString + hostName
-                            }
-                            rightImageSource: "qrc:/images/controls/chevron-right.svg"
-
-                            clickedFunction: function() {
-                                ServersModel.processedIndex = index
-                                PageController.goToPage(PageEnum.PageSettingsServerInfo)
-                            }
+                    descriptionText: {
+                        var servicesNameString = ""
+                        var servicesName = ServersModel.getAllInstalledServicesName(index)
+                        for (var i = 0; i < servicesName.length; i++) {
+                            servicesNameString += servicesName[i] + " · "
                         }
 
-                        DividerType {}
+                        if (ServersModel.isServerFromApi(index)) {
+                            return servicesNameString + serverDescription
+                        } else {
+                            return servicesNameString + hostName
+                        }
+                    }
+                    rightImageSource: "qrc:/images/controls/chevron-right.svg"
+
+                    clickedFunction: function() {
+                        ServersModel.processedIndex = index
+
+                        if (ServersModel.getProcessedServerData("isServerFromGatewayApi")) {
+                            PageController.showBusyIndicator(true)
+                            let result = ApiSettingsController.getAccountInfo(false)
+                            PageController.showBusyIndicator(false)
+                            if (!result) {
+                                return
+                            }
+
+                            PageController.goToPage(PageEnum.PageSettingsApiServerInfo)
+                        } else {
+                            PageController.goToPage(PageEnum.PageSettingsServerInfo)
+                        }
                     }
                 }
+
+                DividerType {}
             }
         }
     }

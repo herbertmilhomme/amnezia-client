@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 import PageEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -10,6 +11,8 @@ import "../Config"
 
 PageType {
     id: root
+
+    property bool isAppSplitTinnelingEnabled: Qt.platform.os === "windows" || Qt.platform.os === "android"
 
     BackButtonType {
         id: backButton
@@ -42,6 +45,7 @@ PageType {
             }
 
             SwitcherType {
+                id: amneziaDnsSwitch
                 Layout.fillWidth: true
                 Layout.margins: 16
 
@@ -59,11 +63,14 @@ PageType {
             DividerType {}
 
             LabelWithButtonType {
+                id: dnsServersButton
                 Layout.fillWidth: true
 
                 text: qsTr("DNS servers")
                 descriptionText: qsTr("When AmneziaDNS is not used or installed")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
+
+                parentFlickable: fl
 
                 clickedFunction: function() {
                     PageController.goToPage(PageEnum.PageSettingsDns)
@@ -73,13 +80,14 @@ PageType {
             DividerType {}
 
             LabelWithButtonType {
-                visible: true
-
+                id: splitTunnelingButton
                 Layout.fillWidth: true
 
                 text: qsTr("Site-based split tunneling")
                 descriptionText: qsTr("Allows you to select which sites you want to access through the VPN")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
+
+                parentFlickable: fl
 
                 clickedFunction: function() {
                     PageController.goToPage(PageEnum.PageSettingsSplitTunneling)
@@ -87,11 +95,12 @@ PageType {
             }
 
             DividerType {
-                visible: GC.isDesktop()
+                visible: root.isAppSplitTinnelingEnabled
             }
 
             LabelWithButtonType {
-                visible: false
+                id: splitTunnelingButton2
+                visible: root.isAppSplitTinnelingEnabled
 
                 Layout.fillWidth: true
 
@@ -99,12 +108,45 @@ PageType {
                 descriptionText: qsTr("Allows you to use the VPN only for certain Apps")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
 
+                parentFlickable: fl
+
                 clickedFunction: function() {
+                    PageController.goToPage(PageEnum.PageSettingsAppSplitTunneling)
                 }
             }
 
             DividerType {
-                visible: false
+                visible: root.isAppSplitTinnelingEnabled
+            }
+
+            SwitcherType {
+                id: killSwitchSwitcher
+                visible: !GC.isMobile()
+
+                Layout.fillWidth: true
+                Layout.margins: 16
+
+                text: qsTr("KillSwitch")
+                descriptionText: qsTr("Disables your internet if your encrypted VPN connection drops out for any reason.")
+
+                parentFlickable: fl
+
+                checked: SettingsController.isKillSwitchEnabled()
+                checkable: !ConnectionController.isConnected
+                onCheckedChanged: {
+                    if (checked !== SettingsController.isKillSwitchEnabled()) {
+                        SettingsController.toggleKillSwitch(checked)
+                    }
+                }
+                onClicked: {
+                    if (!checkable) {
+                        PageController.showNotificationMessage(qsTr("Cannot change KillSwitch settings during active connection"))
+                    }
+                }
+            }
+
+            DividerType {
+                visible: GC.isDesktop()
             }
         }
     }

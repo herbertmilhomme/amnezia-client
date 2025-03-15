@@ -2,6 +2,9 @@
 #include <QJsonDocument>
 #include <QQmlFile>
 #include <QEventLoop>
+#include <QImage>
+
+#include <android/bitmap.h>
 
 #include "android_controller.h"
 #include "android_utils.h"
@@ -90,10 +93,12 @@ bool AndroidController::initialize()
         {"onServiceDisconnected", "()V", reinterpret_cast<void *>(onServiceDisconnected)},
         {"onServiceError", "()V", reinterpret_cast<void *>(onServiceError)},
         {"onVpnPermissionRejected", "()V", reinterpret_cast<void *>(onVpnPermissionRejected)},
+        {"onNotificationStateChanged", "()V", reinterpret_cast<void *>(onNotificationStateChanged)},
         {"onVpnStateChanged", "(I)V", reinterpret_cast<void *>(onVpnStateChanged)},
         {"onStatisticsUpdate", "(JJ)V", reinterpret_cast<void *>(onStatisticsUpdate)},
         {"onFileOpened", "(Ljava/lang/String;)V", reinterpret_cast<void *>(onFileOpened)},
         {"onConfigImported", "(Ljava/lang/String;)V", reinterpret_cast<void *>(onConfigImported)},
+        {"onAuthResult", "(Z)V", reinterpret_cast<void *>(onAuthResult)},
         {"decodeQrCode", "(Ljava/lang/String;)Z", reinterpret_cast<bool *>(decodeQrCode)}
     };
 
@@ -132,7 +137,7 @@ ErrorCode AndroidController::start(const QJsonObject &vpnConfig)
     callActivityMethod("start", "(Ljava/lang/String;)V",
                        QJniObject::fromString(config).object<jstring>());
 
-    return NoError;
+    return ErrorCode::NoError;
 }
 
 void AndroidController::stop()
@@ -158,9 +163,7 @@ QString AndroidController::openFile(const QString &filter)
     QString fileName;
     connect(this, &AndroidController::fileOpened, this,
             [&fileName, &wait](const QString &uri) {
-                qDebug() << "Android event: file opened; uri:" << uri;
-                fileName = QQmlFile::urlToLocalFileOrQrc(uri);
-                qDebug() << "Android opened filename:" << fileName;
+                fileName = uri;
                 wait.quit();
             },
             static_cast<Qt::ConnectionType>(Qt::QueuedConnection | Qt::SingleShotConnection));
@@ -170,17 +173,33 @@ QString AndroidController::openFile(const QString &filter)
     return fileName;
 }
 
-void AndroidController::setNotificationText(const QString &title, const QString &message, int timerSec)
+int AndroidController::getFd(const QString &fileName)
 {
-    callActivityMethod("setNotificationText", "(Ljava/lang/String;Ljava/lang/String;I)V",
-                       QJniObject::fromString(title).object<jstring>(),
-                       QJniObject::fromString(message).object<jstring>(),
-                       (jint) timerSec);
+    return callActivityMethod<jint>("getFd", "(Ljava/lang/String;)I",
+                                    QJniObject::fromString(fileName).object<jstring>());
+}
+
+void AndroidController::closeFd()
+{
+    callActivityMethod("closeFd", "()V");
+}
+
+QString AndroidController::getFileName(const QString &uri)
+{
+    auto fileName = callActivityMethod<jstring, jstring>("getFileName", "(Ljava/lang/String;)Ljava/lang/String;",
+                                                         QJniObject::fromString(uri).object<jstring>());
+    QJniEnvironment env;
+    return AndroidUtils::convertJString(env.jniEnv(), fileName.object<jstring>());
 }
 
 bool AndroidController::isCameraPresent()
 {
     return callActivityMethod<jboolean>("isCameraPresent", "()Z");
+}
+
+bool AndroidController::isOnTv()
+{
+    return callActivityMethod<jboolean>("isOnTv", "()Z");
 }
 
 void AndroidController::startQrReaderActivity()
@@ -207,6 +226,87 @@ void AndroidController::clearLogs()
 void AndroidController::setScreenshotsEnabled(bool enabled)
 {
     callActivityMethod("setScreenshotsEnabled", "(Z)V", enabled);
+}
+
+void AndroidController::setNavigationBarColor(unsigned int color)
+{
+    callActivityMethod("setNavigationBarColor", "(I)V", color);
+}
+
+void AndroidController::minimizeApp()
+{
+    callActivityMethod("minimizeApp", "()V");
+}
+
+QJsonArray AndroidController::getAppList()
+{
+    QJniObject appList = callActivityMethod<jstring>("getAppList", "()Ljava/lang/String;");
+    QJsonArray jsonAppList = QJsonDocument::fromJson(appList.toString().toUtf8()).array();
+    return jsonAppList;
+}
+
+QPixmap AndroidController::getAppIcon(const QString &package, QSize *size, const QSize &requestedSize)
+{
+    QJniObject bitmap = callActivityMethod<jobject>("getAppIcon", "(Ljava/lang/String;II)Landroid/graphics/Bitmap;",
+                                                    QJniObject::fromString(package).object<jstring>(),
+                                                    requestedSize.width(), requestedSize.height());
+
+    QJniEnvironment env;
+    AndroidBitmapInfo info;
+    if (AndroidBitmap_getInfo(env.jniEnv(), bitmap.object(), &info) != ANDROID_BITMAP_RESULT_SUCCESS) return {};
+
+    void *pixels;
+    if (AndroidBitmap_lockPixels(env.jniEnv(), bitmap.object(), &pixels) != ANDROID_BITMAP_RESULT_SUCCESS) return {};
+
+    int width = info.width;
+    int height = info.height;
+
+    size->setWidth(width);
+    size->setHeight(height);
+
+    QImage image(width, height, QImage::Format_RGBA8888);
+    if (info.stride == uint32_t(image.bytesPerLine())) {
+        memcpy((void *) image.constBits(), pixels, info.stride * height);
+    } else {
+        auto *bmpPtr = static_cast<uchar *>(pixels);
+        for (int i = 0; i < height; i++, bmpPtr += info.stride)
+            memcpy((void *) image.constScanLine(i), bmpPtr, width);
+    }
+
+    if (AndroidBitmap_unlockPixels(env.jniEnv(), bitmap.object()) != ANDROID_BITMAP_RESULT_SUCCESS) return {};
+
+    return QPixmap::fromImage(image);
+}
+
+bool AndroidController::isNotificationPermissionGranted()
+{
+    return callActivityMethod<jboolean>("isNotificationPermissionGranted", "()Z");
+}
+
+void AndroidController::requestNotificationPermission()
+{
+    callActivityMethod("requestNotificationPermission", "()V");
+}
+
+bool AndroidController::requestAuthentication()
+{
+    QEventLoop wait;
+    bool result;
+    connect(this, &AndroidController::authenticationResult, this,
+            [&result, &wait](const bool &authResult){
+                qDebug() << "Android authentication result:" << authResult;
+                result = authResult;
+                wait.quit();
+            },
+            static_cast<Qt::ConnectionType>(Qt::QueuedConnection | Qt::SingleShotConnection));
+    callActivityMethod("requestAuthentication", "()V");
+    wait.exec();
+    return result;
+}
+
+void AndroidController::sendTouch(float x, float y)
+{
+    callActivityMethod("sendTouch", "(FF)V", x, y);
 }
 
 // Moving log processing to the Android side
@@ -362,6 +462,15 @@ void AndroidController::onVpnPermissionRejected(JNIEnv *env, jobject thiz)
 }
 
 // static
+void AndroidController::onNotificationStateChanged(JNIEnv *env, jobject thiz)
+{
+    Q_UNUSED(env);
+    Q_UNUSED(thiz);
+
+    emit AndroidController::instance()->notificationStateChanged();
+}
+
+// static
 void AndroidController::onVpnStateChanged(JNIEnv *env, jobject thiz, jint stateCode)
 {
     Q_UNUSED(env);
@@ -395,6 +504,14 @@ void AndroidController::onConfigImported(JNIEnv *env, jobject thiz, jstring data
     Q_UNUSED(thiz);
 
     emit AndroidController::instance()->configImported(AndroidUtils::convertJString(env, data));
+}
+
+// static
+void AndroidController::onAuthResult(JNIEnv *env, jobject thiz, jboolean result)
+{
+    Q_UNUSED(thiz);
+
+    emit AndroidController::instance()->authenticationResult(result);
 }
 
 // static

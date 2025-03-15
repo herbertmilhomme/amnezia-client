@@ -3,34 +3,55 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 
+import Style 1.0
+
 import "TextTypes"
 
 CheckBox {
     id: root
 
     property string descriptionText
-    property string descriptionTextColor: "#878B91"
-    property string descriptionTextDisabledColor: "#494B50"
+    property string descriptionTextColor: AmneziaStyle.color.mutedGray
+    property string descriptionTextDisabledColor: AmneziaStyle.color.charcoalGray
 
-    property string textColor:  "#D7D8DB"
-    property string textDisabledColor: "#878B91"
+    property string textColor: AmneziaStyle.color.paleGray
+    property string textDisabledColor: AmneziaStyle.color.mutedGray
 
-    property string hoveredColor: Qt.rgba(1, 1, 1, 0.05)
-    property string defaultColor: "transparent"
-    property string pressedColor: Qt.rgba(1, 1, 1, 0.05)
+    property string hoveredColor: AmneziaStyle.color.barelyTranslucentWhite
+    property string defaultColor: AmneziaStyle.color.transparent
+    property string pressedColor: AmneziaStyle.color.barelyTranslucentWhite
 
-    property string defaultBorderColor: "#D7D8DB"
-    property string checkedBorderColor: "#FBB26A"
-    property string checkedBorderDisabledColor: "#402102"
+    property string defaultBorderColor: AmneziaStyle.color.paleGray
+    property string checkedBorderColor: AmneziaStyle.color.goldenApricot
+    property string checkedBorderDisabledColor: AmneziaStyle.color.deepBrown
 
-    property string checkedImageColor: "#FBB26A"
-    property string pressedImageColor: "#A85809"
-    property string defaultImageColor: "transparent"
-    property string checkedDisabledImageColor: "#84603D"
+    property string borderFocusedColor: AmneziaStyle.color.paleGray
+
+    property string checkedImageColor: AmneziaStyle.color.goldenApricot
+    property string pressedImageColor: AmneziaStyle.color.burntOrange
+    property string defaultImageColor: AmneziaStyle.color.transparent
+    property string checkedDisabledImageColor: AmneziaStyle.color.mutedBrown
 
     property string imageSource: "qrc:/images/controls/check.svg"
 
+    property var parentFlickable
+    onFocusChanged: {
+        if (root.activeFocus) {
+            if (root.parentFlickable) {
+                root.parentFlickable.ensureVisible(root)
+            }
+        }
+    }
+
     hoverEnabled: enabled ? true : false
+    focusPolicy: Qt.NoFocus
+
+    background: Rectangle {
+        color: AmneziaStyle.color.transparent
+        border.color: root.focus ? borderFocusedColor : AmneziaStyle.color.transparent
+        border.width: 1
+        radius: 16
+    }
 
     indicator: Rectangle {
         id: background
@@ -58,8 +79,12 @@ CheckBox {
             anchors.centerIn: parent
             width: 24
             height: 24
-            color: "transparent"
-            border.color: root.checked ? (root.enabled ? checkedBorderColor : checkedBorderDisabledColor) : defaultBorderColor
+            color: AmneziaStyle.color.transparent
+            border.color: root.checked ?
+                              (root.enabled ?
+                                   checkedBorderColor :
+                                   checkedBorderDisabledColor) :
+                              defaultBorderColor
             border.width: 1
             radius: 4
 
@@ -90,11 +115,11 @@ CheckBox {
     }
 
     contentItem: Item {
-        implicitWidth: content.implicitWidth
-        implicitHeight: content.implicitHeight
-
-        anchors.fill: parent
+        anchors.left: parent.left
+        anchors.right: parent.right
         anchors.leftMargin: 8 + background.width
+
+        implicitHeight: content.implicitHeight
 
         ColumnLayout {
             id: content
@@ -130,6 +155,16 @@ CheckBox {
         cursorShape: Qt.PointingHandCursor
         enabled: false
     }
+
+
+    Keys.onEnterPressed: {
+        root.checked = !root.checked
+    }
+
+    Keys.onReturnPressed: {
+        root.checked = !root.checked
+    }
+
 }
 
 

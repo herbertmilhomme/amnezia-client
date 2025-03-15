@@ -9,6 +9,7 @@ import SortFilterProxyModel 0.2
 
 import PageEnum 1.0
 import ContainerProps 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -21,7 +22,9 @@ DrawerType2 {
 
     property string headerText
     property string configContentHeaderText
-    property string contentVisible
+    property string shareButtonText: qsTr("Share")
+    property string copyButtonText: qsTr("Copy")
+    property bool isSelfHostedConfig: true
 
     property string configExtension: ".vpn"
     property string configCaption: qsTr("Save AmneziaVPN config")
@@ -35,16 +38,8 @@ DrawerType2 {
         configFileName = "amnezia_config"
     }
 
-    expandedContent: Item {
+    expandedStateContent: Item {
         implicitHeight: root.expandedHeight
-
-        Connections {
-            target: root
-            enabled: !GC.isMobile()
-            function onOpened() {
-                header.forceActiveFocus()
-            }
-        }
 
         Header2Type {
             id: header
@@ -56,36 +51,37 @@ DrawerType2 {
             anchors.rightMargin: 16
 
             headerText: root.headerText
-
-            KeyNavigation.tab: shareButton
         }
 
-        FlickableType {
+        ListView {
+            id: listView
+
             anchors.top: header.bottom
             anchors.bottom: parent.bottom
-            contentHeight: content.height + 32
+            anchors.left: parent.left
+            anchors.right: parent.right
 
-            ColumnLayout {
-                id: content
+            property bool isFocusable: true
 
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
+            ScrollBar.vertical: ScrollBarType {}
 
-                anchors.leftMargin: 16
-                anchors.rightMargin: 16
+            model: 1
 
-                visible: root.contentVisible
+            clip: true
+            reuseItems: true
+
+            header: ColumnLayout {
+                width: listView.width
 
                 BasicButtonType {
                     id: shareButton
                     Layout.fillWidth: true
                     Layout.topMargin: 16
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
 
-                    text: qsTr("Share")
-                    imageSource: "qrc:/images/controls/share-2.svg"
-
-                    KeyNavigation.tab: copyConfigTextButton
+                    text: root.shareButtonText
+                    leftImageSource: "qrc:/images/controls/share-2.svg"
 
                     clickedFunc: function() {
                         var fileName = ""
@@ -110,36 +106,41 @@ DrawerType2 {
                     id: copyConfigTextButton
                     Layout.fillWidth: true
                     Layout.topMargin: 8
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
 
-                    defaultColor: "transparent"
-                    hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                    pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                    disabledColor: "#878B91"
-                    textColor: "#D7D8DB"
+                    defaultColor: AmneziaStyle.color.transparent
+                    hoveredColor: AmneziaStyle.color.translucentWhite
+                    pressedColor: AmneziaStyle.color.sheerWhite
+                    disabledColor: AmneziaStyle.color.mutedGray
+                    textColor: AmneziaStyle.color.paleGray
                     borderWidth: 1
 
-                    text: qsTr("Copy")
-                    imageSource: "qrc:/images/controls/copy.svg"
+                    text: root.copyButtonText
+                    leftImageSource: "qrc:/images/controls/copy.svg"
 
-                    KeyNavigation.tab: copyNativeConfigStringButton.visible ? copyNativeConfigStringButton : showSettingsButton
+                    Keys.onReturnPressed: { copyConfigTextButton.clicked() }
+                    Keys.onEnterPressed: { copyConfigTextButton.clicked() }
                 }
 
                 BasicButtonType {
                     id: copyNativeConfigStringButton
                     Layout.fillWidth: true
                     Layout.topMargin: 8
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
 
                     visible: false
 
-                    defaultColor: "transparent"
-                    hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                    pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                    disabledColor: "#878B91"
-                    textColor: "#D7D8DB"
+                    defaultColor: AmneziaStyle.color.transparent
+                    hoveredColor: AmneziaStyle.color.translucentWhite
+                    pressedColor: AmneziaStyle.color.sheerWhite
+                    disabledColor: AmneziaStyle.color.mutedGray
+                    textColor: AmneziaStyle.color.paleGray
                     borderWidth: 1
 
                     text: qsTr("Copy config string")
-                    imageSource: "qrc:/images/controls/copy.svg"
+                    leftImageSource: "qrc:/images/controls/copy.svg"
 
                     KeyNavigation.tab: showSettingsButton
                 }
@@ -149,21 +150,23 @@ DrawerType2 {
 
                     Layout.fillWidth: true
                     Layout.topMargin: 24
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
 
-                    defaultColor: "transparent"
-                    hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                    pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                    disabledColor: "#878B91"
-                    textColor: "#D7D8DB"
+                    visible: root.isSelfHostedConfig
+
+                    defaultColor: AmneziaStyle.color.transparent
+                    hoveredColor: AmneziaStyle.color.translucentWhite
+                    pressedColor: AmneziaStyle.color.sheerWhite
+                    disabledColor: AmneziaStyle.color.mutedGray
+                    textColor: AmneziaStyle.color.paleGray
                     borderWidth: 1
 
                     text: qsTr("Show connection settings")
 
                     clickedFunc: function() {
-                        configContentDrawer.open()
+                        configContentDrawer.openTriggered()
                     }
-
-                    KeyNavigation.tab: header
                 }
 
                 DrawerType2 {
@@ -174,7 +177,7 @@ DrawerType2 {
                     anchors.fill: parent
                     expandedHeight: parent.height * 0.9
 
-                    expandedContent: Item {
+                    expandedStateContent: Item {
                         id: configContentContainer
 
                         implicitHeight: configContentDrawer.expandedHeight
@@ -196,6 +199,7 @@ DrawerType2 {
                                 configText.copy()
                                 configText.select(0, 0)
                                 PageController.showNotificationMessage(qsTr("Copied"))
+                                header.forceActiveFocus()
                             }
                         }
 
@@ -207,9 +211,7 @@ DrawerType2 {
                             anchors.right: parent.right
                             anchors.topMargin: 16
 
-                            backButtonFunction: function() {
-                                configContentDrawer.close()
-                            }
+                            backButtonFunction: function() { configContentDrawer.closeTriggered() }
                         }
 
                         FlickableType {
@@ -256,10 +258,11 @@ DrawerType2 {
                                     height: 24
 
                                     readOnly: true
+                                    activeFocusOnTab: false
 
-                                    color: "#D7D8DB"
-                                    selectionColor:  "#633303"
-                                    selectedTextColor: "#D7D8DB"
+                                    color: AmneziaStyle.color.paleGray
+                                    selectionColor:  AmneziaStyle.color.richBrown
+                                    selectedTextColor: AmneziaStyle.color.paleGray
 
                                     font.pixelSize: 16
                                     font.weight: Font.Medium
@@ -270,13 +273,19 @@ DrawerType2 {
                                     wrapMode: Text.Wrap
 
                                     background: Rectangle {
-                                        color: "transparent"
+                                        color: AmneziaStyle.color.transparent
                                     }
                                 }
                             }
                         }
                     }
                 }
+            }
+
+            delegate: ColumnLayout {
+                width: listView.width
+
+                property bool isQrCodeVisible: root.isSelfHostedConfig ? ExportController.qrCodesCount > 0 : ApiConfigsController.qrCodesCount > 0
 
                 Rectangle {
                     id: qrCodeContainer
@@ -284,8 +293,10 @@ DrawerType2 {
                     Layout.fillWidth: true
                     Layout.preferredHeight: width
                     Layout.topMargin: 20
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
 
-                    visible: ExportController.qrCodesCount > 0
+                    visible: isQrCodeVisible
 
                     color: "white"
 
@@ -293,20 +304,49 @@ DrawerType2 {
                         anchors.fill: parent
                         smooth: false
 
-                        source: ExportController.qrCodesCount ? ExportController.qrCodes[0] : ""
+                        source: root.isSelfHostedConfig ? (isQrCodeVisible ? ExportController.qrCodes[0] : "") :
+                                                          (isQrCodeVisible ? ApiConfigsController.qrCodes[0] : "")
+
+                        property bool isFocusable: true
+
+                        Keys.onTabPressed: {
+                            FocusController.nextKeyTabItem()
+                        }
+
+                        Keys.onBacktabPressed: {
+                            FocusController.previousKeyTabItem()
+                        }
+
+                        Keys.onUpPressed: {
+                            FocusController.nextKeyUpItem()
+                        }
+
+                        Keys.onDownPressed: {
+                            FocusController.nextKeyDownItem()
+                        }
+
+                        Keys.onLeftPressed: {
+                            FocusController.nextKeyLeftItem()
+                        }
+
+                        Keys.onRightPressed: {
+                            FocusController.nextKeyRightItem()
+                        }
 
                         Timer {
                             property int index: 0
                             interval: 1000
-                            running: ExportController.qrCodesCount > 0
+                            running: isQrCodeVisible
                             repeat: true
                             onTriggered: {
-                                if (ExportController.qrCodesCount > 0) {
+                                if (isQrCodeVisible) {
                                     index++
-                                    if (index >= ExportController.qrCodesCount) {
+                                    let qrCodesCount = root.isSelfHostedConfig ? ExportController.qrCodesCount : ApiConfigsController.qrCodesCount
+                                    if (index >= qrCodesCount) {
                                         index = 0
                                     }
-                                    parent.source = ExportController.qrCodes[index]
+
+                                    parent.source = root.isSelfHostedConfig ? ExportController.qrCodes[index] : ApiConfigsController.qrCodes[index]
                                 }
                             }
                         }
@@ -321,8 +361,10 @@ DrawerType2 {
                     Layout.fillWidth: true
                     Layout.topMargin: 24
                     Layout.bottomMargin: 32
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
 
-                    visible: ExportController.qrCodesCount > 0
+                    visible: isQrCodeVisible
 
                     horizontalAlignment: Text.AlignHCenter
                     text: qsTr("To read the QR code in the Amnezia app, select \"Add server\" → \"I have data to connect\" → \"QR code, key or settings file\"")

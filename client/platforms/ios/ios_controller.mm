@@ -6,6 +6,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QThread>
+#include <QEventLoop>
 
 #include "../protocols/vpnprotocol.h"
 #import "ios_controller_wrapper.h"
@@ -26,6 +27,15 @@ const char* MessageKey::isOnDemand = "is-on-demand";
 const char* MessageKey::SplitTunnelType = "SplitTunnelType";
 const char* MessageKey::SplitTunnelSites = "SplitTunnelSites";
 
+static UIViewController* getViewController() {
+    NSArray *windows = [[UIApplication sharedApplication]windows];
+    for (UIWindow *window in windows) {
+        if (window.isKeyWindow) {
+            return window.rootViewController;
+        }
+    }
+    return nil;
+}
 
 Vpn::ConnectionState iosStatusToState(NEVPNStatus status) {
   switch (status) {
@@ -89,9 +99,11 @@ bool IosController::initialize()
 
 
             for (NETunnelProviderManager *manager in managers) {
+                qDebug() << "IosController::initialize : VPNC: " << manager.localizedDescription;
+
                 if (manager.connection.status == NEVPNStatusConnected) {
                     m_currentTunnel = manager;
-                    qDebug() << "IosController::initialize : VPN already connected";
+                    qDebug() << "IosController::initialize : VPN already connected with" << manager.localizedDescription;
                     emit connectionStateChanged(Vpn::ConnectionState::Connected);
                     break;
 
@@ -138,7 +150,7 @@ bool IosController::connectVpn(amnezia::Proto proto, const QJsonObject& configur
     [NETunnelProviderManager loadAllFromPreferencesWithCompletionHandler:^(NSArray<NETunnelProviderManager *> * _Nullable managers, NSError * _Nullable error) {
         @try {
             if (error) {
-                qDebug() << "IosController::connectVpn : Error:" << [error.localizedDescription UTF8String];
+                qDebug() << "IosController::connectVpn : VPNC: loadAllFromPreferences error:" << [error.localizedDescription UTF8String];
                 emit connectionStateChanged(Vpn::ConnectionState::Error);
                 ok = false;
                 return;
@@ -151,7 +163,7 @@ bool IosController::connectVpn(amnezia::Proto proto, const QJsonObject& configur
             for (NETunnelProviderManager *manager in managers) {
                 if ([manager.localizedDescription isEqualToString:tunnelName.toNSString()]) {
                     m_currentTunnel = manager;
-                    qDebug() << "IosController::connectVpn : Using existing tunnel";
+                    qDebug() << "IosController::connectVpn : Using existing tunnel:" << manager.localizedDescription;
                     if (manager.connection.status == NEVPNStatusConnected) {
                         emit connectionStateChanged(Vpn::ConnectionState::Connected);
                         return;
@@ -162,10 +174,10 @@ bool IosController::connectVpn(amnezia::Proto proto, const QJsonObject& configur
             }
 
             if (!m_currentTunnel) {
-                qDebug() << "IosController::connectVpn : Creating new tunnel";
                 isNewTunnelCreated = true;
                 m_currentTunnel = [[NETunnelProviderManager alloc] init];
                 m_currentTunnel.localizedDescription = [NSString stringWithUTF8String:tunnelName.toStdString().c_str()];
+                qDebug() << "IosController::connectVpn : Creating new tunnel" << m_currentTunnel.localizedDescription;
             }
 
         }
@@ -203,6 +215,12 @@ bool IosController::connectVpn(amnezia::Proto proto, const QJsonObject& configur
     }
     if (proto == amnezia::Proto::Awg) {
         return setupAwg();
+    }
+    if (proto == amnezia::Proto::Xray) {
+        return setupXray();
+    }
+    if (proto == amnezia::Proto::SSXray) {
+        return setupSSXray();
     }
 
     return false;
@@ -333,8 +351,6 @@ void IosController::vpnStatusDidChange(void *pNotification)
                                 }
                             }
                         }
-                    } else {
-                        qDebug() << "Disconnect error is absent";
                     }
                 }];
             } else {
@@ -424,6 +440,8 @@ bool IosController::setupCloak()
         openVPNConfig.insert(config_key::mtu, protocols::openvpn::defaultMtu);
     }
 
+    openVPNConfig.insert(config_key::splitTunnelType, m_rawConfig[config_key::splitTunnelType]);
+
     QJsonArray splitTunnelSites = m_rawConfig[config_key::splitTunnelSites].toArray();
 
     for(int index = 0; index < splitTunnelSites.count(); index++) {
@@ -481,10 +499,60 @@ bool IosController::setupWireGuard()
         wgConfig.insert(config_key::persistent_keep_alive, "25");
     }
 
+    if (config.contains(config_key::isObfuscationEnabled) && config.value(config_key::isObfuscationEnabled).toBool()) {
+        wgConfig.insert(config_key::initPacketMagicHeader, config[config_key::initPacketMagicHeader]);
+        wgConfig.insert(config_key::responsePacketMagicHeader, config[config_key::responsePacketMagicHeader]);
+        wgConfig.insert(config_key::underloadPacketMagicHeader, config[config_key::underloadPacketMagicHeader]);
+        wgConfig.insert(config_key::transportPacketMagicHeader, config[config_key::transportPacketMagicHeader]);
+
+        wgConfig.insert(config_key::initPacketJunkSize, config[config_key::initPacketJunkSize]);
+        wgConfig.insert(config_key::responsePacketJunkSize, config[config_key::responsePacketJunkSize]);
+
+        wgConfig.insert(config_key::junkPacketCount, config[config_key::junkPacketCount]);
+        wgConfig.insert(config_key::junkPacketMinSize, config[config_key::junkPacketMinSize]);
+        wgConfig.insert(config_key::junkPacketMaxSize, config[config_key::junkPacketMaxSize]);
+    }
+
     QJsonDocument wgConfigDoc(wgConfig);
     QString wgConfigDocStr(wgConfigDoc.toJson(QJsonDocument::Compact));
 
     return startWireGuard(wgConfigDocStr);
+}
+
+bool IosController::setupXray()
+{
+    QJsonObject config = m_rawConfig[ProtocolProps::key_proto_config_data(amnezia::Proto::Xray)].toObject();
+    QJsonDocument xrayConfigDoc(config);
+
+    QString xrayConfigStr(xrayConfigDoc.toJson(QJsonDocument::Compact));
+
+    QJsonObject finalConfig;
+    finalConfig.insert(config_key::dns1, m_rawConfig[config_key::dns1].toString());
+    finalConfig.insert(config_key::dns2, m_rawConfig[config_key::dns2].toString());
+    finalConfig.insert(config_key::config, xrayConfigStr);
+
+    QJsonDocument finalConfigDoc(finalConfig);
+    QString finalConfigStr(finalConfigDoc.toJson(QJsonDocument::Compact));
+
+    return startXray(finalConfigStr);
+}
+
+bool IosController::setupSSXray()
+{
+    QJsonObject config = m_rawConfig[ProtocolProps::key_proto_config_data(amnezia::Proto::SSXray)].toObject();
+    QJsonDocument ssXrayConfigDoc(config);
+
+    QString ssXrayConfigStr(ssXrayConfigDoc.toJson(QJsonDocument::Compact));
+
+    QJsonObject finalConfig;
+    finalConfig.insert(config_key::dns1, m_rawConfig[config_key::dns1]);
+    finalConfig.insert(config_key::dns2, m_rawConfig[config_key::dns2]);
+    finalConfig.insert(config_key::config, ssXrayConfigStr);
+
+    QJsonDocument finalConfigDoc(finalConfig);
+    QString finalConfigStr(finalConfigDoc.toJson(QJsonDocument::Compact));
+
+    return startXray(finalConfigStr);
 }
 
 bool IosController::setupAwg()
@@ -576,6 +644,20 @@ bool IosController::startWireGuard(const QString &config)
     startTunnel();
 }
 
+bool IosController::startXray(const QString &config)
+{
+    qDebug() << "IosController::startXray";
+
+    NETunnelProviderProtocol *tunnelProtocol = [[NETunnelProviderProtocol alloc] init];
+    tunnelProtocol.providerBundleIdentifier = [NSString stringWithUTF8String:VPN_NE_BUNDLEID];
+    tunnelProtocol.providerConfiguration = @{@"xray": [[NSString stringWithUTF8String:config.toStdString().c_str()] dataUsingEncoding:NSUTF8StringEncoding]};
+    tunnelProtocol.serverAddress = m_serverAddress;
+
+    m_currentTunnel.protocolConfiguration = tunnelProtocol;
+
+    startTunnel();
+}
+
 void IosController::startTunnel()
 {
     NSString *protocolName = @"Unknown";
@@ -596,13 +678,14 @@ void IosController::startTunnel()
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
 
             if (saveError) {
+                qDebug().nospace() << "IosController::startTunnel" << protocolName << ": Connect " << protocolName << " Tunnel Save Error" << saveError.localizedDescription.UTF8String;
                 emit connectionStateChanged(Vpn::ConnectionState::Error);
                 return;
             }
 
             [m_currentTunnel loadFromPreferencesWithCompletionHandler:^(NSError *loadError) {
                     if (loadError) {
-                        qDebug().nospace() << "IosController::start" << protocolName << ": Connect " << protocolName << " Tunnel Load Error" << loadError.localizedDescription.UTF8String;
+                        qDebug().nospace() << "IosController::startTunnel :" << m_currentTunnel.localizedDescription << protocolName << ": Connect " << protocolName << " Tunnel Load Error" << loadError.localizedDescription.UTF8String;
                         emit connectionStateChanged(Vpn::ConnectionState::Error);
                         return;
                     }
@@ -613,11 +696,11 @@ void IosController::startTunnel()
                     BOOL started = [m_currentTunnel.connection startVPNTunnelWithOptions:nil andReturnError:&startError];
 
                     if (!started || startError) {
-                        qDebug().nospace() << "IosController::start" << protocolName << " : Connect " << protocolName << " Tunnel Start Error"
+                        qDebug().nospace() << "IosController::startTunnel :" << m_currentTunnel.localizedDescription << protocolName << " : Connect " << protocolName << " Tunnel Start Error"
                             << (startError ? startError.localizedDescription.UTF8String : "");
                         emit connectionStateChanged(Vpn::ConnectionState::Error);
                     } else {
-                        qDebug().nospace() << "IosController::start" << protocolName << " : Starting the tunnel succeeded";
+                        qDebug().nospace() << "IosController::startTunnel :" << m_currentTunnel.localizedDescription << protocolName << " : Starting the tunnel succeeded";
                     }
             }];
         });
@@ -697,4 +780,86 @@ void IosController::sendVpnExtensionMessage(NSDictionary* message, std::function
                  << [sendError.localizedDescription UTF8String];
     }
 
+}
+
+bool IosController::shareText(const QStringList& filesToSend) {
+    NSMutableArray *sharingItems = [NSMutableArray new];
+
+    for (int i = 0; i < filesToSend.size(); i++) {
+        NSURL *logFileUrl = [[NSURL alloc] initFileURLWithPath:filesToSend[i].toNSString()];
+        [sharingItems addObject:logFileUrl];
+    }
+
+    UIViewController *qtController = getViewController();
+    if (!qtController) return;
+
+    UIActivityViewController *activityController = [[UIActivityViewController alloc] initWithActivityItems:sharingItems applicationActivities:nil];
+    
+    __block bool isAccepted = false;
+    
+    [activityController setCompletionWithItemsHandler:^(NSString *activityType, BOOL completed, NSArray *returnedItems, NSError *activityError) {
+        isAccepted = completed;
+        emit finished();
+    }];
+
+    [qtController presentViewController:activityController animated:YES completion:nil];
+    UIPopoverPresentationController *popController = activityController.popoverPresentationController;
+    if (popController) {
+        popController.sourceView = qtController.view;
+        popController.sourceRect = CGRectMake(100, 100, 100, 100);
+    }
+    
+    QEventLoop wait;
+    QObject::connect(this, &IosController::finished, &wait, &QEventLoop::quit);
+    wait.exec();
+    
+    return isAccepted;
+}
+
+QString IosController::openFile() {
+    UIDocumentPickerViewController *documentPicker = [[UIDocumentPickerViewController alloc] initWithDocumentTypes:@[@"public.item"] inMode:UIDocumentPickerModeOpen];
+
+    DocumentPickerDelegate *documentPickerDelegate = [[DocumentPickerDelegate alloc] init];
+    documentPicker.delegate = documentPickerDelegate;
+
+    UIViewController *qtController = getViewController();
+    if (!qtController) return;
+
+    [qtController presentViewController:documentPicker animated:YES completion:nil];
+    
+    __block QString filePath;
+
+    documentPickerDelegate.documentPickerClosedCallback = ^(NSString *path) {
+        if (path) {
+            filePath = QString::fromUtf8(path.UTF8String);
+        } else {
+            filePath = QString();
+        }
+        emit finished();
+    };
+
+    QEventLoop wait;
+    QObject::connect(this, &IosController::finished, &wait, &QEventLoop::quit);
+    wait.exec();
+    
+    return filePath;
+}
+
+void IosController::requestInetAccess() {
+    NSURL *url = [NSURL URLWithString:@"http://captive.apple.com/generate_204"];
+    if (!url) {
+        qDebug() << "IosController::requestInetAccess URL error";
+        return;
+    }
+
+    NSURLSession *session = [NSURLSession sharedSession];
+    NSURLSessionDataTask *task = [session dataTaskWithURL:url completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        if (error) {
+            qDebug() << "IosController::requestInetAccess error:" << error.localizedDescription;
+        } else {
+            NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+            QString responseBody = QString::fromUtf8((const char*)data.bytes, data.length);
+        }
+    }];
+    [task resume];
 }

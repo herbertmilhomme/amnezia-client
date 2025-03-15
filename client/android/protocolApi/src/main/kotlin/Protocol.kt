@@ -1,6 +1,5 @@
 package org.amnezia.vpn.protocol
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.net.IpPrefix
 import android.net.VpnService
@@ -8,9 +7,6 @@ import android.net.VpnService.Builder
 import android.os.Build
 import android.system.OsConstants
 import androidx.annotation.RequiresApi
-import java.io.File
-import java.io.FileOutputStream
-import java.util.zip.ZipFile
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.amnezia.vpn.util.Log
 import org.amnezia.vpn.util.net.InetNetwork
@@ -27,15 +23,22 @@ private const val SPLIT_TUNNEL_EXCLUDE = 2
 abstract class Protocol {
 
     abstract val statistics: Statistics
+    protected lateinit var context: Context
     protected lateinit var state: MutableStateFlow<ProtocolState>
     protected lateinit var onError: (String) -> Unit
+    protected var isInitialized: Boolean = false
 
-    open fun initialize(context: Context, state: MutableStateFlow<ProtocolState>, onError: (String) -> Unit) {
+    fun initialize(context: Context, state: MutableStateFlow<ProtocolState>, onError: (String) -> Unit) {
+        this.context = context
         this.state = state
         this.onError = onError
+        internalInit()
+        isInitialized = true
     }
 
-    abstract fun startVpn(config: JSONObject, vpnBuilder: Builder, protect: (Int) -> Boolean)
+    protected abstract fun internalInit()
+
+    abstract suspend fun startVpn(config: JSONObject, vpnBuilder: Builder, protect: (Int) -> Boolean)
 
     abstract fun stopVpn()
 
@@ -64,6 +67,22 @@ abstract class Protocol {
         }
     }
 
+    protected fun ProtocolConfig.Builder.configAppSplitTunneling(config: JSONObject) {
+        val splitTunnelType = config.optInt("appSplitTunnelType")
+        if (splitTunnelType == SPLIT_TUNNEL_DISABLE) return
+        val splitTunnelApps = config.getJSONArray("splitTunnelApps")
+        val appHandlerFunc = when (splitTunnelType) {
+            SPLIT_TUNNEL_INCLUDE -> ::includeApplication
+            SPLIT_TUNNEL_EXCLUDE -> ::excludeApplication
+
+            else -> throw BadConfigException("Unexpected value of the 'appSplitTunnelType' parameter: $splitTunnelType")
+        }
+
+        for (i in 0 until splitTunnelApps.length()) {
+            appHandlerFunc(splitTunnelApps.getString(i))
+        }
+    }
+
     protected open fun buildVpnInterface(config: ProtocolConfig, vpnBuilder: Builder) {
         vpnBuilder.setSession(VPN_SESSION_NAME)
 
@@ -89,20 +108,27 @@ abstract class Protocol {
             vpnBuilder.addSearchDomain(it)
         }
 
-        for (addr in config.routes) {
-            Log.d(TAG, "addRoute: $addr")
-            vpnBuilder.addRoute(addr)
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            for (addr in config.excludedRoutes) {
-                Log.d(TAG, "excludeRoute: $addr")
-                vpnBuilder.excludeRoute(addr)
+        for ((inetNetwork, include) in config.routes) {
+            if (include) {
+                Log.d(TAG, "addRoute: $inetNetwork")
+                vpnBuilder.addRoute(inetNetwork)
+            } else {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    Log.d(TAG, "excludeRoute: $inetNetwork")
+                    vpnBuilder.excludeRoute(inetNetwork)
+                } else {
+                    Log.e(TAG, "Trying to exclude route $inetNetwork on old Android")
+                }
             }
         }
 
+        for (app in config.includedApplications) {
+            Log.d(TAG, "addAllowedApplication")
+            vpnBuilder.addAllowedApplication(app)
+        }
+
         for (app in config.excludedApplications) {
-            Log.d(TAG, "addDisallowedApplication: $app")
+            Log.d(TAG, "addDisallowedApplication")
             vpnBuilder.addDisallowedApplication(app)
         }
 
@@ -127,60 +153,6 @@ abstract class Protocol {
         vpnBuilder.setUnderlyingNetworks(null)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
             vpnBuilder.setMetered(false)
-    }
-
-    companion object {
-        private fun extractLibrary(context: Context, libraryName: String, destination: File): Boolean {
-            Log.d(TAG, "Extracting library: $libraryName")
-            val apks = hashSetOf<String>()
-            context.applicationInfo.run {
-                sourceDir?.let { apks += it }
-                splitSourceDirs?.let { apks += it }
-            }
-            for (abi in Build.SUPPORTED_ABIS) {
-                for (apk in apks) {
-                    ZipFile(File(apk), ZipFile.OPEN_READ).use { zipFile ->
-                        val mappedName = System.mapLibraryName(libraryName)
-                        val libraryZipPath = listOf("lib", abi, mappedName).joinToString(File.separator)
-                        val zipEntry = zipFile.getEntry(libraryZipPath)
-                        zipEntry?.let {
-                            Log.d(TAG, "Extracting apk:/$libraryZipPath to ${destination.absolutePath}")
-                            FileOutputStream(destination).use { outStream ->
-                                zipFile.getInputStream(zipEntry).use { inStream ->
-                                    inStream.copyTo(outStream, 32 * 1024)
-                                    outStream.fd.sync()
-                                }
-                            }
-                        }
-                        return true
-                    }
-                }
-            }
-            return false
-        }
-
-        @SuppressLint("UnsafeDynamicallyLoadedCode")
-        fun loadSharedLibrary(context: Context, libraryName: String) {
-            Log.d(TAG, "Loading library: $libraryName")
-            try {
-                System.loadLibrary(libraryName)
-                return
-            } catch (_: UnsatisfiedLinkError) {
-                Log.d(TAG, "Failed to load library, try to extract it from apk")
-            }
-            var tempFile: File? = null
-            try {
-                tempFile = File.createTempFile("lib", ".so", context.codeCacheDir)
-                if (extractLibrary(context, libraryName, tempFile)) {
-                    System.load(tempFile.absolutePath)
-                    return
-                }
-            } catch (e: Exception) {
-                throw LoadLibraryException("Failed to load library apk: $libraryName", e)
-            } finally {
-                tempFile?.delete()
-            }
-        }
     }
 }
 

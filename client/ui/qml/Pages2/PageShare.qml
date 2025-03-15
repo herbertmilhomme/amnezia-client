@@ -7,16 +7,16 @@ import SortFilterProxyModel 0.2
 
 import PageEnum 1.0
 import ContainerProps 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
 import "../Controls2/TextTypes"
 import "../Components"
+import "../Config"
 
 PageType {
     id: root
-
-    defaultActiveFocusItem: clientNameTextField.textField
 
     enum ConfigType {
         AmneziaConnection,
@@ -24,14 +24,15 @@ PageType {
         WireGuard,
         Awg,
         ShadowSocks,
-        Cloak
+        Cloak,
+        Xray
     }
 
     signal revokeConfig(int index)
     onRevokeConfig: function(index) {
         PageController.showBusyIndicator(true)
         ExportController.revokeConfig(index,
-                                      ContainersModel.getCurrentlyProcessedContainerIndex(),
+                                      ContainersModel.getProcessedContainerIndex(),
                                       ServersModel.getProcessedServerCredentials())
         PageController.showBusyIndicator(false)
         PageController.showNotificationMessage(qsTr("Config revoked"))
@@ -44,31 +45,30 @@ PageType {
             shareConnectionDrawer.headerText = qsTr("Connection to ") + serverSelector.text
             shareConnectionDrawer.configContentHeaderText = qsTr("File with connection settings to ") + serverSelector.text
 
-            shareConnectionDrawer.open()
-            shareConnectionDrawer.contentVisible = false
+            shareConnectionDrawer.openTriggered()
             PageController.showBusyIndicator(true)
 
             switch (type) {
             case PageShare.ConfigType.AmneziaConnection: {
-                ExportController.generateConnectionConfig(clientNameTextField.textFieldText);
+                ExportController.generateConnectionConfig(clientNameTextField.textField.text);
                 break;
             }
             case PageShare.ConfigType.OpenVpn: {
-                ExportController.generateOpenVpnConfig(clientNameTextField.textFieldText)
+                ExportController.generateOpenVpnConfig(clientNameTextField.textField.text)
                 shareConnectionDrawer.configCaption = qsTr("Save OpenVPN config")
                 shareConnectionDrawer.configExtension = ".ovpn"
                 shareConnectionDrawer.configFileName = "amnezia_for_openvpn"
                 break
             }
             case PageShare.ConfigType.WireGuard: {
-                ExportController.generateWireGuardConfig(clientNameTextField.textFieldText)
+                ExportController.generateWireGuardConfig(clientNameTextField.textField.text)
                 shareConnectionDrawer.configCaption = qsTr("Save WireGuard config")
                 shareConnectionDrawer.configExtension = ".conf"
                 shareConnectionDrawer.configFileName = "amnezia_for_wireguard"
                 break
             }
             case PageShare.ConfigType.Awg: {
-                ExportController.generateAwgConfig(clientNameTextField.textFieldText)
+                ExportController.generateAwgConfig(clientNameTextField.textField.text)
                 shareConnectionDrawer.configCaption = qsTr("Save AmneziaWG config")
                 shareConnectionDrawer.configExtension = ".conf"
                 shareConnectionDrawer.configFileName = "amnezia_for_awg"
@@ -76,7 +76,7 @@ PageType {
             }
             case PageShare.ConfigType.ShadowSocks: {
                 ExportController.generateShadowSocksConfig()
-                shareConnectionDrawer.configCaption = qsTr("Save ShadowSocks config")
+                shareConnectionDrawer.configCaption = qsTr("Save Shadowsocks config")
                 shareConnectionDrawer.configExtension = ".json"
                 shareConnectionDrawer.configFileName = "amnezia_for_shadowsocks"
                 break
@@ -88,14 +88,22 @@ PageType {
                 shareConnectionDrawer.configFileName = "amnezia_for_cloak"
                 break
             }
+            case PageShare.ConfigType.Xray: {
+                ExportController.generateXrayConfig(clientNameTextField.textField.text)
+                shareConnectionDrawer.configCaption = qsTr("Save XRay config")
+                shareConnectionDrawer.configExtension = ".json"
+                shareConnectionDrawer.configFileName = "amnezia_for_xray"
+                break
+            }
             }
 
             PageController.showBusyIndicator(false)
         }
 
-        function onExportErrorOccurred(errorMessage) {
-            shareConnectionDrawer.close()
-            PageController.showErrorMessage(errorMessage)
+        function onExportErrorOccurred(error) {
+            shareConnectionDrawer.closeTriggered()
+
+            PageController.showErrorMessage(error)
         }
     }
 
@@ -108,36 +116,43 @@ PageType {
 
     QtObject {
         id: amneziaConnectionFormat
-        property string name: qsTr("For the AmneziaVPN app")
-        property var type: PageShare.ConfigType.AmneziaConnection
+        readonly property string name: qsTr("For the AmneziaVPN app")
+        readonly property int type: PageShare.ConfigType.AmneziaConnection
     }
     QtObject {
         id: openVpnConnectionFormat
-        property string name: qsTr("OpenVpn native format")
-        property var type: PageShare.ConfigType.OpenVpn
+        readonly property string name: qsTr("OpenVPN native format")
+        readonly property int type: PageShare.ConfigType.OpenVpn
     }
     QtObject {
         id: wireGuardConnectionFormat
-        property string name: qsTr("WireGuard native format")
-        property var type: PageShare.ConfigType.WireGuard
+        readonly property string name: qsTr("WireGuard native format")
+        readonly property int type: PageShare.ConfigType.WireGuard
     }
     QtObject {
         id: awgConnectionFormat
-        property string name: qsTr("AmneziaWG native format")
-        property var type: PageShare.ConfigType.Awg
+        readonly property string name: qsTr("AmneziaWG native format")
+        readonly property int type: PageShare.ConfigType.Awg
     }
     QtObject {
         id: shadowSocksConnectionFormat
-        property string name: qsTr("ShadowSocks native format")
-        property var type: PageShare.ConfigType.ShadowSocks
+        readonly property string name: qsTr("Shadowsocks native format")
+        readonly property int type: PageShare.ConfigType.ShadowSocks
     }
     QtObject {
         id: cloakConnectionFormat
-        property string name: qsTr("Cloak native format")
-        property var type: PageShare.ConfigType.Cloak
+        readonly property string name: qsTr("Cloak native format")
+        readonly property int type: PageShare.ConfigType.Cloak
+    }
+    QtObject {
+        id: xrayConnectionFormat
+        readonly property string name: qsTr("XRay native format")
+        readonly property int type: PageShare.ConfigType.Xray
     }
 
     FlickableType {
+        id: a
+
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         contentHeight: content.height + 10
@@ -155,6 +170,7 @@ PageType {
             spacing: 0
 
             HeaderType {
+                id: header
                 Layout.fillWidth: true
                 Layout.topMargin: 24
 
@@ -162,7 +178,7 @@ PageType {
 
                 actionButtonImage: "qrc:/images/controls/more-vertical.svg"
                 actionButtonFunction: function() {
-                    shareFullAccessDrawer.open()
+                    shareFullAccessDrawer.openTriggered()
                 }
 
                 DrawerType2 {
@@ -171,15 +187,20 @@ PageType {
                     parent: root
 
                     anchors.fill: parent
-                    expandedHeight: root.height * 0.45
+                    expandedHeight: root.height
 
-                    expandedContent: ColumnLayout {
+                    expandedStateContent: ColumnLayout {
+                        id: shareFullAccessDrawerContent
                         anchors.top: parent.top
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.topMargin: 16
 
                         spacing: 0
+
+                        onImplicitHeightChanged: {
+                            shareFullAccessDrawer.expandedHeight = shareFullAccessDrawerContent.implicitHeight + 32
+                        }
 
                         Header2Type {
                             Layout.fillWidth: true
@@ -191,8 +212,8 @@ PageType {
                             descriptionText: qsTr("Use for your own devices, or share with those you trust to manage the server.")
                         }
 
-
                         LabelWithButtonType {
+                            id: shareFullAccessButton
                             Layout.fillWidth: true
 
                             text: qsTr("Share")
@@ -200,7 +221,7 @@ PageType {
 
                             clickedFunction: function() {
                                 PageController.goToPage(PageEnum.PageShareFullAccess)
-                                shareFullAccessDrawer.close()
+                                shareFullAccessDrawer.closeTriggered()
                             }
                         }
                     }
@@ -217,7 +238,7 @@ PageType {
                 implicitWidth: accessTypeSelectorContent.implicitWidth
                 implicitHeight: accessTypeSelectorContent.implicitHeight
 
-                color: "#1C1D21"
+                color: AmneziaStyle.color.onyxBlack
                 radius: 16
 
                 RowLayout {
@@ -226,6 +247,7 @@ PageType {
                     spacing: 0
 
                     HorizontalRadioButton {
+                        id: connectionRadioButton
                         checked: accessTypeSelector.currentIndex === 0
 
                         implicitWidth: (root.width - 32) / 2
@@ -237,6 +259,7 @@ PageType {
                     }
 
                     HorizontalRadioButton {
+                        id: usersRadioButton
                         checked: accessTypeSelector.currentIndex === 1
 
                         implicitWidth: (root.width - 32) / 2
@@ -245,7 +268,7 @@ PageType {
                         onClicked: {
                             accessTypeSelector.currentIndex = 1
                             PageController.showBusyIndicator(true)
-                            ExportController.updateClientManagementModel(ContainersModel.getCurrentlyProcessedContainerIndex(),
+                            ExportController.updateClientManagementModel(ContainersModel.getProcessedContainerIndex(),
                                                                          ServersModel.getProcessedServerCredentials())
                             PageController.showBusyIndicator(false)
                         }
@@ -261,7 +284,7 @@ PageType {
                 visible: accessTypeSelector.currentIndex === 0
 
                 text: qsTr("Share VPN access without the ability to manage the server")
-                color: "#878B91"
+                color: AmneziaStyle.color.mutedGray
             }
 
             TextFieldWithHeaderType {
@@ -272,12 +295,10 @@ PageType {
                 visible: accessTypeSelector.currentIndex === 0
 
                 headerText: qsTr("User name")
-                textFieldText: "New client"
+                textField.text: "New client"
                 textField.maximumLength: 20
 
                 checkEmptyText: true
-
-                KeyNavigation.tab: shareButton
             }
 
             DropDownType {
@@ -297,7 +318,6 @@ PageType {
 
                 listView: ListViewWithRadioButtonType {
                     id: serverSelectorListView
-
                     rootWidth: root.width
                     imageSource: "qrc:/images/controls/check.svg"
 
@@ -319,27 +339,28 @@ PageType {
                     clickedFunction: function() {
                         handler()
 
-                        if (serverSelector.currentIndex !== serverSelectorListView.currentIndex) {
-                            serverSelector.currentIndex = serverSelectorListView.currentIndex
+                        if (serverSelector.currentIndex !== serverSelectorListView.selectedIndex) {
+                            serverSelector.currentIndex = serverSelectorListView.selectedIndex
                             serverSelector.severSelectorIndexChanged()
                         }
 
-                        serverSelector.close()
+                        serverSelector.closeTriggered()
                     }
 
                     Component.onCompleted: {
                         if (ServersModel.isDefaultServerHasWriteAccess() && ServersModel.getDefaultServerData("hasInstalledContainers")) {
-                            serverSelectorListView.currentIndex = proxyServersModel.mapFromSource(ServersModel.defaultIndex)
+                            serverSelectorListView.selectedIndex = proxyServersModel.mapFromSource(ServersModel.defaultIndex)
                         } else {
-                            serverSelectorListView.currentIndex = 0
+                            serverSelectorListView.selectedIndex = 0
                         }
 
+                        serverSelectorListView.positionViewAtIndex(selectedIndex, ListView.Beginning)
                         serverSelectorListView.triggerCurrentItem()
                     }
 
                     function handler() {
                         serverSelector.text = selectedText
-                        ServersModel.processedIndex = proxyServersModel.mapToSource(currentIndex)
+                        ServersModel.processedIndex = proxyServersModel.mapToSource(selectedIndex)
                     }
                 }
             }
@@ -377,12 +398,10 @@ PageType {
                         ]
                     }
 
-                    currentIndex: 0
-
                     clickedFunction: function() {
                         handler()
 
-                        protocolSelector.close()
+                        protocolSelector.closeTriggered()
                     }
 
                     Connections {
@@ -390,7 +409,8 @@ PageType {
 
                         function onSeverSelectorIndexChanged() {
                             var defaultContainer = proxyContainersModel.mapFromSource(ServersModel.getProcessedServerData("defaultContainer"))
-                            protocolSelectorListView.currentIndex = defaultContainer
+                            protocolSelectorListView.selectedIndex = defaultContainer
+                            protocolSelectorListView.positionViewAtIndex(selectedIndex, ListView.Beginning)
                             protocolSelectorListView.triggerCurrentItem()
                         }
                     }
@@ -405,13 +425,13 @@ PageType {
 
                         protocolSelector.text = selectedText
 
-                        ContainersModel.setCurrentlyProcessedContainerIndex(proxyContainersModel.mapToSource(currentIndex))
+                        ContainersModel.setProcessedContainerIndex(proxyContainersModel.mapToSource(selectedIndex))
 
                         fillConnectionTypeModel()
 
                         if (accessTypeSelector.currentIndex === 1) {
                             PageController.showBusyIndicator(true)
-                            ExportController.updateClientManagementModel(ContainersModel.getCurrentlyProcessedContainerIndex(),
+                            ExportController.updateClientManagementModel(ContainersModel.getProcessedContainerIndex(),
                                                                          ServersModel.getProcessedServerCredentials())
                             PageController.showBusyIndicator(false)
                         }
@@ -420,7 +440,7 @@ PageType {
                     function fillConnectionTypeModel() {
                         root.connectionTypesModel = [amneziaConnectionFormat]
 
-                        var index = proxyContainersModel.mapToSource(currentIndex)
+                        var index = proxyContainersModel.mapToSource(selectedIndex)
 
                         if (index === ContainerProps.containerFromString("amnezia-openvpn")) {
                             root.connectionTypesModel.push(openVpnConnectionFormat)
@@ -435,6 +455,8 @@ PageType {
                             root.connectionTypesModel.push(openVpnConnectionFormat)
                             root.connectionTypesModel.push(shadowSocksConnectionFormat)
                             root.connectionTypesModel.push(cloakConnectionFormat)
+                        } else if (index === ContainerProps.containerFromString("amnezia-xray")) {
+                            root.connectionTypesModel.push(xrayConnectionFormat)
                         }
                     }
                 }
@@ -458,9 +480,11 @@ PageType {
                 headerText: qsTr("Connection format")
 
                 listView: ListViewWithRadioButtonType {
+                    id: exportTypeSelectorListView
+
                     onCurrentIndexChanged: {
-                        exportTypeSelector.currentIndex = currentIndex
-                        exportTypeSelector.text = selectedText
+                        exportTypeSelector.currentIndex = exportTypeSelectorListView.selectedIndex
+                        exportTypeSelector.text = exportTypeSelectorListView.selectedText
                     }
 
                     rootWidth: root.width
@@ -471,14 +495,14 @@ PageType {
                     currentIndex: 0
 
                     clickedFunction: function() {
-                        exportTypeSelector.text = selectedText
-                        exportTypeSelector.currentIndex = currentIndex
-                        exportTypeSelector.close()
+                        exportTypeSelector.text = exportTypeSelectorListView.selectedText
+                        exportTypeSelector.currentIndex = exportTypeSelectorListView.selectedIndex
+                        exportTypeSelector.closeTriggered()
                     }
 
                     Component.onCompleted: {
-                        exportTypeSelector.text = selectedText
-                        exportTypeSelector.currentIndex = currentIndex
+                        exportTypeSelector.text = exportTypeSelectorListView.selectedText
+                        exportTypeSelector.currentIndex = exportTypeSelectorListView.selectedIndex
                     }
                 }
             }
@@ -494,16 +518,20 @@ PageType {
                 visible: accessTypeSelector.currentIndex === 0
 
                 text: qsTr("Share")
-                imageSource: "qrc:/images/controls/share-2.svg"
+                leftImageSource: "qrc:/images/controls/share-2.svg"
+
+
+                parentFlickable: a
 
                 clickedFunc: function(){
-                    if (clientNameTextField.textFieldText !== "") {
+                    if (clientNameTextField.textField.text !== "") {
                         ExportController.generateConfig(root.connectionTypesModel[exportTypeSelector.currentIndex].type)
                     }
                 }
             }
 
             Header2Type {
+                id: usersHeader
                 Layout.fillWidth: true
                 Layout.topMargin: 24
                 Layout.bottomMargin: 16
@@ -526,17 +554,35 @@ PageType {
                     id: searchTextField
                     Layout.fillWidth: true
 
-                    textFieldPlaceholderText: qsTr("Search")
+                    textField.placeholderText: qsTr("Search")
+
+                    Keys.onEscapePressed: {
+                        root.isSearchBarVisible = false
+                    }
+
+                    function navigateTo() {
+                        if (searchTextField.textField.text === "") {
+                            root.isSearchBarVisible = false
+                        }
+                    }
+
+                    Keys.onTabPressed: { navigateTo() }
+                    Keys.onEnterPressed: { navigateTo() }
+                    Keys.onReturnPressed: { navigateTo() }
                 }
 
                 ImageButtonType {
+                    id: closeSearchButton
                     image: "qrc:/images/controls/close.svg"
-                    imageColor: "#D7D8DB"
+                    imageColor: AmneziaStyle.color.paleGray
 
-                    onClicked: function() {
+                    function clickedFunc() {
                         root.isSearchBarVisible = false
-                        searchTextField.textFieldText = ""
                     }
+
+                    onClicked: clickedFunc()
+                    Keys.onEnterPressed: clickedFunc()
+                    Keys.onReturnPressed: clickedFunc()
                 }
             }
 
@@ -547,18 +593,21 @@ PageType {
 
                 visible: accessTypeSelector.currentIndex === 1
 
+                property bool isFocusable: true
+
                 model: SortFilterProxyModel {
                     id: proxyClientManagementModel
                     sourceModel: ClientManagementModel
                     filters: RegExpFilter {
                         roleName: "clientName"
-                        pattern: ".*" + searchTextField.textFieldText + ".*"
+                        pattern: ".*" + searchTextField.textField.text + ".*"
                         caseSensitivity: Qt.CaseInsensitive
                     }
                 }
 
                 clip: true
                 interactive: false
+                reuseItems: true
 
                 delegate: Item {
                     implicitWidth: clientsListView.width
@@ -575,13 +624,14 @@ PageType {
                         anchors.leftMargin: -16
 
                         LabelWithButtonType {
+                            id: clientFocusItem
                             Layout.fillWidth: true
 
                             text: clientName
                             rightImageSource: "qrc:/images/controls/chevron-right.svg"
 
                             clickedFunction: function() {
-                                clientInfoDrawer.open()
+                                clientInfoDrawer.openTriggered()
                             }
                         }
 
@@ -592,10 +642,11 @@ PageType {
 
                             parent: root
 
-                            anchors.fill: parent
-                            expandedHeight: root.height * 0.5
+                            width: root.width
+                            height: root.height
 
-                            expandedContent: ColumnLayout {
+                            expandedStateContent: ColumnLayout {
+                                id: expandedStateContent
                                 anchors.top: parent.top
                                 anchors.left: parent.left
                                 anchors.right: parent.right
@@ -603,31 +654,94 @@ PageType {
                                 anchors.leftMargin: 16
                                 anchors.rightMargin: 16
 
-                                spacing: 8
+                                onImplicitHeightChanged: {
+                                    clientInfoDrawer.expandedHeight = expandedStateContent.implicitHeight + 32
+                                }
 
-                                Header2Type {
-                                    Layout.fillWidth: true
+                                Header2TextType {
+                                    Layout.maximumWidth: parent.width
                                     Layout.bottomMargin: 24
 
-                                    headerText: clientName
-                                    descriptionText: qsTr("Creation date: ") + creationDate
+                                    text: clientName
+                                    maximumLineCount: 2
+                                    wrapMode: Text.Wrap
+                                    elide: Qt.ElideRight
+                                }
+
+                                ParagraphTextType {
+                                    color: AmneziaStyle.color.mutedGray
+                                    visible: creationDate
+                                    Layout.maximumWidth: parent.width
+
+                                    maximumLineCount: 2
+                                    wrapMode: Text.Wrap
+                                    elide: Qt.ElideRight
+
+                                    text: qsTr("Creation date: %1").arg(creationDate)
+                                }
+
+                                ParagraphTextType {
+                                    color: AmneziaStyle.color.mutedGray
+                                    visible: latestHandshake
+                                    Layout.maximumWidth: parent.width
+
+                                    maximumLineCount: 2
+                                    wrapMode: Text.Wrap
+                                    elide: Qt.ElideRight
+
+                                    text: qsTr("Latest handshake: %1").arg(latestHandshake)
+                                }
+
+                                ParagraphTextType {
+                                    color: AmneziaStyle.color.mutedGray
+                                    visible: dataReceived
+                                    Layout.maximumWidth: parent.width
+
+                                    maximumLineCount: 2
+                                    wrapMode: Text.Wrap
+                                    elide: Qt.ElideRight
+
+                                    text: qsTr("Data received: %1").arg(dataReceived)
+                                }
+
+                                ParagraphTextType {
+                                    color: AmneziaStyle.color.mutedGray
+                                    visible: dataSent
+                                    Layout.maximumWidth: parent.width
+
+                                    maximumLineCount: 2
+                                    wrapMode: Text.Wrap
+                                    elide: Qt.ElideRight
+
+                                    text: qsTr("Data sent: %1").arg(dataSent)
+                                }
+
+                                ParagraphTextType {
+                                    color: AmneziaStyle.color.mutedGray
+                                    visible: allowedIps
+                                    Layout.maximumWidth: parent.width
+
+                                    wrapMode: Text.Wrap
+
+                                    text: qsTr("Allowed IPs: %1").arg(allowedIps)
                                 }
 
                                 BasicButtonType {
+                                    id: renameButton
                                     Layout.fillWidth: true
                                     Layout.topMargin: 24
 
-                                    defaultColor: "transparent"
-                                    hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                                    pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                                    disabledColor: "#878B91"
-                                    textColor: "#D7D8DB"
+                                    defaultColor: AmneziaStyle.color.transparent
+                                    hoveredColor: AmneziaStyle.color.translucentWhite
+                                    pressedColor: AmneziaStyle.color.sheerWhite
+                                    disabledColor: AmneziaStyle.color.mutedGray
+                                    textColor: AmneziaStyle.color.paleGray
                                     borderWidth: 1
 
                                     text: qsTr("Rename")
 
                                     clickedFunc: function() {
-                                        clientNameEditDrawer.open()
+                                        clientNameEditDrawer.openTriggered()
                                     }
 
                                     DrawerType2 {
@@ -638,7 +752,7 @@ PageType {
                                         anchors.fill: parent
                                         expandedHeight: root.height * 0.35
 
-                                        expandedContent: ColumnLayout {
+                                        expandedStateContent: ColumnLayout {
                                             anchors.top: parent.top
                                             anchors.left: parent.left
                                             anchors.right: parent.right
@@ -646,23 +760,13 @@ PageType {
                                             anchors.leftMargin: 16
                                             anchors.rightMargin: 16
 
-                                            Connections {
-                                                target: clientNameEditDrawer
-                                                enabled: !GC.isMobile()
-                                                function onOpened() {
-                                                    clientNameEditor.textField.forceActiveFocus()
-                                                }
-                                            }
-
                                             TextFieldWithHeaderType {
                                                 id: clientNameEditor
                                                 Layout.fillWidth: true
                                                 headerText: qsTr("Client name")
-                                                textFieldText: clientName
+                                                textField.text: clientName
                                                 textField.maximumLength: 20
                                                 checkEmptyText: true
-
-                                                KeyNavigation.tab: saveButton
                                             }
 
                                             BasicButtonType {
@@ -673,18 +777,18 @@ PageType {
                                                 text: qsTr("Save")
 
                                                 clickedFunc: function() {
-                                                    if (clientNameEditor.textFieldText === "") {
+                                                    if (clientNameEditor.textField.text === "") {
                                                         return
                                                     }
 
-                                                    if (clientNameEditor.textFieldText !== clientName) {
+                                                    if (clientNameEditor.textField.text !== clientName) {
                                                         PageController.showBusyIndicator(true)
                                                         ExportController.renameClient(index,
-                                                                                      clientNameEditor.textFieldText,
-                                                                                      ContainersModel.getCurrentlyProcessedContainerIndex(),
+                                                                                      clientNameEditor.textField.text,
+                                                                                      ContainersModel.getProcessedContainerIndex(),
                                                                                       ServersModel.getProcessedServerCredentials())
                                                         PageController.showBusyIndicator(false)
-                                                        clientNameEditDrawer.close()
+                                                        clientNameEditDrawer.closeTriggered()
                                                     }
                                                 }
                                             }
@@ -693,13 +797,15 @@ PageType {
                                 }
 
                                 BasicButtonType {
+                                    id: revokeButton
                                     Layout.fillWidth: true
+                                    Layout.topMargin: 8
 
-                                    defaultColor: "transparent"
-                                    hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                                    pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                                    disabledColor: "#878B91"
-                                    textColor: "#D7D8DB"
+                                    defaultColor: AmneziaStyle.color.transparent
+                                    hoveredColor: AmneziaStyle.color.translucentWhite
+                                    pressedColor: AmneziaStyle.color.sheerWhite
+                                    disabledColor: AmneziaStyle.color.mutedGray
+                                    textColor: AmneziaStyle.color.paleGray
                                     borderWidth: 1
 
                                     text: qsTr("Revoke")
@@ -711,10 +817,13 @@ PageType {
                                         var noButtonText = qsTr("Cancel")
 
                                         var yesButtonFunction = function() {
-                                            clientInfoDrawer.close()
+                                            clientInfoDrawer.closeTriggered()
                                             root.revokeConfig(index)
                                         }
                                         var noButtonFunction = function() {
+                                            if (!GC.isMobile()) {
+                                                // focusItem1.forceActiveFocus()
+                                            }
                                         }
 
                                         showQuestionDrawer(headerText, descriptionText, yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
@@ -732,13 +841,5 @@ PageType {
         id: shareConnectionDrawer
 
         anchors.fill: parent
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        onPressed: function(mouse) {
-            forceActiveFocus()
-            mouse.accepted = false
-        }
     }
 }

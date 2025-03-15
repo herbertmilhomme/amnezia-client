@@ -20,7 +20,9 @@ ListView {
     height: root.contentItem.height
 
     clip: true
-    interactive: false
+    reuseItems: true
+
+    property bool isFocusable: false
 
     delegate: Item {
         implicitWidth: root.width
@@ -32,6 +34,7 @@ ListView {
             anchors.fill: parent
 
             LabelWithButtonType {
+                id: containerRadioButton
                 implicitWidth: parent.width
 
                 text: name
@@ -41,7 +44,7 @@ ListView {
                 clickedFunction: function() {
                     if (isInstalled) {
                         var containerIndex = root.model.mapToSource(index)
-                        ContainersModel.setCurrentlyProcessedContainerIndex(containerIndex)
+                        ContainersModel.setProcessedContainerIndex(containerIndex)
 
                         if (serviceType !== ProtocolEnum.Other) {
                             if (config[ContainerProps.containerTypeToString(containerIndex)]["isThirdPartyConfig"]) {
@@ -52,47 +55,23 @@ ListView {
                         }
 
                         switch (containerIndex) {
-                        case ContainerEnum.OpenVpn: {
-                            OpenVpnConfigModel.updateModel(config)
-                            PageController.goToPage(PageEnum.PageProtocolOpenVpnSettings)
-                            break
-                        }
-                        case ContainerEnum.WireGuard: {
-                            WireGuardConfigModel.updateModel(config)
-                            PageController.goToPage(PageEnum.PageProtocolWireGuardSettings)
-                            break
-                        }
-                        case ContainerEnum.Awg: {
-                            AwgConfigModel.updateModel(config)
-                            PageController.goToPage(PageEnum.PageProtocolAwgSettings)
-                            break
-                        }
                         case ContainerEnum.Ipsec: {
                             ProtocolsModel.updateModel(config)
                             PageController.goToPage(PageEnum.PageProtocolRaw)
-                            break
-                        }
-                        case ContainerEnum.Sftp: {
-                            SftpConfigModel.updateModel(config)
-                            PageController.goToPage(PageEnum.PageServiceSftpSettings)
-                            break
-                        }
-                        case ContainerEnum.TorWebSite: {
-                            PageController.goToPage(PageEnum.PageServiceTorWebsiteSettings)
                             break
                         }
                         case ContainerEnum.Dns: {
                             PageController.goToPage(PageEnum.PageServiceDnsSettings)
                             break
                         }
-                        default: { // go to the settings page of the container with multiple protocols
+                        default: {
                             ProtocolsModel.updateModel(config)
                             PageController.goToPage(PageEnum.PageSettingsServerProtocol)
                         }
                         }
 
                     } else {
-                        ContainersModel.setCurrentlyProcessedContainerIndex(root.model.mapToSource(index))
+                        ContainersModel.setProcessedContainerIndex(root.model.mapToSource(index))
                         InstallController.setShouldCreateServer(false)
                         PageController.goToPage(PageEnum.PageSetupWizardProtocolSettings)
                     }

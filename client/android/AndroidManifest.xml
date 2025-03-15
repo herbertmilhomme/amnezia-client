@@ -3,7 +3,6 @@
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="org.amnezia.vpn"
     android:versionName="-- %%INSERT_VERSION_NAME%% --"
     android:versionCode="-- %%INSERT_VERSION_CODE%% --"
     android:installLocation="auto">
@@ -11,6 +10,9 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    <!-- for TV -->
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
     <!-- The following comment will be replaced upon deployment with default features based on the dependencies
     of the application. Remove the comment if you do not require these default features. -->
@@ -18,24 +20,24 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- To request network state -->
-    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-    <!-- Enable when VPN-per-app mode will be implemented -->
-    <!-- <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/> -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesPermission" />
 
     <application
         android:name=".AmneziaApplication"
         android:label="-- %%INSERT_APP_NAME%% --"
         android:icon="@mipmap/icon"
         android:roundIcon="@mipmap/icon_round"
+        android:banner="@mipmap/ic_banner"
         android:theme="@style/NoActionBar"
         android:fullBackupContent="@xml/backup_content"
         android:dataExtractionRules="@xml/data_extraction_rules"
+        android:hasFragileUserData="false"
         tools:targetApi="s">
 
         <activity
@@ -43,12 +45,13 @@
             android:configChanges="uiMode|screenSize|smallestScreenSize|screenLayout|orientation|density
                 |fontScale|layoutDirection|locale|keyboard|keyboardHidden|navigation|mcc|mnc"
             android:launchMode="singleInstance"
-            android:windowSoftInputMode="adjustResize"
+            android:windowSoftInputMode="stateUnchanged|adjustResize"
             android:exported="true">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
 
             <intent-filter>
@@ -64,9 +67,6 @@
                 android:name="android.app.lib_name"
                 android:value="-- %%INSERT_APP_LIB_NAME%% --" />
 
-            <meta-data
-                android:name="android.app.extract_android_style"
-                android:value="minimal" />
         </activity>
 
         <activity
@@ -78,6 +78,20 @@
 
         <activity
             android:name=".VpnRequestActivity"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:exported="false"
+            android:theme="@style/Translucent" />
+
+        <activity android:name=".AuthActivity"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:exported="false"
+            android:theme="@style/Translucent" />
+
+        <activity android:name=".TvFilePicker"
             android:excludeFromRecents="true"
             android:launchMode="singleTask"
             android:taskAffinity=""
@@ -138,8 +152,34 @@
         </activity>
 
         <service
-            android:name=".AmneziaVpnService"
-            android:process=":amneziaVpnService"
+            android:name=".AwgService"
+            android:process=":amneziaAwgService"
+            android:permission="android.permission.BIND_VPN_SERVICE"
+            android:foregroundServiceType="systemExempted"
+            android:exported="false"
+            tools:ignore="ForegroundServicePermission">
+
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".OpenVpnService"
+            android:process=":amneziaOpenVpnService"
+            android:permission="android.permission.BIND_VPN_SERVICE"
+            android:foregroundServiceType="systemExempted"
+            android:exported="false"
+            tools:ignore="ForegroundServicePermission">
+
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".XrayService"
+            android:process=":amneziaXrayService"
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:foregroundServiceType="systemExempted"
             android:exported="false"

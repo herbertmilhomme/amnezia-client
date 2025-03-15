@@ -8,6 +8,7 @@ import PageEnum 1.0
 import ProtocolEnum 1.0
 import ContainerEnum 1.0
 import ContainerProps 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -28,6 +29,7 @@ PageType {
         anchors.topMargin: 20
 
         BackButtonType {
+            id: backButton
         }
 
         HeaderType {
@@ -35,7 +37,7 @@ PageType {
             Layout.leftMargin: 16
             Layout.rightMargin: 16
 
-            headerText: ContainersModel.getCurrentlyProcessedContainerName() + qsTr(" settings")
+            headerText: ContainersModel.getProcessedContainerName() + qsTr(" settings")
         }
     }
 
@@ -55,15 +57,21 @@ PageType {
             anchors.topMargin: 32
 
             ListView {
+                id: listView
                 width: parent.width
                 height: contentItem.height
                 clip: true
                 interactive: false
                 model: ProtocolsModel
 
+                activeFocusOnTab: true
+                focus: true
+
                 delegate: Item {
                     implicitWidth: parent.width
                     implicitHeight: delegateContent.implicitHeight
+
+                    property alias focusItem: button
 
                     ColumnLayout {
                         id: delegateContent
@@ -78,7 +86,7 @@ PageType {
                             text: qsTr("Show connection options")
 
                             clickedFunction: function() {
-                                configContentDrawer.open()
+                                configContentDrawer.openTriggered()
                             }
 
                             MouseArea {
@@ -98,11 +106,11 @@ PageType {
                             parent: root
                             anchors.fill: parent
 
-                            expandedContent: Item {
+                            expandedStateContent: Item {
                                 implicitHeight: configContentDrawer.expandedHeight
 
                                 BackButtonType {
-                                    id: backButton
+                                    id: backButton1
 
                                     anchors.top: parent.top
                                     anchors.left: parent.left
@@ -110,12 +118,12 @@ PageType {
                                     anchors.topMargin: 16
 
                                     backButtonFunction: function() {
-                                        configContentDrawer.close()
+                                        configContentDrawer.closeTriggered()
                                     }
                                 }
 
                                 FlickableType {
-                                    anchors.top: backButton.bottom
+                                    anchors.top: backButton1.bottom
                                     anchors.left: parent.left
                                     anchors.right: parent.right
                                     anchors.bottom: parent.bottom
@@ -146,9 +154,9 @@ PageType {
                                             leftPadding: 0
                                             height: 24
 
-                                            color: "#D7D8DB"
-                                            selectionColor:  "#633303"
-                                            selectedTextColor: "#D7D8DB"
+                                            color: AmneziaStyle.color.paleGray
+                                            selectionColor: AmneziaStyle.color.richBrown
+                                            selectedTextColor: AmneziaStyle.color.paleGray
 
                                             font.pixelSize: 16
                                             font.weight: Font.Medium
@@ -159,7 +167,7 @@ PageType {
                                             wrapMode: Text.Wrap
 
                                             background: Rectangle {
-                                                color: "transparent"
+                                                color: AmneziaStyle.color.transparent
                                             }
                                         }
                                     }
@@ -177,20 +185,23 @@ PageType {
 
                 visible: ServersModel.isProcessedServerHasWriteAccess()
 
-                text: qsTr("Remove ") + ContainersModel.getCurrentlyProcessedContainerName()
-                textColor: "#EB5757"
+                text: qsTr("Remove ") + ContainersModel.getProcessedContainerName()
+                textColor: AmneziaStyle.color.vibrantRed
 
                 clickedFunction: function() {
-                    var headerText = qsTr("Remove %1 from server?").arg(ContainersModel.getCurrentlyProcessedContainerName())
-                    var descriptionText = qsTr("All users with whom you shared a connection will no longer be able to connect to it.")
+                    var headerText = qsTr("Remove %1 from server?").arg(ContainersModel.getProcessedContainerName())
+                    var descriptionText = qsTr("All users with whom you shared a connection with will no longer be able to connect to it.")
                     var yesButtonText = qsTr("Continue")
                     var noButtonText = qsTr("Cancel")
 
                     var yesButtonFunction = function() {
                         PageController.goToPage(PageEnum.PageDeinstalling)
-                        InstallController.removeCurrentlyProcessedContainer()
+                        InstallController.removeProcessedContainer()
                     }
                     var noButtonFunction = function() {
+                        if (!GC.isMobile()) {
+                            focusItem.forceActiveFocus()
+                        }
                     }
 
                     showQuestionDrawer(headerText, descriptionText, yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)

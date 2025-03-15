@@ -14,7 +14,7 @@ DrawerType2 {
     width: parent.width
     height: parent.height
 
-    expandedContent: ColumnLayout {
+    expandedStateContent: ColumnLayout {
         id: content
 
         anchors.top: parent.top
@@ -46,13 +46,14 @@ DrawerType2 {
 
             clickedFunction: function() {
                 PageController.goToPage(PageEnum.PageSetupWizardCredentials)
-                root.close()
+                root.closeTriggered()
             }
         }
 
         DividerType {}
 
         LabelWithButtonType {
+            id: qrCode
             Layout.fillWidth: true
 
             text: qsTr("Open config file, key or QR code")
@@ -60,7 +61,7 @@ DrawerType2 {
 
             clickedFunction: function() {
                 PageController.goToPage(PageEnum.PageSetupWizardConfigSource)
-                root.close()
+                root.closeTriggered()
             }
         }
 

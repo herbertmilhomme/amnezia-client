@@ -3,41 +3,82 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 
+import Style 1.0
+
 import "TextTypes"
 
 Button {
     id: root
 
-    property string hoveredColor: "#C1C2C5"
-    property string defaultColor: "#D7D8DB"
-    property string disabledColor: "#494B50"
-    property string pressedColor: "#979799"
+    property string hoveredColor: AmneziaStyle.color.lightGray
+    property string defaultColor: AmneziaStyle.color.paleGray
+    property string disabledColor: AmneziaStyle.color.charcoalGray
+    property string pressedColor: AmneziaStyle.color.mutedGray
 
-    property string textColor: "#0E0E11"
+    property string textColor: AmneziaStyle.color.midnightBlack
 
-    property string borderColor: "#D7D8DB"
-    property string borderFocusedColor: "#D7D8DB"
+    property string borderColor: AmneziaStyle.color.paleGray
+    property string borderFocusedColor: AmneziaStyle.color.paleGray
     property int borderWidth: 0
     property int borderFocusedWidth: 1
 
-    property string imageSource
+    property string leftImageSource
     property string rightImageSource
     property string leftImageColor: textColor
+    property bool changeLeftImageSize: true
 
     property bool squareLeftSide: false
 
+    property FlickableType parentFlickable
+
     property var clickedFunc
 
+    property alias buttonTextLabel: buttonText
+
+    property bool isFocusable: true
+
+    Keys.onTabPressed: {
+        FocusController.nextKeyTabItem()
+    }
+
+    Keys.onBacktabPressed: {
+        FocusController.previousKeyTabItem()
+    }
+
+    Keys.onUpPressed: {
+        FocusController.nextKeyUpItem()
+    }
+    
+    Keys.onDownPressed: {
+        FocusController.nextKeyDownItem()
+    }
+    
+    Keys.onLeftPressed: {
+        FocusController.nextKeyLeftItem()
+    }
+
+    Keys.onRightPressed: {
+        FocusController.nextKeyRightItem()
+    }
+    
     implicitHeight: 56
 
     hoverEnabled: true
 
+    onFocusChanged: {
+        if (root.activeFocus) {
+            if (root.parentFlickable) {
+                root.parentFlickable.ensureVisible(this)
+            }
+        }
+    }
+
     background: Rectangle {
         id: focusBorder
 
-        color: "transparent"
-        border.color: root.activeFocus ? root.borderFocusedColor : "transparent"
-        border.width: root.activeFocus ? root.borderFocusedWidth : "transparent"
+        color: AmneziaStyle.color.transparent
+        border.color: root.activeFocus ? root.borderFocusedColor : AmneziaStyle.color.transparent
+        border.width: root.activeFocus ? root.borderFocusedWidth : 0
 
         anchors.fill: parent
 
@@ -112,22 +153,29 @@ Button {
             anchors.centerIn: parent
 
             Image {
-                Layout.preferredHeight: 20
-                Layout.preferredWidth: 20
-
-                source: root.imageSource
-                visible: root.imageSource === "" ? false : true
+                id: leftImage
+                source: root.leftImageSource
+                visible: root.leftImageSource === "" ? false : true
 
                 layer {
-                    enabled: true
+                    enabled: leftImageColor !== "" ? true : false
                     effect: ColorOverlay {
                         color: leftImageColor
+                    }
+                }
+
+                Component.onCompleted: {
+                    if (root.changeLeftImageSize) {
+                        leftImage.Layout.preferredHeight = 20
+                        leftImage.Layout.preferredWidth = 20
                     }
                 }
             }
 
             ButtonTextType {
-                color: textColor
+                id: buttonText
+
+                color: root.textColor
                 text: root.text
                 visible: root.text === "" ? false : true
 

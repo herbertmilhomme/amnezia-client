@@ -6,6 +6,7 @@ import SortFilterProxyModel 0.2
 
 import PageEnum 1.0
 import ContainerEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -16,10 +17,8 @@ import "../Components"
 PageType {
     id: root
 
-    defaultActiveFocusItem: listview.currentItem.vpnAddressSubnetTextField.textField
-
     ColumnLayout {
-        id: backButton
+        id: backButtonLayout
 
         anchors.top: parent.top
         anchors.left: parent.left
@@ -28,12 +27,13 @@ PageType {
         anchors.topMargin: 20
 
         BackButtonType {
+            id: backButton
         }
     }
 
     FlickableType {
         id: fl
-        anchors.top: backButton.bottom
+        anchors.top: backButtonLayout.bottom
         anchors.bottom: parent.bottom
         contentHeight: content.implicitHeight
 
@@ -88,15 +88,15 @@ PageType {
                             Layout.topMargin: 32
 
                             headerText: qsTr("VPN address subnet")
-                            textFieldText: subnetAddress
+                            textField.text: subnetAddress
+
+                            parentFlickable: fl
 
                             textField.onEditingFinished: {
-                                if (textFieldText !== subnetAddress) {
-                                    subnetAddress = textFieldText
+                                if (textField.text !== subnetAddress) {
+                                    subnetAddress = textField.text
                                 }
                             }
-
-                            KeyNavigation.tab: portTextField.enabled ? portTextField.textField : saveRestartButton
                         }
 
                         ParagraphTextType {
@@ -107,6 +107,7 @@ PageType {
                         }
 
                         TransportProtoSelector {
+                            id: transportProtoSelector
                             Layout.fillWidth: true
                             Layout.topMargin: 16
                             rootWidth: root.width
@@ -129,24 +130,22 @@ PageType {
                         TextFieldWithHeaderType {
                             id: portTextField
 
-
                             Layout.fillWidth: true
                             Layout.topMargin: 40
+                            parentFlickable: fl
 
                             enabled: isPortEditable
 
                             headerText: qsTr("Port")
-                            textFieldText: port
+                            textField.text: port
                             textField.maximumLength: 5
                             textField.validator: IntValidator { bottom: 1; top: 65535 }
 
                             textField.onEditingFinished: {
-                                if (textFieldText !== port) {
-                                    port = textFieldText
+                                if (textField.text !== port) {
+                                    port = textField.text
                                 }
                             }
-
-                            KeyNavigation.tab: saveRestartButton
                         }
 
                         SwitcherType {
@@ -154,6 +153,7 @@ PageType {
 
                             Layout.fillWidth: true
                             Layout.topMargin: 24
+                            parentFlickable: fl
 
                             text: qsTr("Auto-negotiate encryption")
                             checked: autoNegotiateEncryprion
@@ -198,7 +198,7 @@ PageType {
                                 clickedFunction: function() {
                                     hashDropDown.text = selectedText
                                     hash = hashDropDown.text
-                                    hashDropDown.close()
+                                    hashDropDown.closeTriggered()
                                 }
 
                                 Component.onCompleted: {
@@ -246,7 +246,7 @@ PageType {
                                 clickedFunction: function() {
                                     cipherDropDown.text = selectedText
                                     cipher = cipherDropDown.text
-                                    cipherDropDown.close()
+                                    cipherDropDown.closeTriggered()
                                 }
 
                                 Component.onCompleted: {
@@ -262,17 +262,30 @@ PageType {
                         }
 
                         Rectangle {
+                            id: contentRect
                             Layout.fillWidth: true
                             Layout.topMargin: 32
                             Layout.preferredHeight: checkboxLayout.implicitHeight
-                            color: "#1C1D21"
+                            color: AmneziaStyle.color.onyxBlack
                             radius: 16
+
+                            Connections {
+                                target: tlsAuthCheckBox
+                                enabled: !GC.isMobile()
+
+                                function onFocusChanged() {
+                                    if (tlsAuthCheckBox.activeFocus) {
+                                        fl.ensureVisible(contentRect)
+                                    }
+                                }
+                            }
 
                             ColumnLayout {
                                 id: checkboxLayout
 
                                 anchors.fill: parent
                                 CheckBoxType {
+                                    id: tlsAuthCheckBox
                                     Layout.fillWidth: true
 
                                     text: qsTr("TLS auth")
@@ -280,6 +293,7 @@ PageType {
 
                                     onCheckedChanged: {
                                         if (checked !== tlsAuth) {
+                                            console.log("tlsAuth changed to: " + checked)
                                             tlsAuth = checked
                                         }
                                     }
@@ -288,6 +302,7 @@ PageType {
                                 DividerType {}
 
                                 CheckBoxType {
+                                    id: blockDnsCheckBox
                                     Layout.fillWidth: true
 
                                     text: qsTr("Block DNS requests outside of VPN")
@@ -306,6 +321,7 @@ PageType {
                             id: additionalClientCommandsSwitcher
                             Layout.fillWidth: true
                             Layout.topMargin: 32
+                            parentFlickable: fl
 
                             checked: additionalClientCommands !== ""
 
@@ -319,10 +335,13 @@ PageType {
                         }
 
                         TextAreaType {
+                            id: additionalClientCommandsTextArea
                             Layout.fillWidth: true
                             Layout.topMargin: 16
 
                             visible: additionalClientCommandsSwitcher.checked
+
+                            parentFlickable: fl
 
                             textAreaText: additionalClientCommands
                             placeholderText: qsTr("Commands:")
@@ -338,6 +357,7 @@ PageType {
                             id: additionalServerCommandsSwitcher
                             Layout.fillWidth: true
                             Layout.topMargin: 16
+                            parentFlickable: fl
 
                             checked: additionalServerCommands !== ""
 
@@ -351,6 +371,7 @@ PageType {
                         }
 
                         TextAreaType {
+                            id: additionalServerCommandsTextArea
                             Layout.fillWidth: true
                             Layout.topMargin: 16
 
@@ -358,42 +379,11 @@ PageType {
 
                             textAreaText: additionalServerCommands
                             placeholderText: qsTr("Commands:")
-
+                            parentFlickable: fl
                             textArea.onEditingFinished: {
                                 if (additionalServerCommands !== textAreaText) {
                                     additionalServerCommands = textAreaText
                                 }
-                            }
-                        }
-
-                        BasicButtonType {
-                            Layout.topMargin: 24
-                            Layout.leftMargin: -8
-                            implicitHeight: 32
-
-                            visible: ContainersModel.getCurrentlyProcessedContainerIndex() === ContainerEnum.OpenVpn
-
-                            defaultColor: "transparent"
-                            hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                            pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                            textColor: "#EB5757"
-
-                            text: qsTr("Remove OpenVPN")
-
-                            clickedFunc: function() {
-                                var headerText = qsTr("Remove OpenVpn from server?")
-                                var descriptionText = qsTr("All users with whom you shared a connection will no longer be able to connect to it.")
-                                var yesButtonText = qsTr("Continue")
-                                var noButtonText = qsTr("Cancel")
-
-                                var yesButtonFunction = function() {
-                                    PageController.goToPage(PageEnum.PageDeinstalling)
-                                    InstallController.removeCurrentlyProcessedContainer()
-                                }
-                                var noButtonFunction = function() {
-                                }
-
-                                showQuestionDrawer(headerText, descriptionText, yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
                             }
                         }
 
@@ -405,9 +395,16 @@ PageType {
                             Layout.bottomMargin: 24
 
                             text: qsTr("Save")
+                            parentFlickable: fl
 
                             clickedFunc: function() {
                                 forceActiveFocus()
+
+                                if (ConnectionController.isConnected && ServersModel.getDefaultServerData("defaultContainer") === ContainersModel.getProcessedContainerIndex()) {
+                                    PageController.showNotificationMessage(qsTr("Unable change settings while there is an active connection"))
+                                    return
+                                }
+
                                 PageController.goToPage(PageEnum.PageSetupWizardInstalling);
                                 InstallController.updateContainer(OpenVpnConfigModel.getConfig())
                             }

@@ -2,7 +2,10 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+import Style 1.0
+
 import "TextTypes"
+import "../Config"
 
 Popup {
     id: root
@@ -22,7 +25,15 @@ Popup {
 
     Overlay.modal: Rectangle {
         visible: root.closeButtonVisible
-        color: Qt.rgba(14/255, 14/255, 17/255, 0.8)
+        color: AmneziaStyle.color.translucentMidnightBlack
+    }
+
+    onOpened: {
+        timer.start()
+    }
+
+    onClosed: {
+        FocusController.dropRootObject(root)
     }
 
     background: Rectangle {
@@ -30,6 +41,17 @@ Popup {
 
         color: "white"
         radius: 4
+    }
+
+    Timer {
+        id: timer
+        interval: 200 // Milliseconds
+        onTriggered: {
+            FocusController.pushRootObject(root)
+            FocusController.setFocusItem(closeButton)
+        }
+        repeat: false // Stop the timer after one trigger
+        running: true // Start the timer
     }
 
     contentItem: Item {
@@ -49,23 +71,35 @@ Popup {
                 horizontalAlignment: Text.AlignLeft
                 Layout.fillWidth: true
 
+                onLinkActivated: function(link) {
+                    Qt.openUrlExternally(link)
+                }
+
                 text: root.text
+
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.NoButton
+                    cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
+                }
             }
 
             BasicButtonType {
+                id: closeButton
                 visible: closeButtonVisible
 
                 implicitHeight: 32
 
                 defaultColor: "white"
-                hoveredColor: "#C1C2C5"
-                pressedColor: "#AEB0B7"
-                disabledColor: "#494B50"
+                hoveredColor: AmneziaStyle.color.lightGray
+                pressedColor: AmneziaStyle.color.lightGray
+                disabledColor: AmneziaStyle.color.charcoalGray
 
-                textColor: "#0E0E11"
+                textColor: AmneziaStyle.color.midnightBlack
                 borderWidth: 0
 
                 text: qsTr("Close")
+
                 clickedFunc: function() {
                     root.close()
                 }

@@ -17,12 +17,15 @@ object QtAndroidController {
     external fun onServiceError()
 
     external fun onVpnPermissionRejected()
+    external fun onNotificationStateChanged()
     external fun onVpnStateChanged(stateCode: Int)
     external fun onStatisticsUpdate(rxBytes: Long, txBytes: Long)
 
     external fun onFileOpened(uri: String)
 
     external fun onConfigImported(data: String)
+
+    external fun onAuthResult(result: Boolean)
 
     external fun decodeQrCode(data: String): Boolean
 }

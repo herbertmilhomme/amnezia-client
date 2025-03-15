@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+import Style 1.0
+
 RadioButton {
     id: root
 
@@ -9,23 +11,50 @@ RadioButton {
     property string bodyText
     property string footerText
 
-    property string hoveredColor: Qt.rgba(1, 1, 1, 0.05)
-    property string defaultColor: Qt.rgba(1, 1, 1, 0)
-    property string disabledColor: Qt.rgba(1, 1, 1, 0)
-    property string pressedColor: Qt.rgba(1, 1, 1, 0.05)
-    property string selectedColor: Qt.rgba(1, 1, 1, 0)
+    property string hoveredColor: AmneziaStyle.color.barelyTranslucentWhite
+    property string defaultColor: AmneziaStyle.color.transparent
+    property string disabledColor: AmneziaStyle.color.transparent
+    property string pressedColor: AmneziaStyle.color.barelyTranslucentWhite
+    property string selectedColor: AmneziaStyle.color.transparent
 
-    property string textColor: "#0E0E11"
+    property string textColor: AmneziaStyle.color.midnightBlack
 
-    property string pressedBorderColor: Qt.rgba(251/255, 178/255, 106/255, 0.3)
-    property string selectedBorderColor: "#FBB26A"
-    property string defaultBodredColor: "transparent"
+    property string pressedBorderColor: AmneziaStyle.color.softGoldenApricot
+    property string selectedBorderColor: AmneziaStyle.color.goldenApricot
+    property string defaultBodredColor: AmneziaStyle.color.transparent
+    property string focusBorderColor: AmneziaStyle.color.paleGray
     property int borderWidth: 0
 
     implicitWidth: content.implicitWidth
     implicitHeight: content.implicitHeight
 
     hoverEnabled: true
+
+    property bool isFocusable: true
+
+    Keys.onTabPressed: {
+        FocusController.nextKeyTabItem()
+    }
+
+    Keys.onBacktabPressed: {
+        FocusController.previousKeyTabItem()
+    }
+
+    Keys.onUpPressed: {
+        FocusController.nextKeyUpItem()
+    }
+
+    Keys.onDownPressed: {
+        FocusController.nextKeyDownItem()
+    }
+
+    Keys.onLeftPressed: {
+        FocusController.nextKeyLeftItem()
+    }
+
+    Keys.onRightPressed: {
+        FocusController.nextKeyRightItem()
+    }
 
     indicator: Rectangle {
         anchors.fill: parent
@@ -50,6 +79,8 @@ RadioButton {
                     return pressedBorderColor
                 } else if (root.checked) {
                     return selectedBorderColor
+                } else if (root.activeFocus) {
+                    return focusBorderColor
                 }
             }
             return defaultBodredColor
@@ -57,7 +88,7 @@ RadioButton {
 
         border.width: {
             if (root.enabled) {
-                if(root.checked) {
+                if(root.checked || root.activeFocus) {
                     return 1
                 }
                 return root.pressed ? 1 : 0
@@ -82,7 +113,7 @@ RadioButton {
         Text {
             text: root.headerText
             wrapMode: Text.WordWrap
-            color: "#D7D8DB"
+            color: AmneziaStyle.color.paleGray
             font.pixelSize: 25
             font.weight: 700
             font.family: "PT Root UI VF"
@@ -97,7 +128,7 @@ RadioButton {
         Text {
             text: root.bodyText
             wrapMode: Text.WordWrap
-            color: "#D7D8DB"
+            color: AmneziaStyle.color.paleGray
             font.pixelSize: 16
             font.weight: 400
             font.family: "PT Root UI VF"
@@ -113,7 +144,7 @@ RadioButton {
             text: root.footerText
             wrapMode: Text.WordWrap
             visible: root.footerText !== ""
-            color: "#878B91"
+            color: AmneziaStyle.color.mutedGray
             font.pixelSize: 13
             font.weight: 400
             font.family: "PT Root UI VF"

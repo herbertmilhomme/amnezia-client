@@ -1,5 +1,4 @@
 #include "secure_qsettings.h"
-#include "platforms/ios/MobileUtils.h"
 
 #include "QAead.h"
 #include "QBlockCipher.h"
@@ -15,6 +14,12 @@
 #include <QTimer>
 
 using namespace QKeychain;
+
+namespace {
+    constexpr const char *settingsKeyTag = "settingsKeyTag";
+    constexpr const char *settingsIvTag = "settingsIvTag";
+    constexpr const char *keyChainName = "AmneziaVPN-Keychain";
+}
 
 SecureQSettings::SecureQSettings(const QString &organization, const QString &application, QObject *parent)
     : QObject { parent }, m_settings(organization, application, parent), encryptedKeys({ "Servers/serversList" })
@@ -50,7 +55,7 @@ QVariant SecureQSettings::value(const QString &key, const QVariant &defaultValue
     // check if value is not encrypted, v. < 2.0.x
     retVal = m_settings.value(key);
     if (retVal.isValid()) {
-        if (retVal.userType() == QVariant::ByteArray && retVal.toByteArray().mid(0, magicString.size()) == magicString) {
+        if (retVal.userType() == QMetaType::QByteArray && retVal.toByteArray().mid(0, magicString.size()) == magicString) {
 
             if (getEncKey().isEmpty() || getEncIv().isEmpty()) {
                 qCritical() << "SecureQSettings::setValue Decryption requested, but key is empty";
@@ -124,7 +129,30 @@ QByteArray SecureQSettings::backupAppConfig() const
 {
     QJsonObject cfg;
 
+    const auto needToBackup = [this](const auto &key) {
+      for (const auto &item : m_fieldsToBackup)
+      {
+        if (key == "Conf/installationUuid")
+        {
+          return false;
+        }
+
+        if (key.startsWith(item))
+        {
+            return true;
+        }
+      }
+
+      return false;
+    };
+
     for (const QString &key : m_settings.allKeys()) {
+
+        if (!needToBackup(key))
+        {
+            continue;
+        }
+
         cfg.insert(key, QJsonValue::fromVariant(value(key)));
     }
 
@@ -138,6 +166,10 @@ bool SecureQSettings::restoreAppConfig(const QByteArray &json)
         return false;
 
     for (const QString &key : cfg.keys()) {
+        if (key == "Conf/installationUuid") {
+            continue;
+        }
+
         setValue(key, cfg.value(key).toVariant());
     }
 
@@ -148,18 +180,30 @@ bool SecureQSettings::restoreAppConfig(const QByteArray &json)
 QByteArray SecureQSettings::encryptText(const QByteArray &value) const
 {
     QSimpleCrypto::QBlockCipher cipher;
-    return cipher.encryptAesBlockCipher(value, getEncKey(), getEncIv());
+    QByteArray result;
+    try {
+        result = cipher.encryptAesBlockCipher(value, getEncKey(), getEncIv());
+    } catch (...) { // todo change error handling in QSimpleCrypto?
+        qCritical() << "error when encrypting the settings value";
+    }
+    return result;
 }
 
 QByteArray SecureQSettings::decryptText(const QByteArray &ba) const
 {
     QSimpleCrypto::QBlockCipher cipher;
-    return cipher.decryptAesBlockCipher(ba, getEncKey(), getEncIv());
+    QByteArray result;
+    try {
+        result = cipher.decryptAesBlockCipher(ba, getEncKey(), getEncIv());
+    } catch (...) { // todo change error handling in QSimpleCrypto?
+        qCritical() << "error when decrypting the settings value";
+    }
+    return result;
 }
 
 bool SecureQSettings::encryptionRequired() const
 {
-#ifdef Q_OS_LINUX
+#if defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
     // QtKeyChain failing on Linux
     return false;
 #endif
@@ -174,7 +218,7 @@ QByteArray SecureQSettings::getEncKey() const
     if (m_key.isEmpty()) {
         // Create new key
         QSimpleCrypto::QBlockCipher cipher;
-        QByteArray key = cipher.generateSecureRandomBytes(32);
+        QByteArray key = cipher.generatePrivateSalt(32);
         if (key.isEmpty()) {
             qCritical() << "SecureQSettings::getEncKey Unable to generate new enc key";
         }
@@ -200,7 +244,7 @@ QByteArray SecureQSettings::getEncIv() const
     if (m_iv.isEmpty()) {
         // Create new IV
         QSimpleCrypto::QBlockCipher cipher;
-        QByteArray iv = cipher.generateSecureRandomBytes(32);
+        QByteArray iv = cipher.generatePrivateSalt(32);
         if (iv.isEmpty()) {
             qCritical() << "SecureQSettings::getEncIv Unable to generate new enc IV";
         }

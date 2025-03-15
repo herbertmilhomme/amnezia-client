@@ -7,6 +7,7 @@ import SortFilterProxyModel 0.2
 import PageEnum 1.0
 import ContainerProps 1.0
 import ProtocolProps 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -64,7 +65,7 @@ PageType {
                 implicitWidth: parent.width
                 headerTextMaximumLineCount: 10
 
-                headerText: qsTr("What is the level of internet control in your region?")
+                headerText: qsTr("Choose Installation Type")
             }
 
             ButtonGroup {
@@ -85,6 +86,8 @@ PageType {
                 property int dockerContainer
                 property int containerDefaultPort
                 property int containerDefaultTransportProto
+
+                property bool isFocusable: true
 
                 delegate: Item {
                     implicitWidth: containers.width
@@ -136,8 +139,8 @@ PageType {
             CardType {
                 implicitWidth: parent.width
 
-                headerText: qsTr("Set up a VPN yourself")
-                bodyText: qsTr("I want to choose a VPN protocol")
+                headerText: qsTr("Manual")
+                bodyText: qsTr("Choose a VPN protocol")
 
                 ButtonGroup.group: buttonGroup
 
@@ -146,21 +149,18 @@ PageType {
                 }
             }
 
-            Item {
-                implicitWidth: 1
-                implicitHeight: 54
-            }
-
             BasicButtonType {
                 id: continueButton
 
                 implicitWidth: parent.width
 
                 text: qsTr("Continue")
+                
+                parentFlickable: fl
 
                 clickedFunc: function() {
                     if (root.isEasySetup) {
-                        ContainersModel.setCurrentlyProcessedContainerIndex(containers.dockerContainer)
+                        ContainersModel.setProcessedContainerIndex(containers.dockerContainer)
                         PageController.goToPage(PageEnum.PageSetupWizardInstalling)
                         InstallController.install(containers.dockerContainer,
                                                   containers.containerDefaultPort,
@@ -178,12 +178,15 @@ PageType {
                 anchors.topMargin: 8
                 anchors.bottomMargin: 24
 
-                defaultColor: "transparent"
-                hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                disabledColor: "#878B91"
-                textColor: "#D7D8DB"
+                defaultColor: AmneziaStyle.color.transparent
+                hoveredColor: AmneziaStyle.color.translucentWhite
+                pressedColor: AmneziaStyle.color.sheerWhite
+                disabledColor: AmneziaStyle.color.mutedGray
+                textColor: AmneziaStyle.color.paleGray
                 borderWidth: 1
+
+                Keys.onTabPressed: lastItemTabClicked(focusItem)
+                parentFlickable: fl
 
                 visible: {
                     if (PageController.isTriggeredByConnectButton()) {
@@ -194,7 +197,7 @@ PageType {
                     return  true
                 }
 
-                text: qsTr("Set up later")
+                text: qsTr("Skip setup")
 
                 clickedFunc: function() {
                     PageController.goToPage(PageEnum.PageSetupWizardInstalling)

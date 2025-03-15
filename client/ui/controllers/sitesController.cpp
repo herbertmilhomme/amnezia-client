@@ -5,7 +5,7 @@
 #include <QStandardPaths>
 
 #include "systemController.h"
-#include "utilities.h"
+#include "core/networkUtilities.h"
 
 SitesController::SitesController(const std::shared_ptr<Settings> &settings,
                                  const QSharedPointer<VpnConnection> &vpnConnection,
@@ -25,7 +25,7 @@ void SitesController::addSite(QString hostname)
         return;
     }
 
-    if (!Utils::ipAddressWithSubnetRegExp().exactMatch(hostname)) {
+    if (!NetworkUtilities::ipAddressWithSubnetRegExp().exactMatch(hostname)) {
         // get domain name if it present
         hostname.replace("https://", "");
         hostname.replace("http://", "");
@@ -40,11 +40,10 @@ void SitesController::addSite(QString hostname)
         if (!ip.isEmpty()) {
             QMetaObject::invokeMethod(m_vpnConnection.get(), "addRoutes", Qt::QueuedConnection,
                                       Q_ARG(QStringList, QStringList() << ip));
-        } else if (Utils::ipAddressWithSubnetRegExp().exactMatch(hostname)) {
+        } else if (NetworkUtilities::ipAddressWithSubnetRegExp().exactMatch(hostname)) {
             QMetaObject::invokeMethod(m_vpnConnection.get(), "addRoutes", Qt::QueuedConnection,
                                       Q_ARG(QStringList, QStringList() << hostname));
         }
-        QMetaObject::invokeMethod(m_vpnConnection.get(), "flushDns", Qt::QueuedConnection);
     };
 
     const auto &resolveCallback = [this, processSite](const QHostInfo &hostInfo) {
@@ -57,7 +56,7 @@ void SitesController::addSite(QString hostname)
         }
     };
 
-    if (Utils::ipAddressWithSubnetRegExp().exactMatch(hostname)) {
+    if (NetworkUtilities::ipAddressWithSubnetRegExp().exactMatch(hostname)) {
         processSite(hostname, "");
     } else {
         processSite(hostname, "");
@@ -75,21 +74,18 @@ void SitesController::removeSite(int index)
 
     QMetaObject::invokeMethod(m_vpnConnection.get(), "deleteRoutes", Qt::QueuedConnection,
                               Q_ARG(QStringList, QStringList() << hostname));
-    QMetaObject::invokeMethod(m_vpnConnection.get(), "flushDns", Qt::QueuedConnection);
 
     emit finished(tr("Site removed: %1").arg(hostname));
 }
 
 void SitesController::importSites(const QString &fileName, bool replaceExisting)
 {
-    QFile file(fileName);
-
-    if (!file.open(QIODevice::ReadOnly)) {
+    QByteArray jsonData;
+    if (!SystemController::readFile(fileName, jsonData)) {
         emit errorOccurred(tr("Can't open file: %1").arg(fileName));
         return;
     }
 
-    QByteArray jsonData = file.readAll();
     QJsonDocument jsonDocument = QJsonDocument::fromJson(jsonData);
     if (jsonDocument.isNull()) {
         emit errorOccurred(tr("Failed to parse JSON data from file: %1").arg(fileName));
@@ -110,7 +106,7 @@ void SitesController::importSites(const QString &fileName, bool replaceExisting)
         auto hostname = jsonObject.value("hostname").toString("");
         auto ip = jsonObject.value("ip").toString("");
 
-        if (!hostname.contains(".") && !Utils::ipAddressWithSubnetRegExp().exactMatch(hostname)) {
+        if (!hostname.contains(".") && !NetworkUtilities::ipAddressWithSubnetRegExp().exactMatch(hostname)) {
             qDebug() << hostname << " not look like ip adress or domain name";
             continue;
         }
@@ -126,7 +122,6 @@ void SitesController::importSites(const QString &fileName, bool replaceExisting)
     m_sitesModel->addSites(sites, replaceExisting);
 
     QMetaObject::invokeMethod(m_vpnConnection.get(), "addRoutes", Qt::QueuedConnection, Q_ARG(QStringList, ips));
-    QMetaObject::invokeMethod(m_vpnConnection.get(), "flushDns", Qt::QueuedConnection);
 
     emit finished(tr("Import completed"));
 }

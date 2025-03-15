@@ -6,26 +6,54 @@ import Qt5Compat.GraphicalEffects
 
 import ConnectionState 1.0
 import PageEnum 1.0
+import Style 1.0
 
 Button {
     id: root
 
-    property string defaultButtonColor: "#D7D8DB"
-    property string progressButtonColor: "#D7D8DB"
-    property string connectedButtonColor: "#FBB26A"
+    property string defaultButtonColor: AmneziaStyle.color.paleGray
+    property string progressButtonColor: AmneziaStyle.color.paleGray
+    property string connectedButtonColor: AmneziaStyle.color.goldenApricot
+    property bool buttonActiveFocus: activeFocus && (Qt.platform.os !== "android" || SettingsController.isOnTv())
 
+    property bool isFocusable: true
+    
+    Keys.onTabPressed: {
+        FocusController.nextKeyTabItem()
+    }
+
+    Keys.onBacktabPressed: {
+        FocusController.previousKeyTabItem()
+    }
+
+    Keys.onUpPressed: {
+        FocusController.nextKeyUpItem()
+    }
+    
+    Keys.onDownPressed: {
+        FocusController.nextKeyDownItem()
+    }
+    
+    Keys.onLeftPressed: {
+        FocusController.nextKeyLeftItem()
+    }
+
+    Keys.onRightPressed: {
+        FocusController.nextKeyRightItem()
+    }
+        
     implicitWidth: 190
     implicitHeight: 190
+
+    text: ConnectionController.connectionStateText
 
     Connections {
         target: ConnectionController
 
-        function onConnectionErrorOccurred(errorMessage) {
-            PageController.showErrorMessage(errorMessage)
+        function onPreparingConfig() {
+            PageController.showNotificationMessage(qsTr("Unable to disconnect during configuration preparation"))
         }
     }
-
-    text: ConnectionController.connectionStateText
 
 //    enabled: !ConnectionController.isConnectionInProgress
 
@@ -49,29 +77,45 @@ Button {
                 verticalOffset: 0
                 radius: 10
                 samples: 25
-                color: "#FBB26A"
+                color: root.buttonActiveFocus ? AmneziaStyle.color.paleGray : AmneziaStyle.color.goldenApricot
                 source: backgroundCircle
             }
 
             ShapePath {
-                fillColor: "transparent"
+                fillColor: AmneziaStyle.color.transparent
+                strokeColor: AmneziaStyle.color.paleGray
+                strokeWidth: root.buttonActiveFocus ? 1 : 0
+                capStyle: ShapePath.RoundCap
+
+                PathAngleArc {
+                    centerX: backgroundCircle.width / 2
+                    centerY: backgroundCircle.height / 2
+                    radiusX: 94
+                    radiusY: 94
+                    startAngle: 0
+                    sweepAngle: 360
+                }
+            }
+
+            ShapePath {
+                fillColor: AmneziaStyle.color.transparent
                 strokeColor: {
                     if (ConnectionController.isConnectionInProgress) {
-                        return "#261E1A"
+                        return AmneziaStyle.color.darkCharcoal
                     } else if (ConnectionController.isConnected) {
                         return connectedButtonColor
                     } else {
                         return defaultButtonColor
                     }
                 }
-                strokeWidth: 3
+                strokeWidth: root.buttonActiveFocus ? 2 : 3
                 capStyle: ShapePath.RoundCap
 
                 PathAngleArc {
                     centerX: backgroundCircle.width / 2
                     centerY: backgroundCircle.height / 2
-                    radiusX: 93
-                    radiusY: 93
+                    radiusX: 93 - (root.buttonActiveFocus ? 2 : 0)
+                    radiusY: 93 - (root.buttonActiveFocus ? 2 : 0)
                     startAngle: 0
                     sweepAngle: 360
                 }
@@ -97,8 +141,8 @@ Button {
             visible: ConnectionController.isConnectionInProgress
 
             ShapePath {
-                fillColor: "transparent"
-                strokeColor: "#D7D8DB"
+                fillColor: AmneziaStyle.color.transparent
+                strokeColor: AmneziaStyle.color.paleGray
                 strokeWidth: 3
                 capStyle: ShapePath.RoundCap
 
@@ -139,6 +183,9 @@ Button {
 
     onClicked: {
         ServersModel.setProcessedServerIndex(ServersModel.defaultIndex)
-        ApiController.updateServerConfigFromApi()
+        ConnectionController.connectButtonClicked()
     }
+
+    Keys.onEnterPressed: this.clicked()
+    Keys.onReturnPressed: this.clicked()
 }

@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import SortFilterProxyModel 0.2
 
 import PageEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -14,8 +15,8 @@ import "../Config"
 PageType {
     id: root
 
-    Component.onCompleted: PageController.disableControls(true)
-    Component.onDestruction: PageController.disableControls(false)
+    Component.onCompleted: PageController.disableTabBar(true)
+    Component.onDestruction: PageController.disableTabBar(false)
 
     property bool isTimerRunning: true
     property string progressBarText: qsTr("Usually it takes no more than 5 minutes")
@@ -25,8 +26,9 @@ PageType {
         target: InstallController
 
         function onInstallContainerFinished(finishedMessage, isServiceInstall) {
-            if (!ConnectionController.isConnected && !isServiceInstall) {
-                ServersModel.setDefaultContainer(ServersModel.processedIndex, ContainersModel.getCurrentlyProcessedContainerIndex())
+            var containerIndex = ContainersModel.getProcessedContainerIndex()
+            if (!ConnectionController.isConnected && !ContainersModel.isServiceContainer(containerIndex)) {
+                ServersModel.setDefaultContainer(ServersModel.processedIndex, containerIndex)
             }
 
             PageController.closePage() // close installing page
@@ -45,11 +47,7 @@ PageType {
                 ServersModel.processedIndex = ServersModel.defaultIndex
             }
 
-            PageController.goToStartPage()
-            if (stackView.currentItem.objectName === PageController.getPagePath(PageEnum.PageSetupWizardStart)) {
-                PageController.replaceStartPage()
-            }
-
+            PageController.goToPageHome()
             PageController.showNotificationMessage(finishedMessage)
         }
 

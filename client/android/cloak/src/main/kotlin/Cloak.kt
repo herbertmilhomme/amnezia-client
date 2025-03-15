@@ -3,42 +3,15 @@ package org.amnezia.vpn.protocol.cloak
 import android.util.Base64
 import net.openvpn.ovpn3.ClientAPI_Config
 import org.amnezia.vpn.protocol.openvpn.OpenVpn
-import org.amnezia.vpn.protocol.openvpn.OpenVpnConfig
-import org.amnezia.vpn.util.net.InetNetwork
-import org.amnezia.vpn.util.net.parseInetAddress
+import org.amnezia.vpn.util.LibraryLoader.loadSharedLibrary
 import org.json.JSONObject
 
-/**
- *    Config Example:
- *    {
- *     "protocol": "cloak",
- *     "description": "Server 1",
- *     "dns1": "1.1.1.1",
- *     "dns2": "1.0.0.1",
- *     "hostName": "100.100.100.0",
- *     "splitTunnelSites": [
- *     ],
- *     "splitTunnelType": 0,
- *     "openvpn_config_data": {
- *           "config": "openVpnConfig"
- *     }
- *     "cloak_config_data": {
- *          "BrowserSig": "chrome",
- *          "EncryptionMethod": "aes-gcm",
- *          "NumConn": 1,
- *          "ProxyMethod": "openvpn",
- *          "PublicKey": "PublicKey=",
- *          "RemoteHost": "100.100.100.0",
- *          "RemotePort": "443",
- *          "ServerName": "servername",
- *          "StreamTimeout": 300,
- *          "Transport": "direct",
- *          "UID": "UID="
- *     }
- * }
- */
-
 class Cloak : OpenVpn() {
+
+    override fun internalInit() {
+        super.internalInit()
+        if (!isInitialized) loadSharedLibrary(context, "ck-ovpn-plugin")
+    }
 
     override fun parseConfig(config: JSONObject): ClientAPI_Config {
         val openVpnConfig = ClientAPI_Config()
@@ -52,13 +25,6 @@ class Cloak : OpenVpn() {
         openVpnConfig.usePluggableTransports = true
         openVpnConfig.content = configStr
         return openVpnConfig
-    }
-
-    override fun configPluggableTransport(configBuilder: OpenVpnConfig.Builder, config: JSONObject) {
-        // exclude remote server ip from vpn routes
-        val remoteServer = config.getString("hostName")
-        val remoteServerAddress = InetNetwork(parseInetAddress(remoteServer))
-        configBuilder.excludeRoute(remoteServerAddress)
     }
 
     private fun checkCloakJson(cloakConfigJson: JSONObject): JSONObject {

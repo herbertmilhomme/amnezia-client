@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import SortFilterProxyModel 0.2
 
 import PageEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -15,10 +16,8 @@ import "../Components"
 PageType {
     id: root
 
-    defaultActiveFocusItem: listview.currentItem.portTextField.textField
-
     ColumnLayout {
-        id: backButton
+        id: backButtonLayout
 
         anchors.top: parent.top
         anchors.left: parent.left
@@ -27,12 +26,13 @@ PageType {
         anchors.topMargin: 20
 
         BackButtonType {
+            id: backButton
         }
     }
 
     FlickableType {
         id: fl
-        anchors.top: backButton.bottom
+        anchors.top: backButtonLayout.bottom
         anchors.bottom: parent.bottom
         contentHeight: content.implicitHeight
 
@@ -60,7 +60,11 @@ PageType {
                     implicitWidth: listview.width
                     implicitHeight: col.implicitHeight
 
-                    property alias portTextField: portTextField
+                    property var focusItemId: portTextField.enabled ?
+                                                    portTextField :
+                                                    cipherDropDown.enabled ?
+                                                        cipherDropDown :
+                                                        saveRestartButton
 
                     ColumnLayout {
                         id: col
@@ -77,7 +81,7 @@ PageType {
                         HeaderType {
                             Layout.fillWidth: true
 
-                            headerText: qsTr("ShadowSocks settings")
+                            headerText: qsTr("Shadowsocks settings")
                         }
 
                         TextFieldWithHeaderType {
@@ -86,18 +90,18 @@ PageType {
                             Layout.fillWidth: true
                             Layout.topMargin: 40
 
+                            enabled: isPortEditable
+
                             headerText: qsTr("Port")
-                            textFieldText: port
+                            textField.text: port
                             textField.maximumLength: 5
                             textField.validator: IntValidator { bottom: 1; top: 65535 }
 
                             textField.onEditingFinished: {
-                                if (textFieldText !== port) {
-                                    port = textFieldText
+                                if (textField.text !== port) {
+                                    port = textField.text
                                 }
                             }
-
-                            KeyNavigation.tab: saveRestartButton
                         }
 
                         DropDownType {
@@ -105,12 +109,15 @@ PageType {
                             Layout.fillWidth: true
                             Layout.topMargin: 20
 
+                            enabled: isCipherEditable
+
                             descriptionText: qsTr("Cipher")
                             headerText: qsTr("Cipher")
 
                             drawerParent: root
 
                             listView: ListViewWithRadioButtonType {
+
                                 id: cipherListView
 
                                 rootWidth: root.width
@@ -126,7 +133,7 @@ PageType {
                                 clickedFunction: function() {
                                     cipherDropDown.text = selectedText
                                     cipher = cipherDropDown.text
-                                    cipherDropDown.close()
+                                    cipherDropDown.closeTriggered()
                                 }
 
                                 Component.onCompleted: {
@@ -148,10 +155,18 @@ PageType {
                             Layout.topMargin: 24
                             Layout.bottomMargin: 24
 
+                            enabled: isPortEditable | isCipherEditable
+
                             text: qsTr("Save")
 
                             clickedFunc: function() {
                                 forceActiveFocus()
+
+                                if (ConnectionController.isConnected && ServersModel.getDefaultServerData("defaultContainer") === ContainersModel.getProcessedContainerIndex()) {
+                                    PageController.showNotificationMessage(qsTr("Unable change settings while there is an active connection"))
+                                    return
+                                }
+
                                 PageController.goToPage(PageEnum.PageSetupWizardInstalling);
                                 InstallController.updateContainer(ShadowSocksConfigModel.getConfig())
                             }

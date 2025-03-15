@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QQmlEngine>
 
+#include "core/defs.h"
 #include "ui/models/servers_model.h"
 
 namespace PageLoader
@@ -29,10 +30,18 @@ namespace PageLoader
         PageSettingsAbout,
         PageSettingsLogging,
         PageSettingsSplitTunneling,
+        PageSettingsAppSplitTunneling,
+        PageSettingsApiServerInfo,
+        PageSettingsApiAvailableCountries,
+        PageSettingsApiSupport,
+        PageSettingsApiInstructions,
+        PageSettingsApiNativeConfigs,
+        PageSettingsApiDevices,
 
         PageServiceSftpSettings,
         PageServiceTorWebsiteSettings,
         PageServiceDnsSettings,
+        PageServiceSocksProxySettings,
 
         PageSetupWizardStart,
         PageSetupWizardCredentials,
@@ -44,16 +53,24 @@ namespace PageLoader
         PageSetupWizardTextKey,
         PageSetupWizardViewConfig,
         PageSetupWizardQrReader,
+        PageSetupWizardApiServicesList,
+        PageSetupWizardApiServiceInfo,
 
         PageProtocolOpenVpnSettings,
         PageProtocolShadowSocksSettings,
         PageProtocolCloakSettings,
+        PageProtocolXraySettings,
         PageProtocolWireGuardSettings,
         PageProtocolAwgSettings,
         PageProtocolIKev2Settings,
         PageProtocolRaw,
 
-        PageShareFullAccess
+        PageProtocolWireGuardClientSettings,
+        PageProtocolAwgClientSettings,
+
+        PageShareFullAccess,
+
+        PageDevMenu
     };
     Q_ENUM_NS(PageEnum)
 
@@ -71,10 +88,11 @@ public:
                             QObject *parent = nullptr);
 
 public slots:
-    QString getInitialPage();
+    bool isStartPageVisible();
     QString getPagePath(PageLoader::PageEnum page);
 
     void closeWindow();
+    void hideWindow();
     void keyPressEvent(Qt::Key key);
 
     unsigned int getInitialPageNavigationBarColor();
@@ -88,7 +106,12 @@ public slots:
     void closeApplication();
 
     void setDrawerDepth(const int depth);
-    int getDrawerDepth();
+    int getDrawerDepth() const;
+    int incrementDrawerDepth();
+    int decrementDrawerDepth();
+
+private slots:
+    void onShowErrorMessage(amnezia::ErrorCode errorCode);
 
 signals:
     void goToPage(PageLoader::PageEnum page, bool slide = true);
@@ -102,13 +125,14 @@ signals:
     void closePage();
 
     void restorePageHomeState(bool isContainerInstalled = false);
-    void replaceStartPage();
 
+    void showErrorMessage(amnezia::ErrorCode);
     void showErrorMessage(const QString &errorMessage);
     void showNotificationMessage(const QString &message);
 
     void showBusyIndicator(bool visible);
     void disableControls(bool disabled);
+    void disableTabBar(bool disabled);
 
     void hideMainWindow();
     void raiseMainWindow();

@@ -1,44 +1,126 @@
 #include <QCoreApplication>
 #include <QDebug>
 #include <QDir>
-#include <QHostAddress>
-#include <QHostInfo>
 #include <QProcess>
 #include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QStandardPaths>
 #include <QUrl>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 #include "utilities.h"
-#include "version.h"
+
+#ifdef Q_OS_WINDOWS
+QString printErrorMessage(DWORD errorCode) {
+    LPVOID lpMsgBuf;
+
+    DWORD dwFlags = FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                    FORMAT_MESSAGE_FROM_SYSTEM |
+                    FORMAT_MESSAGE_IGNORE_INSERTS;
+
+    DWORD dwLanguageId = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US);
+
+    FormatMessageW(
+        dwFlags,
+        NULL,
+        errorCode,
+        dwLanguageId,
+        (LPWSTR)&lpMsgBuf,
+        0,
+        NULL
+        );
+
+    QString errorMsg = QString::fromWCharArray((LPCWSTR)lpMsgBuf);
+    LocalFree(lpMsgBuf);
+    return errorMsg.trimmed();
+}
+
+QString Utils::getNextDriverLetter()
+{
+    DWORD drivesBitmask = GetLogicalDrives();
+    if (drivesBitmask == 0) {
+        DWORD error = GetLastError();
+        qDebug() << "GetLogicalDrives failed. Error code:" << error;
+        return "";
+    }
+
+    QString letters = "FGHIJKLMNOPQRSTUVWXYZ";
+    QString availableLetter;
+
+    for (int i = letters.size() - 1; i >= 0; --i) {
+        QChar letterChar = letters.at(i);
+        int driveIndex = letterChar.toLatin1() - 'A';
+
+        if ((drivesBitmask & (1 << driveIndex)) == 0) {
+            availableLetter = letterChar;
+            break;
+        }
+    }
+
+    if (availableLetter.isEmpty()) {
+        qDebug() << "Can't find free drive letter";
+        return "";
+    }
+
+    return availableLetter;
+}
+#endif
 
 QString Utils::getRandomString(int len)
 {
-    const QString possibleCharacters("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
-
+    const QString possibleCharacters = QStringLiteral("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
     QString randomString;
+
     for (int i = 0; i < len; ++i) {
-        quint32 index = QRandomGenerator::global()->generate() % possibleCharacters.length();
-        QChar nextChar = possibleCharacters.at(index);
-        randomString.append(nextChar);
+        randomString.append(possibleCharacters.at(QRandomGenerator::system()->bounded(possibleCharacters.length())));
     }
+
     return randomString;
 }
 
-QString Utils::systemLogPath()
+QString Utils::VerifyJsonString(const QString &source)
 {
-#ifdef Q_OS_WIN
-    QStringList locationList = QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation);
-    QString primaryLocation = "ProgramData";
-    foreach (const QString &location, locationList) {
-        if (location.contains(primaryLocation)) {
-            return QString("%1/%2/log").arg(location).arg(APPLICATION_NAME);
-        }
+    QJsonParseError error;
+    QJsonDocument doc = QJsonDocument::fromJson(source.toUtf8(), &error);
+    Q_UNUSED(doc)
+
+    if (error.error == QJsonParseError::NoError) {
+        return "";
+    } else {
+        qDebug() << "WARNING: Json parse returns: " + error.errorString();
+        return error.errorString();
     }
-    return QString();
-#else
-    return QString("/var/log/%1").arg(APPLICATION_NAME);
-#endif
+}
+
+QJsonObject Utils::JsonFromString(const QString &string)
+{
+    auto removeComment = string.trimmed();
+    if (removeComment != string.trimmed()) {
+        qDebug() << "Some comments have been removed from the json.";
+    }
+    QJsonDocument doc = QJsonDocument::fromJson(removeComment.toUtf8());
+    return doc.object();
+}
+
+QString Utils::SafeBase64Decode(QString string)
+{
+    QByteArray ba = string.replace(QChar('-'), QChar('+')).replace(QChar('_'), QChar('/')).toUtf8();
+    return QByteArray::fromBase64(ba, QByteArray::Base64Option::OmitTrailingEquals);
+}
+
+QString Utils::JsonToString(const QJsonObject &json, QJsonDocument::JsonFormat format)
+{
+    QJsonDocument doc;
+    doc.setObject(json);
+    return doc.toJson(format);
+}
+
+QString Utils::JsonToString(const QJsonArray &array, QJsonDocument::JsonFormat format)
+{
+    QJsonDocument doc;
+    doc.setArray(array);
+    return doc.toJson(format);
 }
 
 bool Utils::initializePath(const QString &path)
@@ -78,149 +160,101 @@ QString Utils::usrExecutable(const QString &baseName)
         return ("/usr/bin/" + baseName);
 }
 
-bool Utils::processIsRunning(const QString &fileName)
+bool Utils::processIsRunning(const QString &fileName, const bool fullFlag)
 {
 #ifdef Q_OS_WIN
-    QProcess process;
-    process.setReadChannel(QProcess::StandardOutput);
-    process.setProcessChannelMode(QProcess::MergedChannels);
-    process.start("wmic.exe",
-                  QStringList() << "/OUTPUT:STDOUT"
-                                << "PROCESS"
-                                << "get"
-                                << "Caption");
-    process.waitForStarted();
-    process.waitForFinished();
-    QString processData(process.readAll());
-    QStringList processList = processData.split(QRegularExpression("[\r\n]"), Qt::SkipEmptyParts);
-    foreach (const QString &rawLine, processList) {
-        const QString line = rawLine.simplified();
-        if (line.isEmpty()) {
-            continue;
-        }
+    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hSnapshot == INVALID_HANDLE_VALUE) {
+        qWarning() << "Utils::processIsRunning error CreateToolhelp32Snapshot";
+        return false;
+    }
 
-        if (line == fileName) {
+    PROCESSENTRY32W pe32;
+    pe32.dwSize = sizeof(PROCESSENTRY32W);
+
+    if (!Process32FirstW(hSnapshot, &pe32)) {
+        CloseHandle(hSnapshot);
+        qWarning() << "Utils::processIsRunning error Process32FirstW";
+        return false;
+    }
+
+    do {
+        QString exeFile = QString::fromWCharArray(pe32.szExeFile);
+
+        if (exeFile.compare(fileName, Qt::CaseInsensitive) == 0) {
+            CloseHandle(hSnapshot);
             return true;
         }
-    }
+    } while (Process32NextW(hSnapshot, &pe32));
+
+    CloseHandle(hSnapshot);
     return false;
-#elif defined(Q_OS_IOS)
+
+#elif defined(Q_OS_IOS) || defined(Q_OS_ANDROID)
     return false;
 #else
     QProcess process;
+    QStringList arguments;
+    if (fullFlag) {
+        arguments << "-f";
+    }
+    arguments << fileName;
     process.setProcessChannelMode(QProcess::MergedChannels);
-    process.start("pgrep", QStringList({ fileName }));
+    process.start("pgrep", arguments);
     process.waitForFinished();
     if (process.exitStatus() == QProcess::NormalExit) {
-        return (process.readAll().toUInt() > 0);
+        if (fullFlag) {
+            return (process.readLine().toUInt() > 0);
+        } else {
+            return (process.readAll().toUInt() > 0);
+        }
     }
     return false;
 #endif
 }
 
-QString Utils::getIPAddress(const QString &host)
-{
-    if (ipAddressRegExp().match(host).hasMatch()) {
-        return host;
-    }
-
-    QList<QHostAddress> addresses = QHostInfo::fromName(host).addresses();
-    if (!addresses.isEmpty()) {
-        return addresses.first().toString();
-    }
-    qDebug() << "Unable to resolve address for " << host;
-    return "";
-}
-
-QString Utils::getStringBetween(const QString &s, const QString &a, const QString &b)
-{
-    int ap = s.indexOf(a), bp = s.indexOf(b, ap + a.length());
-    if (ap < 0 || bp < 0)
-        return QString();
-    ap += a.length();
-    if (bp - ap <= 0)
-        return QString();
-    return s.mid(ap, bp - ap).trimmed();
-}
-
-bool Utils::checkIPv4Format(const QString &ip)
-{
-    if (ip.isEmpty())
-        return false;
-    int count = ip.count(".");
-    if (count != 3)
-        return false;
-
-    QHostAddress addr(ip);
-    return (addr.protocol() == QAbstractSocket::NetworkLayerProtocol::IPv4Protocol);
-}
-
-bool Utils::checkIpSubnetFormat(const QString &ip)
-{
-    if (!ip.contains("/"))
-        return checkIPv4Format(ip);
-
-    QStringList parts = ip.split("/");
-    if (parts.size() != 2)
-        return false;
-
-    bool ok;
-    int subnet = parts.at(1).toInt(&ok);
-    if (subnet >= 0 && subnet <= 32 && ok)
-        return checkIPv4Format(parts.at(0));
-    else
-        return false;
-}
-
-void Utils::killProcessByName(const QString &name)
+bool Utils::killProcessByName(const QString &name)
 {
     qDebug().noquote() << "Kill process" << name;
 #ifdef Q_OS_WIN
-    QProcess::execute("taskkill", QStringList() << "/IM" << name << "/F");
-#elif defined Q_OS_IOS
-    return;
+    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hSnapshot == INVALID_HANDLE_VALUE)
+        return false;
+
+    PROCESSENTRY32W pe32;
+    pe32.dwSize = sizeof(PROCESSENTRY32W);
+
+    bool success = false;
+
+    if (Process32FirstW(hSnapshot, &pe32)) {
+        do {
+            QString exeFile = QString::fromWCharArray(pe32.szExeFile);
+
+            if (exeFile.compare(name, Qt::CaseInsensitive) == 0) {
+                HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, pe32.th32ProcessID);
+                if (hProcess != NULL) {
+                    if (TerminateProcess(hProcess, 0)) {
+                        success = true;
+                    } else {
+                        DWORD error = GetLastError();
+                        qCritical() << "Can't terminate process" << exeFile << "(PID:" << pe32.th32ProcessID << "). Error:" << printErrorMessage(error);
+                    }
+                    CloseHandle(hProcess);
+                } else {
+                    DWORD error = GetLastError();
+                    qCritical() << "Can't open process for termination" << exeFile << "(PID:" << pe32.th32ProcessID << "). Error:" << printErrorMessage(error);
+                }
+            }
+        } while (Process32NextW(hSnapshot, &pe32));
+    }
+
+    CloseHandle(hSnapshot);
+    return success;
+#elif defined Q_OS_IOS || defined(Q_OS_ANDROID)
+    return false;
 #else
-    QProcess::execute(QString("pkill %1").arg(name));
+    return QProcess::execute("pkill", { name }) == 0;
 #endif
-}
-
-QString Utils::netMaskFromIpWithSubnet(const QString ip)
-{
-    if (!ip.contains("/"))
-        return "255.255.255.255";
-
-    bool ok;
-    int prefix = ip.split("/").at(1).toInt(&ok);
-    if (!ok)
-        return "255.255.255.255";
-
-    unsigned long mask = (0xFFFFFFFF << (32 - prefix)) & 0xFFFFFFFF;
-
-    return QString("%1.%2.%3.%4").arg(mask >> 24).arg((mask >> 16) & 0xFF).arg((mask >> 8) & 0xFF).arg(mask & 0xFF);
-}
-
-QString Utils::ipAddressFromIpWithSubnet(const QString ip)
-{
-    if (ip.count(".") != 3)
-        return "";
-    return ip.split("/").first();
-}
-
-QStringList Utils::summarizeRoutes(const QStringList &ips, const QString cidr)
-{
-    //    QMap<int, int>
-    //    QHostAddress
-
-    //    QMap<QString, QStringList> subnets; // <"a.b", <list subnets>>
-
-    //    for (const QString &ip : ips) {
-    //        if (ip.count(".") != 3) continue;
-
-    //        const QStringList &parts = ip.split(".");
-    //        subnets[parts.at(0) + "." + parts.at(1)].append(ip);
-    //    }
-
-    return QStringList();
 }
 
 QString Utils::openVpnExecPath()
@@ -259,6 +293,19 @@ QString Utils::certUtilPath()
 #endif
 }
 
+QString Utils::tun2socksPath()
+{
+#ifdef Q_OS_WIN
+    return Utils::executable("xray/tun2socks", true);
+#elif defined Q_OS_LINUX
+    // We have service that runs OpenVPN on Linux. We need to make same
+    // path for client and service.
+    return Utils::executable("../../client/bin/tun2socks", true);
+#else
+    return Utils::executable("/tun2socks", true);
+#endif
+}
+
 #ifdef Q_OS_WIN
 // Inspired from http://stackoverflow.com/a/15281070/1529139
 // and http://stackoverflow.com/q/40059902/1529139
@@ -292,3 +339,22 @@ bool Utils::signalCtrl(DWORD dwProcessId, DWORD dwCtrlEvent)
 }
 
 #endif
+
+void Utils::logException(const std::exception &e)
+{
+    qCritical() << e.what();
+    try {
+        std::rethrow_if_nested(e);
+    } catch (const std::exception &nested) {
+        logException(nested);
+    } catch (...) {}
+}
+
+void Utils::logException(const std::exception_ptr &eptr)
+{
+    try {
+        if (eptr) std::rethrow_exception(eptr);
+    } catch (const std::exception &e) {
+        logException(e);
+    } catch (...) {}
+}

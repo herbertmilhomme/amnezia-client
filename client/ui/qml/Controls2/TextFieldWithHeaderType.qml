@@ -2,39 +2,53 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+import Style 1.0
+
 import "TextTypes"
 
 Item {
     id: root
 
     property string headerText
-    property string headerTextDisabledColor: "#494B50"
-    property string headerTextColor: "#878b91"
+    property string headerTextDisabledColor: AmneziaStyle.color.charcoalGray
+    property string headerTextColor: AmneziaStyle.color.mutedGray
 
     property alias errorText: errorField.text
     property bool checkEmptyText: false
+    property bool rightButtonClickedOnEnter: false
 
     property string buttonText
     property string buttonImageSource
     property var clickedFunc
 
     property alias textField: textField
-    property alias textFieldText: textField.text
-    property string textFieldTextColor: "#d7d8db"
-    property string textFieldTextDisabledColor: "#878B91"
+    property string textFieldTextColor: AmneziaStyle.color.paleGray
+    property string textFieldTextDisabledColor: AmneziaStyle.color.mutedGray
 
-    property string textFieldPlaceholderText
     property bool textFieldEditable: true
 
-    property string borderColor: "#2C2D30"
-    property string borderFocusedColor: "#d7d8db"
+    property string borderColor: AmneziaStyle.color.slateGray
+    property string borderFocusedColor: AmneziaStyle.color.paleGray
 
-    property string backgroundColor: "#1c1d21"
-    property string backgroundDisabledColor: "transparent"
-    property string bgBorderHoveredColor: "#494B50"
+    property string backgroundColor: AmneziaStyle.color.onyxBlack
+    property string backgroundDisabledColor: AmneziaStyle.color.transparent
+    property string bgBorderHoveredColor: AmneziaStyle.color.charcoalGray
 
     implicitWidth: content.implicitWidth
     implicitHeight: content.implicitHeight
+
+    property FlickableType parentFlickable
+
+    Connections {
+        target: textField
+        function onFocusChanged() {
+            if (textField.activeFocus) {
+                if (root.parentFlickable) {
+                    root.parentFlickable.ensureVisible(root)
+                }
+            }
+        }
+    }
 
     ColumnLayout {
         id: content
@@ -69,18 +83,26 @@ Item {
 
                     TextField {
                         id: textField
-                        activeFocusOnTab: false
+
+                        property bool isFocusable: true
+
+                        Keys.onTabPressed: {
+                            FocusController.nextKeyTabItem()
+                        }
+
+                        Keys.onBacktabPressed: {
+                            FocusController.previousKeyTabItem()
+                        }
 
                         enabled: root.textFieldEditable
                         color: root.enabled ? root.textFieldTextColor : root.textFieldTextDisabledColor
 
                         inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhSensitiveData | Qt.ImhNoPredictiveText
 
-                        placeholderText: root.textFieldPlaceholderText
-                        placeholderTextColor: "#494B50"
+                        placeholderTextColor: AmneziaStyle.color.charcoalGray
 
-                        selectionColor:  "#633303"
-                        selectedTextColor: "#D7D8DB"
+                        selectionColor:  AmneziaStyle.color.richBrown
+                        selectedTextColor: AmneziaStyle.color.paleGray
 
                         font.pixelSize: 16
                         font.weight: 400
@@ -104,8 +126,8 @@ Item {
                         }
 
                         onActiveFocusChanged: {
-                            if (checkEmptyText && textFieldText === "") {
-                                errorText = qsTr("The field can't be empty")
+                            if (root.checkEmptyText && text === "") {
+                                root.errorText = qsTr("The field can't be empty")
                             }
                         }
 
@@ -126,32 +148,6 @@ Item {
                         }
                     }
                 }
-
-                BasicButtonType {
-                    visible: (root.buttonText !== "") || (root.buttonImageSource !== "")
-
-//                    defaultColor: "transparent"
-//                    hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-//                    pressedColor: Qt.rgba(1, 1, 1, 0.12)
-//                    disabledColor: "#878B91"
-//                    textColor: "#D7D8DB"
-//                    borderWidth: 0
-
-                    focusPolicy: Qt.NoFocus
-                    text: root.buttonText
-                    imageSource: root.buttonImageSource
-
-//                        Layout.rightMargin: 24
-                    Layout.preferredHeight: content.implicitHeight
-                    Layout.preferredWidth: content.implicitHeight
-                    squareLeftSide: true
-
-                    clickedFunc: function() {
-                        if (root.clickedFunc && typeof root.clickedFunc === "function") {
-                            root.clickedFunc()
-                        }
-                    }
-                }
             }
         }
 
@@ -160,7 +156,9 @@ Item {
 
             text: root.errorText
             visible: root.errorText !== ""
-            color: "#EB5757"
+            color: AmneziaStyle.color.vibrantRed
+
+            Layout.fillWidth: true
         }
     }
 
@@ -187,15 +185,49 @@ Item {
         }
     }
 
+    BasicButtonType {
+        visible: (root.buttonText !== "") || (root.buttonImageSource !== "")
+
+        focusPolicy: Qt.NoFocus
+        text: root.buttonText
+        leftImageSource: root.buttonImageSource
+
+        anchors.top: content.top
+        anchors.bottom: content.bottom
+        anchors.right: content.right
+
+        height: content.implicitHeight
+        width: content.implicitHeight
+        squareLeftSide: true
+
+        clickedFunc: function() {
+            if (root.clickedFunc && typeof root.clickedFunc === "function") {
+                root.clickedFunc()
+            }
+        }
+    }
+
     function getBackgroundBorderColor(noneFocusedColor) {
         return textField.focus ? root.borderFocusedColor : noneFocusedColor
     }
 
     Keys.onEnterPressed: {
-         KeyNavigation.tab.forceActiveFocus();
+        if (root.rightButtonClickedOnEnter && root.clickedFunc && typeof root.clickedFunc === "function") {
+            clickedFunc()
+        }
+
+        // if (KeyNavigation.tab) {
+        //     KeyNavigation.tab.forceActiveFocus();
+        // }
     }
 
     Keys.onReturnPressed: {
-         KeyNavigation.tab.forceActiveFocus();
+        if (root.rightButtonClickedOnEnter &&root.clickedFunc && typeof root.clickedFunc === "function") {
+            clickedFunc()
+        }
+
+        // if (KeyNavigation.tab) {
+        //     KeyNavigation.tab.forceActiveFocus();
+        // }
     }
 }

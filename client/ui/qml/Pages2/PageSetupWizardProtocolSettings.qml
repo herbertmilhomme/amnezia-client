@@ -7,6 +7,7 @@ import SortFilterProxyModel 0.2
 import PageEnum 1.0
 import ContainerProps 1.0
 import ProtocolProps 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -48,6 +49,32 @@ PageType {
                 interactive: false
                 model: proxyContainersModel
 
+                property bool isFocusable: true
+
+                Keys.onTabPressed: {
+                    FocusController.nextKeyTabItem()
+                }
+
+                Keys.onBacktabPressed: {
+                    FocusController.previousKeyTabItem()
+                }
+
+                Keys.onUpPressed: {
+                    FocusController.nextKeyUpItem()
+                }
+
+                Keys.onDownPressed: {
+                    FocusController.nextKeyDownItem()
+                }
+
+                Keys.onLeftPressed: {
+                    FocusController.nextKeyLeftItem()
+                }
+
+                Keys.onRightPressed: {
+                    FocusController.nextKeyRightItem()
+                }
+
                 delegate: Item {
                     implicitWidth: processedContainerListView.width
                     implicitHeight: (delegateContent.implicitHeight > root.height) ? delegateContent.implicitHeight : root.height
@@ -86,16 +113,17 @@ PageType {
 
                             implicitHeight: 32
 
-                            defaultColor: "transparent"
-                            hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                            pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                            disabledColor: "#878B91"
-                            textColor: "#FBB26A"
+                            defaultColor: AmneziaStyle.color.transparent
+                            hoveredColor: AmneziaStyle.color.translucentWhite
+                            pressedColor: AmneziaStyle.color.sheerWhite
+                            disabledColor: AmneziaStyle.color.mutedGray
+                            textColor: AmneziaStyle.color.goldenApricot
 
                             text: qsTr("More detailed")
+                            KeyNavigation.tab: transportProtoSelector
 
                             clickedFunc: function() {
-                                showDetailsDrawer.open()
+                                showDetailsDrawer.openTriggered()
                             }
                         }
 
@@ -105,7 +133,7 @@ PageType {
 
                             anchors.fill: parent
                             expandedHeight: parent.height * 0.9
-                            expandedContent: Item {
+                            expandedStateContent: Item {
                                 implicitHeight: showDetailsDrawer.expandedHeight
 
                                 BackButtonType {
@@ -117,11 +145,12 @@ PageType {
                                     anchors.topMargin: 16
 
                                     backButtonFunction: function() {
-                                        showDetailsDrawer.close()
+                                        showDetailsDrawer.closeTriggered()
                                     }
                                 }
 
                                 FlickableType {
+                                    id: fl
                                     anchors.top: showDetailsBackButton.bottom
                                     anchors.left: parent.left
                                     anchors.right: parent.right
@@ -158,20 +187,21 @@ PageType {
                                             textFormat: Text.MarkdownText
                                         }
 
-
                                         Rectangle {
                                             Layout.fillHeight: true
-                                            color: "transparent"
+                                            color: AmneziaStyle.color.transparent
                                         }
 
                                         BasicButtonType {
+                                            id: showDetailsCloseButton
                                             Layout.fillWidth: true
                                             Layout.bottomMargin: 32
+                                            parentFlickable: fl
 
                                             text: qsTr("Close")
 
 											clickedFunc: function()  {
-                                                showDetailsDrawer.close()
+                                                showDetailsDrawer.closeTriggered()
                                             }
                                         }
                                     }
@@ -203,13 +233,11 @@ PageType {
                             headerText: qsTr("Port")
                             textField.maximumLength: 5
                             textField.validator: IntValidator { bottom: 1; top: 65535 }
-
-                            KeyNavigation.tab: installButton
                         }
 
                         Rectangle {
                             Layout.fillHeight: true
-                            color: "transparent"
+                            color: AmneziaStyle.color.transparent
                         }
 
                         BasicButtonType {
@@ -221,8 +249,15 @@ PageType {
                             text: qsTr("Install")
 
                             clickedFunc: function() {
+                                if (!port.textField.acceptableInput &&
+                                        ContainerProps.containerTypeToString(dockerContainer) !== "torwebsite" &&
+                                        ContainerProps.containerTypeToString(dockerContainer) !== "ikev2") {
+                                    port.errorText = qsTr("The port must be in the range of 1 to 65535")
+                                    return
+                                }
+
                                 PageController.goToPage(PageEnum.PageSetupWizardInstalling);
-                                InstallController.install(dockerContainer, port.textFieldText, transportProtoSelector.currentIndex)
+                                InstallController.install(dockerContainer, port.textField.text, transportProtoSelector.currentIndex)
                             }
                         }
 
@@ -232,7 +267,7 @@ PageType {
                             if (ProtocolProps.defaultPort(defaultContainerProto) < 0) {
                                 port.visible = false
                             } else {
-                                port.textFieldText = ProtocolProps.getPortForInstall(defaultContainerProto)
+                                port.textField.text = ProtocolProps.getPortForInstall(defaultContainerProto)
                             }
                             transportProtoSelector.currentIndex = ProtocolProps.defaultTransportProto(defaultContainerProto)
 
@@ -240,8 +275,6 @@ PageType {
                             var protocolSelectorVisible = ProtocolProps.defaultTransportProtoChangeable(defaultContainerProto)
                             transportProtoSelector.visible = protocolSelectorVisible
                             transportProtoHeader.visible = protocolSelectorVisible
-
-                            defaultActiveFocusItem = port.textField
                         }
                     }
                 }

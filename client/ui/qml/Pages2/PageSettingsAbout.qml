@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 import PageEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -20,20 +21,107 @@ PageType {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.topMargin: 20
+
+        onActiveFocusChanged: {
+            if(backButton.enabled && backButton.activeFocus) {
+                listView.positionViewAtBeginning()
+            }
+        }
     }
 
-    FlickableType {
-        id: fl
+    QtObject {
+        id: telegramGroup
+
+        readonly property string title: qsTr("Telegram group")
+        readonly property string description: qsTr("To discuss features")
+        readonly property string imageSource: "qrc:/images/controls/telegram.svg"
+        readonly property var handler: function() {
+            Qt.openUrlExternally(qsTr("https://t.me/amnezia_vpn_en"))
+        }
+    }
+
+    QtObject {
+        id: mail
+
+        readonly property string title: qsTr("support@amnezia.org")
+        readonly property string description: qsTr("For reviews and bug reports")
+        readonly property string imageSource: "qrc:/images/controls/mail.svg"
+        readonly property var handler: function() {
+            Qt.openUrlExternally(qsTr("mailto:support@amnezia.org"))
+        }
+    }
+
+    QtObject {
+        id: github
+
+        readonly property string title: qsTr("GitHub")
+        readonly property string description: qsTr("Discover the source code")
+        readonly property string imageSource: "qrc:/images/controls/github.svg"
+        readonly property var handler: function() {
+            Qt.openUrlExternally(qsTr("https://github.com/amnezia-vpn/amnezia-client"))
+        }
+    }
+
+    QtObject {
+        id: website
+
+        readonly property string title: qsTr("Website")
+        readonly property string description: qsTr("Visit official website")
+        readonly property string imageSource: "qrc:/images/controls/amnezia.svg"
+        readonly property var handler: function() {
+            Qt.openUrlExternally(LanguageModel.getCurrentSiteUrl())
+        }
+    }
+
+    property list<QtObject> contacts: [
+        telegramGroup,
+        mail,
+        github,
+        website
+    ]
+
+    ListView {
+        id: listView
+
         anchors.top: backButton.bottom
         anchors.bottom: parent.bottom
-        contentHeight: content.height
+        anchors.right: parent.right
+        anchors.left: parent.left
 
-        ColumnLayout {
-            id: content
+        property bool isFocusable: true
 
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
+        Keys.onTabPressed: {
+            FocusController.nextKeyTabItem()
+        }
+
+        Keys.onBacktabPressed: {
+            FocusController.previousKeyTabItem()
+        }
+
+        Keys.onUpPressed: {
+            FocusController.nextKeyUpItem()
+        }
+
+        Keys.onDownPressed: {
+            FocusController.nextKeyDownItem()
+        }
+
+        Keys.onLeftPressed: {
+            FocusController.nextKeyLeftItem()
+        }
+
+        Keys.onRightPressed: {
+            FocusController.nextKeyRightItem()
+        }
+
+        ScrollBar.vertical: ScrollBarType {}
+
+        model: contacts
+
+        clip: true
+
+        header: ColumnLayout {
+            width: listView.width
 
             Image {
                 id: image
@@ -68,42 +156,8 @@ PageType {
                 height: 20
                 font.pixelSize: 14
 
-                text: qsTr("This is a free and open source application. If you like it, support the developers with a donation. ") +
-                      qsTr("And if you don’t like the application, all the more reason to support it - the donation will be used for the improving the application.")
-                color: "#CCCAC8"
-            }
-
-            BasicButtonType {
-                Layout.fillWidth: true
-                Layout.topMargin: 24
-                Layout.leftMargin: 16
-                Layout.rightMargin: 16
-
-                text: qsTr("Card on Patreon")
-
-                clickedFunc: function() {
-                    Qt.openUrlExternally(qsTr("https://www.patreon.com/amneziavpn"))
-                }
-            }
-
-            BasicButtonType {
-                Layout.fillWidth: true
-                Layout.topMargin: 8
-                Layout.leftMargin: 16
-                Layout.rightMargin: 16
-
-                defaultColor: "transparent"
-                hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                disabledColor: "#878B91"
-                textColor: "#D7D8DB"
-                borderWidth: 1
-
-                text: qsTr("Show other methods on Github")
-
-                clickedFunc: function() {
-                    Qt.openUrlExternally(qsTr("https://github.com/amnezia-vpn/amnezia-client#donate"))
-                }
+                text: qsTr("Amnezia is a free and open-source application. You can support the developers if you like it.")
+                color: AmneziaStyle.color.paleGray
             }
 
             ParagraphTextType {
@@ -114,60 +168,29 @@ PageType {
 
                 text: qsTr("Contacts")
             }
+        }
+
+        delegate: ColumnLayout {
+            width: listView.width
 
             LabelWithButtonType {
+                id: telegramButton
                 Layout.fillWidth: true
-                Layout.topMargin: 16
+                Layout.topMargin: 6
 
-                text: qsTr("Telegram group")
-                descriptionText: qsTr("To discuss features")
-                leftImageSource: "qrc:/images/controls/telegram.svg"
+                text: title
+                descriptionText: description
+                leftImageSource: imageSource
 
-                clickedFunction: function() {
-                    Qt.openUrlExternally(qsTr("https://t.me/amnezia_vpn_en"))
-                }
+                clickedFunction: handler
             }
 
             DividerType {}
 
-            LabelWithButtonType {
-                Layout.fillWidth: true
+        }
 
-                text: qsTr("Mail")
-                descriptionText: qsTr("For reviews and bug reports")
-                leftImageSource: "qrc:/images/controls/mail.svg"
-
-                clickedFunction: function() {
-                }
-            }
-
-            DividerType {}
-
-            LabelWithButtonType {
-                Layout.fillWidth: true
-
-                text: qsTr("Github")
-                leftImageSource: "qrc:/images/controls/github.svg"
-
-                clickedFunction: function() {
-                    Qt.openUrlExternally(qsTr("https://github.com/amnezia-vpn/amnezia-client"))
-                }
-            }
-
-            DividerType {}
-
-            LabelWithButtonType {
-                Layout.fillWidth: true
-
-                text: qsTr("Website")
-                leftImageSource: "qrc:/images/controls/amnezia.svg"
-
-                clickedFunction: function() {
-                    Qt.openUrlExternally(qsTr("https://amnezia.org"))
-                }
-            }
-
-            DividerType {}
+        footer: ColumnLayout {
+            width: listView.width
 
             CaptionTextType {
                 Layout.fillWidth: true
@@ -176,25 +199,60 @@ PageType {
                 horizontalAlignment: Text.AlignHCenter
 
                 text: qsTr("Software version: %1").arg(SettingsController.getAppVersion())
-                color: "#878B91"
+                color: AmneziaStyle.color.mutedGray
+
+                MouseArea {
+                    property int clickCount: 0
+                    anchors.fill: parent
+                    onClicked: {
+                        if (clickCount > 10) {
+                            SettingsController.enableDevMode()
+                        } else {
+                            clickCount++
+                        }
+                    }
+                }
             }
 
             BasicButtonType {
+                id: checkUpdatesButton
+
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: 8
                 Layout.bottomMargin: 16
                 implicitHeight: 32
 
-                defaultColor: "transparent"
-                hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                disabledColor: "#878B91"
-                textColor: "#FBB26A"
+                defaultColor: AmneziaStyle.color.transparent
+                hoveredColor: AmneziaStyle.color.translucentWhite
+                pressedColor: AmneziaStyle.color.sheerWhite
+                disabledColor: AmneziaStyle.color.mutedGray
+                textColor: AmneziaStyle.color.goldenApricot
 
                 text: qsTr("Check for updates")
 
                 clickedFunc: function() {
                     Qt.openUrlExternally("https://github.com/amnezia-vpn/desktop-client/releases/latest")
+                }
+            }
+
+            BasicButtonType {
+                id: privacyPolicyButton
+
+                Layout.alignment: Qt.AlignHCenter
+                Layout.bottomMargin: 16
+                Layout.topMargin: -15
+                implicitHeight: 25
+
+                defaultColor: AmneziaStyle.color.transparent
+                hoveredColor: AmneziaStyle.color.translucentWhite
+                pressedColor: AmneziaStyle.color.sheerWhite
+                disabledColor: AmneziaStyle.color.mutedGray
+                textColor: AmneziaStyle.color.goldenApricot
+
+                text: qsTr("Privacy Policy")
+
+                clickedFunc: function() {
+                    Qt.openUrlExternally(LanguageModel.getCurrentSiteUrl() + "/policy")
                 }
             }
         }

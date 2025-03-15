@@ -1,8 +1,9 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#include "protocols/protocols_defs.h"
 #include "localsocketcontroller.h"
+
+#include <stdint.h>
 
 #include <QDir>
 #include <QFileInfo>
@@ -17,6 +18,9 @@
 #include "leakdetector.h"
 #include "logger.h"
 #include "models/server.h"
+#include "daemon/daemonerrors.h"
+
+#include "protocols/protocols_defs.h"
 
 // How many times do we try to reconnect.
 constexpr int MAX_CONNECTION_RETRY = 10;
@@ -34,8 +38,8 @@ LocalSocketController::LocalSocketController() {
   m_socket = new QLocalSocket(this);
   connect(m_socket, &QLocalSocket::connected, this,
           &LocalSocketController::daemonConnected);
-  connect(m_socket, &QLocalSocket::disconnected, this,
-          &LocalSocketController::disconnected);
+  connect(m_socket, &QLocalSocket::disconnected, this, 
+          [&] { errorOccurred(QLocalSocket::PeerClosedError); });
   connect(m_socket, &QLocalSocket::errorOccurred, this,
           &LocalSocketController::errorOccurred);
   connect(m_socket, &QLocalSocket::readyRead, this,
@@ -117,6 +121,9 @@ void LocalSocketController::activate(const QJsonObject &rawConfig) {
   int splitTunnelType = rawConfig.value("splitTunnelType").toInt();
   QJsonArray splitTunnelSites = rawConfig.value("splitTunnelSites").toArray();
 
+  int appSplitTunnelType = rawConfig.value(amnezia::config_key::appSplitTunnelType).toInt();
+  QJsonArray splitTunnelApps = rawConfig.value(amnezia::config_key::splitTunnelApps).toArray();
+
   QJsonObject wgConfig = rawConfig.value(protocolName + "_config_data").toObject();
 
   QJsonObject json;
@@ -124,10 +131,14 @@ void LocalSocketController::activate(const QJsonObject &rawConfig) {
   //  json.insert("hopindex", QJsonValue((double)hop.m_hopindex));
   json.insert("privateKey", wgConfig.value(amnezia::config_key::client_priv_key));
   json.insert("deviceIpv4Address", wgConfig.value(amnezia::config_key::client_ip));
-  // todo review wg ipv6
-#ifdef Q_OS_MACOS
-  json.insert("deviceIpv6Address", "dead::1");
-#endif
+
+  // set up IPv6 unique-local-address, ULA, with "fd00::/8" prefix, not globally routable.
+  // this will be default IPv6 gateway, OS recognizes that IPv6 link is local and switches to IPv4.
+  // Otherwise some OSes (Linux) try IPv6 forever and hang. 
+  // https://en.wikipedia.org/wiki/Unique_local_address (RFC 4193)
+  // https://man7.org/linux/man-pages/man5/gai.conf.5.html
+  json.insert("deviceIpv6Address", "fd58:baa6:dead::1"); // simply "dead::1" is globally-routable, don't use it
+
   json.insert("serverPublicKey", wgConfig.value(amnezia::config_key::server_pub_key));
   json.insert("serverPskKey", wgConfig.value(amnezia::config_key::psk_key));
   json.insert("serverIpv4AddrIn", wgConfig.value(amnezia::config_key::hostName));
@@ -142,7 +153,7 @@ void LocalSocketController::activate(const QJsonObject &rawConfig) {
   QJsonArray jsAllowedIPAddesses;
 
   QJsonArray plainAllowedIP = wgConfig.value(amnezia::config_key::allowed_ips).toArray();
-  QJsonArray defaultAllowedIP = QJsonArray::fromStringList(QString("0.0.0.0/0, ::/0").split(","));
+  QJsonArray defaultAllowedIP = { "0.0.0.0/0", "::/0" };
 
   if (plainAllowedIP != defaultAllowedIP && !plainAllowedIP.isEmpty()) {
     // Use AllowedIP list from WG config because of higher priority
@@ -213,14 +224,29 @@ void LocalSocketController::activate(const QJsonObject &rawConfig) {
 
   json.insert("excludedAddresses", jsExcludedAddresses);
 
+  json.insert("vpnDisabledApps", splitTunnelApps);
 
-  //  QJsonArray splitTunnelApps;
-  //  for (const auto& uri : hop.m_vpnDisabledApps) {
-  //    splitTunnelApps.append(QJsonValue(uri));
-  //  }
-  //  json.insert("vpnDisabledApps", splitTunnelApps);
-  
+  json.insert(amnezia::config_key::killSwitchOption, rawConfig.value(amnezia::config_key::killSwitchOption));
+
   if (protocolName == amnezia::config_key::awg) {
+    json.insert(amnezia::config_key::junkPacketCount, wgConfig.value(amnezia::config_key::junkPacketCount));
+    json.insert(amnezia::config_key::junkPacketMinSize, wgConfig.value(amnezia::config_key::junkPacketMinSize));
+    json.insert(amnezia::config_key::junkPacketMaxSize, wgConfig.value(amnezia::config_key::junkPacketMaxSize));
+    json.insert(amnezia::config_key::initPacketJunkSize, wgConfig.value(amnezia::config_key::initPacketJunkSize));
+    json.insert(amnezia::config_key::responsePacketJunkSize, wgConfig.value(amnezia::config_key::responsePacketJunkSize));
+    json.insert(amnezia::config_key::initPacketMagicHeader, wgConfig.value(amnezia::config_key::initPacketMagicHeader));
+    json.insert(amnezia::config_key::responsePacketMagicHeader, wgConfig.value(amnezia::config_key::responsePacketMagicHeader));
+    json.insert(amnezia::config_key::underloadPacketMagicHeader, wgConfig.value(amnezia::config_key::underloadPacketMagicHeader));
+    json.insert(amnezia::config_key::transportPacketMagicHeader, wgConfig.value(amnezia::config_key::transportPacketMagicHeader));
+  } else if (!wgConfig.value(amnezia::config_key::junkPacketCount).isUndefined()
+             && !wgConfig.value(amnezia::config_key::junkPacketMinSize).isUndefined()
+             && !wgConfig.value(amnezia::config_key::junkPacketMaxSize).isUndefined()
+             && !wgConfig.value(amnezia::config_key::initPacketJunkSize).isUndefined()
+             && !wgConfig.value(amnezia::config_key::responsePacketJunkSize).isUndefined()
+             && !wgConfig.value(amnezia::config_key::initPacketMagicHeader).isUndefined()
+             && !wgConfig.value(amnezia::config_key::responsePacketMagicHeader).isUndefined()
+             && !wgConfig.value(amnezia::config_key::underloadPacketMagicHeader).isUndefined()
+             && !wgConfig.value(amnezia::config_key::transportPacketMagicHeader).isUndefined()) {
     json.insert(amnezia::config_key::junkPacketCount, wgConfig.value(amnezia::config_key::junkPacketCount));
     json.insert(amnezia::config_key::junkPacketMinSize, wgConfig.value(amnezia::config_key::junkPacketMinSize));
     json.insert(amnezia::config_key::junkPacketMaxSize, wgConfig.value(amnezia::config_key::junkPacketMaxSize));
@@ -429,8 +455,39 @@ void LocalSocketController::parseCommand(const QByteArray& command) {
   }
 
   if (type == "backendFailure") {
-    qCritical() << "backendFailure";
-    return;
+    if (!obj.contains("errorCode")) {
+      // report a generic error if we dont know what it is.
+      logger.error() << "generic backend failure error";
+      // REPORTERROR(ErrorHandler::ControllerError, "controller");
+      return;
+    }
+    auto errorCode = static_cast<uint8_t>(obj["errorCode"].toInt());
+    if (errorCode >= (uint8_t)DaemonError::DAEMON_ERROR_MAX) {
+      // Also report a generic error if the code is invalid.
+      logger.error() << "invalid backend failure error code";
+      // REPORTERROR(ErrorHandler::ControllerError, "controller");
+      return;
+    }
+    switch (static_cast<DaemonError>(errorCode)) {
+      case DaemonError::ERROR_NONE:
+        [[fallthrough]];
+      case DaemonError::ERROR_FATAL:
+        logger.error() << "generic backend failure error (fatal or error none)";
+        // REPORTERROR(ErrorHandler::ControllerError, "controller");
+        break;
+      case DaemonError::ERROR_SPLIT_TUNNEL_INIT_FAILURE:
+        [[fallthrough]];
+      case DaemonError::ERROR_SPLIT_TUNNEL_START_FAILURE:
+        [[fallthrough]];
+      case DaemonError::ERROR_SPLIT_TUNNEL_EXCLUDE_FAILURE:
+        logger.error() << "split tunnel backend failure error";
+        //REPORTERROR(ErrorHandler::SplitTunnelError, "controller");
+        break;
+      case DaemonError::DAEMON_ERROR_MAX:
+        // We should not get here.
+        Q_ASSERT(false);
+        break;
+    }
   }
 
   if (type == "logs") {

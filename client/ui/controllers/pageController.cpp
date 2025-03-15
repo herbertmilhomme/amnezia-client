@@ -1,4 +1,6 @@
 #include "pageController.h"
+#include "utils/converter.h"
+#include "core/errorstrings.h"
 
 #if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
     #include <QGuiApplication>
@@ -7,8 +9,7 @@
 #endif
 
 #ifdef Q_OS_ANDROID
-    #include "platforms/android/android_utils.h"
-    #include <QJniObject>
+    #include "platforms/android/android_controller.h"
 #endif
 #if defined Q_OS_MAC
     #include "ui/macos_util.h"
@@ -19,38 +20,30 @@ PageController::PageController(const QSharedPointer<ServersModel> &serversModel,
     : QObject(parent), m_serversModel(serversModel), m_settings(settings)
 {
 #ifdef Q_OS_ANDROID
-    // Change color of navigation and status bar's
     auto initialPageNavigationBarColor = getInitialPageNavigationBarColor();
-    AndroidUtils::runOnAndroidThreadSync([&initialPageNavigationBarColor]() {
-        QJniObject activity = AndroidUtils::getActivity();
-        QJniObject window = activity.callObjectMethod("getWindow", "()Landroid/view/Window;");
-        if (window.isValid()) {
-            window.callMethod<void>("addFlags", "(I)V", 0x80000000);
-            window.callMethod<void>("clearFlags", "(I)V", 0x04000000);
-            window.callMethod<void>("setStatusBarColor", "(I)V", 0xFF0E0E11);
-            window.callMethod<void>("setNavigationBarColor", "(I)V", initialPageNavigationBarColor);
-        }
-    });
+    AndroidController::instance()->setNavigationBarColor(initialPageNavigationBarColor);
 #endif
 
 #if defined Q_OS_MACX
     connect(this, &PageController::raiseMainWindow, []() { setDockIconVisible(true); });
     connect(this, &PageController::hideMainWindow, []() { setDockIconVisible(false); });
 #endif
+
+    connect(this, qOverload<ErrorCode>(&PageController::showErrorMessage), this, &PageController::onShowErrorMessage);
     
     m_isTriggeredByConnectButton = false;
 }
 
-QString PageController::getInitialPage()
+bool PageController::isStartPageVisible()
 {
     if (m_serversModel->getServersCount()) {
         if (m_serversModel->getDefaultServerIndex() < 0) {
             auto defaultServerIndex = m_serversModel->index(0);
             m_serversModel->setData(defaultServerIndex, true, ServersModel::Roles::IsDefaultRole);
         }
-        return getPagePath(PageLoader::PageEnum::PageStart);
+        return false;
     } else {
-        return getPagePath(PageLoader::PageEnum::PageSetupWizardStart);
+        return true;
     }
 }
 
@@ -74,6 +67,13 @@ void PageController::closeWindow()
 #endif
 }
 
+void PageController::hideWindow()
+{
+#ifdef Q_OS_ANDROID
+    AndroidController::instance()->minimizeApp();
+#endif
+}
+
 void PageController::keyPressEvent(Qt::Key key)
 {
     switch (key) {
@@ -81,7 +81,7 @@ void PageController::keyPressEvent(Qt::Key key)
     case Qt::Key_Escape: {
         if (m_drawerDepth) {
             emit closeTopDrawer();
-            setDrawerDepth(getDrawerDepth() - 1);
+            decrementDrawerDepth();
         } else {
             emit escapePressed();
         }
@@ -103,14 +103,7 @@ unsigned int PageController::getInitialPageNavigationBarColor()
 void PageController::updateNavigationBarColor(const int color)
 {
 #ifdef Q_OS_ANDROID
-    // Change color of navigation bar
-    AndroidUtils::runOnAndroidThreadSync([&color]() {
-        QJniObject activity = AndroidUtils::getActivity();
-        QJniObject window = activity.callObjectMethod("getWindow", "()Landroid/view/Window;");
-        if (window.isValid()) {
-            window.callMethod<void>("setNavigationBarColor", "(I)V", color);
-        }
-    });
+    AndroidController::instance()->setNavigationBarColor(color);
 #endif
 }
 
@@ -119,7 +112,7 @@ void PageController::showOnStartup()
     if (!m_settings->isStartMinimized()) {
         emit raiseMainWindow();
     } else {
-#ifdef Q_OS_WIN
+#if defined(Q_OS_WIN) || (defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID))
         emit hideMainWindow();
 #elif defined Q_OS_MACX
         setDockIconVisible(false);
@@ -149,7 +142,31 @@ void PageController::setDrawerDepth(const int depth)
     }
 }
 
-int PageController::getDrawerDepth()
+int PageController::getDrawerDepth() const
 {
     return m_drawerDepth;
+}
+
+int PageController::incrementDrawerDepth()
+{
+    return ++m_drawerDepth;
+}
+
+int PageController::decrementDrawerDepth()
+{
+    if (m_drawerDepth == 0) {
+        return m_drawerDepth;
+    } else {
+        return --m_drawerDepth;
+    }
+}
+
+void PageController::onShowErrorMessage(ErrorCode errorCode)
+{
+    const auto fullErrorMessage = errorString(errorCode);
+    const auto errorMessage = fullErrorMessage.mid(fullErrorMessage.indexOf(". ") + 1); // remove ErrorCode %1.
+    const auto errorUrl = QStringLiteral("https://docs.amnezia.org/troubleshooting/error-codes/#error-%1-%2").arg(static_cast<int>(errorCode)).arg(utils::enumToString(errorCode).toLower());
+    const auto fullMessage = QStringLiteral("<a href=\"%1\" style=\"color: #FBB26A;\">ErrorCode: %2</a>. %3").arg(errorUrl).arg(static_cast<int>(errorCode)).arg(errorMessage);
+
+    emit showErrorMessage(fullMessage);
 }

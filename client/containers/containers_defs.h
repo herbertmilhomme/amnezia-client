@@ -22,11 +22,14 @@ namespace amnezia
             Cloak,
             ShadowSocks,
             Ipsec,
+            Xray,
+            SSXray,
 
             // non-vpn
             TorWebSite,
             Dns,
-            Sftp
+            Sftp,
+            Socks5Proxy
         };
         Q_ENUM_NS(DockerContainer)
     } // namespace ContainerEnumNS
@@ -67,6 +70,10 @@ namespace amnezia
         static int easySetupOrder(amnezia::DockerContainer container);
 
         static bool isShareable(amnezia::DockerContainer container);
+
+        static QJsonObject getProtocolConfigFromContainer(const amnezia::Proto protocol, const QJsonObject &containerConfig);
+
+        static int installPageOrder(amnezia::DockerContainer container);
     };
 
     static void declareQmlContainerEnum()

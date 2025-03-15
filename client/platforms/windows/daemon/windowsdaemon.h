@@ -5,13 +5,16 @@
 #ifndef WINDOWSDAEMON_H
 #define WINDOWSDAEMON_H
 
+#include <qpointer.h>
+
 #include "daemon/daemon.h"
 #include "dnsutilswindows.h"
+#include "windowsfirewall.h"
 #include "windowssplittunnel.h"
 #include "windowstunnelservice.h"
 #include "wireguardutilswindows.h"
 
-#define TUNNEL_SERVICE_NAME L"WireGuardTunnel$AmneziaVPN"
+#define TUNNEL_SERVICE_NAME L"AmneziaWGTunnel$AmneziaVPN"
 
 class WindowsDaemon final : public Daemon {
   Q_DISABLE_COPY_MOVE(WindowsDaemon)
@@ -20,12 +23,12 @@ class WindowsDaemon final : public Daemon {
   WindowsDaemon();
   ~WindowsDaemon();
 
-  void prepareActivation(const InterfaceConfig& config) override;
+  void prepareActivation(const InterfaceConfig& config, int inetAdapterIndex = 0) override;
+  void activateSplitTunnel(const InterfaceConfig& config, int vpnAdapterIndex = 0) override;
 
  protected:
   bool run(Op op, const InterfaceConfig& config) override;
-  WireguardUtils* wgutils() const override { return m_wgutils; }
-  bool supportDnsUtils() const override { return true; }
+  WireguardUtils* wgutils() const override { return m_wgutils.get(); }
   DnsUtils* dnsutils() override { return m_dnsutils; }
 
  private:
@@ -37,12 +40,12 @@ class WindowsDaemon final : public Daemon {
     Inactive,
   };
 
-  State m_state = Inactive;
   int m_inetAdapterIndex = -1;
 
-  WireguardUtilsWindows* m_wgutils = nullptr;
+  std::unique_ptr<WireguardUtilsWindows> m_wgutils;
   DnsUtilsWindows* m_dnsutils = nullptr;
-  WindowsSplitTunnel m_splitTunnelManager;
+  std::unique_ptr<WindowsSplitTunnel> m_splitTunnelManager;
+  QPointer<WindowsFirewall> m_firewallManager;
 };
 
 #endif  // WINDOWSDAEMON_H

@@ -18,10 +18,14 @@ ListView {
     property var selectedText
 
     width: rootWidth
-    height: menuContent.contentItem.height
+    height: contentItem.height
 
     clip: true
-    interactive: false
+    snapMode: ListView.SnapToItem
+
+    ScrollBar.vertical: ScrollBarType {}
+
+    property bool isFocusable: true
 
     ButtonGroup {
         id: containersRadioButtonGroup
@@ -51,7 +55,7 @@ ListView {
                 imageSource: "qrc:/images/controls/download.svg"
                 showImage: !isInstalled
 
-                checkable: isInstalled && !ConnectionController.isConnected && isSupported
+                checkable: isInstalled && !ConnectionController.isConnected
                 checked: proxyDefaultServerContainersModel.mapToSource(index) === ServersModel.getDefaultServerData("defaultContainer")
 
                 onClicked: {
@@ -61,18 +65,13 @@ ListView {
                     }
 
                     if (checked) {
-                        containersDropDown.close()
+                        containersDropDown.closeTriggered()
                         ServersModel.setDefaultContainer(ServersModel.defaultIndex, proxyDefaultServerContainersModel.mapToSource(index))
                     } else {
-                        if (!isSupported && isInstalled) {
-                            PageController.showErrorMessage(qsTr("The selected protocol is not supported on the current platform"))
-                            return
-                        }
-
-                        ContainersModel.setCurrentlyProcessedContainerIndex(proxyDefaultServerContainersModel.mapToSource(index))
+                        ContainersModel.setProcessedContainerIndex(proxyDefaultServerContainersModel.mapToSource(index))
                         InstallController.setShouldCreateServer(false)
                         PageController.goToPage(PageEnum.PageSetupWizardProtocolSettings)
-                        containersDropDown.close()
+                        containersDropDown.closeTriggered()
                     }
                 }
 
@@ -80,6 +79,19 @@ ListView {
                     anchors.fill: containerRadioButton
                     cursorShape: Qt.PointingHandCursor
                     enabled: false
+                }
+
+                Keys.onEnterPressed: {
+                    if (checkable) {
+                        checked = true
+                    }
+                    containerRadioButton.clicked()
+                }
+                Keys.onReturnPressed: {
+                    if (checkable) {
+                        checked = true
+                    }
+                    containerRadioButton.clicked()
                 }
             }
 

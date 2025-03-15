@@ -8,6 +8,7 @@ import PageEnum 1.0
 import ProtocolEnum 1.0
 import ContainerProps 1.0
 import ProtocolProps 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -18,16 +19,32 @@ import "../Components"
 PageType {
     id: root
 
+    readonly property int pageSettingsServerProtocols: 0
+    readonly property int pageSettingsServerServices: 1
+    readonly property int pageSettingsServerData: 2
+
+    property var processedServer
+
     Connections {
         target: PageController
 
         function onGoToPageSettingsServerServices() {
-            tabBar.currentIndex = 1
+            tabBar.setCurrentIndex(root.pageSettingsServerServices)
+        }
+    }
+
+    Connections {
+        target: ServersModel
+
+        function onProcessedServerChanged() {
+            root.processedServer = proxyServersModel.get(0)
         }
     }
 
     SortFilterProxyModel {
         id: proxyServersModel
+        objectName: "proxyServersModel"
+
         sourceModel: ServersModel
         filters: [
             ValueFilter {
@@ -35,109 +52,61 @@ PageType {
                 value: true
             }
         ]
+
+        Component.onCompleted: {
+            root.processedServer = proxyServersModel.get(0)
+        }
     }
 
     ColumnLayout {
+        objectName: "mainLayout"
+
         anchors.fill: parent
+        anchors.topMargin: 20
 
-        spacing: 16
+        spacing: 4
 
-        Repeater {
-            id: header
-            model: proxyServersModel
+        BackButtonType {
+            id: backButton
+            objectName: "backButton"
+        }
 
-            delegate: ColumnLayout {
-                id: content
+        HeaderType {
+            id: headerContent
+            objectName: "headerContent"
 
-                Layout.topMargin: 20
+            Layout.fillWidth: true
+            Layout.leftMargin: 16
+            Layout.rightMargin: 16
+            Layout.bottomMargin: 10
 
-                BackButtonType {
-                }
+            actionButtonImage: "qrc:/images/controls/edit-3.svg"
 
-                HeaderType {
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 16
-                    Layout.rightMargin: 16
-
-                    actionButtonImage: "qrc:/images/controls/edit-3.svg"
-
-                    headerText: name
-                    descriptionText: {
-                        if (ServersModel.isProcessedServerHasWriteAccess()) {
-                            return credentialsLogin + " · " + hostName
-                        } else {
-                            return hostName
-                        }
-                    }
-
-                    actionButtonFunction: function() {
-                        serverNameEditDrawer.open()
-                    }
-                }
-
-                DrawerType2 {
-                    id: serverNameEditDrawer
-
-                    parent: root
-
-                    anchors.fill: parent
-                    expandedHeight: root.height * 0.35
-
-                    expandedContent: ColumnLayout {
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.topMargin: 32
-                        anchors.leftMargin: 16
-                        anchors.rightMargin: 16
-
-                        Connections {
-                            target: serverNameEditDrawer
-                            enabled: !GC.isMobile()
-                            function onOpened() {
-                                serverName.textField.forceActiveFocus()
-                            }
-                        }
-
-                        TextFieldWithHeaderType {
-                            id: serverName
-
-                            Layout.fillWidth: true
-                            headerText: qsTr("Server name")
-                            textFieldText: name
-                            textField.maximumLength: 30
-                            checkEmptyText: true
-
-                            KeyNavigation.tab: saveButton
-                        }
-
-                        BasicButtonType {
-                            id: saveButton
-
-                            Layout.fillWidth: true
-
-                            text: qsTr("Save")
-
-                            clickedFunc: function() {
-                                if (serverName.textFieldText === "") {
-                                    return
-                                }
-
-                                if (serverName.textFieldText !== name) {
-                                    name = serverName.textFieldText
-                                }
-                                serverNameEditDrawer.close()
-                            }
-                        }
-
-                        Component.onCompleted: {
-                            if (header.itemAt(0) && !GC.isMobile()) {
-                                defaultActiveFocusItem = serverName.textField
-                            }
-                        }
-                    }
+            headerText: root.processedServer.name
+            descriptionText: {
+                if (root.processedServer.isServerFromTelegramApi) {
+                    return root.processedServer.serverDescription
+                } else if (root.processedServer.hasWriteAccess) {
+                    return root.processedServer.credentialsLogin + " · " + root.processedServer.hostName
+                } else {
+                    return root.processedServer.hostName
                 }
             }
+
+            actionButtonFunction: function() {
+                serverNameEditDrawer.openTriggered()
+            }
+        }
+
+        RenameServerDrawer {
+            id: serverNameEditDrawer
+
+            parent: root
+
+            anchors.fill: parent
+            expandedHeight: root.height * 0.35
+
+            serverNameText: root.processedServer.name
         }
 
         TabBar {
@@ -145,31 +114,51 @@ PageType {
 
             Layout.fillWidth: true
 
+            currentIndex: (ServersModel.getProcessedServerData("isServerFromTelegramApi")
+                           && !ServersModel.getProcessedServerData("hasInstalledContainers")) ?
+                              root.pageSettingsServerData : root.pageSettingsServerProtocols
+
             background: Rectangle {
-                color: "transparent"
+                color: AmneziaStyle.color.transparent
+            }
+
+
+            TabButtonType {
+                id: protocolsTab
+                visible: protocolsPage.installedProtocolsCount
+                width: protocolsPage.installedProtocolsCount ? undefined : 0
+                isSelected: TabBar.tabBar.currentIndex === root.pageSettingsServerProtocols
+                text: qsTr("Protocols")
+
+                Keys.onReturnPressed: TabBar.tabBar.setCurrentIndex(root.pageSettingsServerProtocols)
+                Keys.onEnterPressed: TabBar.tabBar.setCurrentIndex(root.pageSettingsServerProtocols)
             }
 
             TabButtonType {
-                visible: protocolsPage.installedProtocolsCount
-                width: protocolsPage.installedProtocolsCount ? undefined : 0
-                isSelected: tabBar.currentIndex === 0
-                text: qsTr("Protocols")
-            }
-            TabButtonType {
+                id: servicesTab
                 visible: servicesPage.installedServicesCount
                 width: servicesPage.installedServicesCount ? undefined : 0
-                isSelected: tabBar.currentIndex === 1
+                isSelected: TabBar.tabBar.currentIndex === root.pageSettingsServerServices
                 text: qsTr("Services")
+
+                Keys.onReturnPressed: TabBar.tabBar.setCurrentIndex(root.pageSettingsServerServices)
+                Keys.onEnterPressed: TabBar.tabBar.setCurrentIndex(root.pageSettingsServerServices)
             }
+
             TabButtonType {
-                isSelected: tabBar.currentIndex === 2
-                text: qsTr("Data")
+                id: dataTab
+                isSelected: tabBar.currentIndex === root.pageSettingsServerData
+                text: qsTr("Management")
+
+                Keys.onReturnPressed: TabBar.tabBar.setCurrentIndex(root.pageSettingsServerData)
+                Keys.onEnterPressed: TabBar.tabBar.setCurrentIndex(root.pageSettingsServerData)
             }
         }
 
         StackLayout {
-            Layout.preferredWidth: root.width
-            Layout.preferredHeight: root.height - tabBar.implicitHeight - header.implicitHeight
+            id: nestedStackView
+
+            Layout.fillWidth: true
 
             currentIndex: tabBar.currentIndex
 
@@ -177,11 +166,14 @@ PageType {
                 id: protocolsPage
                 stackView: root.stackView
             }
+
             PageSettingsServerServices {
                 id: servicesPage
                 stackView: root.stackView
             }
+
             PageSettingsServerData {
+                id: dataPage
                 stackView: root.stackView
             }
         }

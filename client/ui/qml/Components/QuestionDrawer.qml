@@ -2,8 +2,12 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+import Style 1.0
+
 import "../Controls2"
 import "../Controls2/TextTypes"
+
+import "../Config"
 
 DrawerType2 {
     id: root
@@ -16,7 +20,7 @@ DrawerType2 {
     property var yesButtonFunction
     property var noButtonFunction
 
-    expandedContent: ColumnLayout {
+    expandedStateContent: ColumnLayout {
         id: content
 
         anchors.top: parent.top
@@ -48,6 +52,7 @@ DrawerType2 {
         }
 
         BasicButtonType {
+            id: yesButton
             Layout.fillWidth: true
             Layout.topMargin: 16
             Layout.rightMargin: 16
@@ -63,15 +68,16 @@ DrawerType2 {
         }
 
         BasicButtonType {
+            id: noButton
             Layout.fillWidth: true
             Layout.rightMargin: 16
             Layout.leftMargin: 16
 
-            defaultColor: "transparent"
-            hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-            pressedColor: Qt.rgba(1, 1, 1, 0.12)
-            disabledColor: "#878B91"
-            textColor: "#D7D8DB"
+            defaultColor: AmneziaStyle.color.transparent
+            hoveredColor: AmneziaStyle.color.translucentWhite
+            pressedColor: AmneziaStyle.color.sheerWhite
+            disabledColor: AmneziaStyle.color.mutedGray
+            textColor: AmneziaStyle.color.paleGray
             borderWidth: 1
 
             text: noButtonText

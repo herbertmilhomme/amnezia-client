@@ -3,6 +3,8 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 
+import Style 1.0
+
 import "TextTypes"
 
 RadioButton {
@@ -12,16 +14,45 @@ RadioButton {
     property int textElide: Qt.ElideRight
     property string descriptionText
 
-    property string hoveredColor: Qt.rgba(1, 1, 1, 0.05)
-    property string defaultColor: Qt.rgba(1, 1, 1, 0)
-    property string disabledColor: Qt.rgba(1, 1, 1, 0)
-    property string selectedColor: Qt.rgba(1, 1, 1, 0)
+    property string hoveredColor: AmneziaStyle.color.barelyTranslucentWhite
+    property string defaultColor: AmneziaStyle.color.transparent
+    property string disabledColor: AmneziaStyle.color.transparent
+    property string selectedColor: AmneziaStyle.color.transparent
 
-    property string textColor: "#D7D8DB"
-    property string selectedTextColor: "#FBB26A"
+    property string textColor: AmneziaStyle.color.paleGray
+    property string selectedTextColor: AmneziaStyle.color.goldenApricot
+
+    property string borderFocusedColor: AmneziaStyle.color.paleGray
+    property int borderFocusedWidth: 1
 
     property string imageSource
     property bool showImage
+
+    property bool isFocusable: true
+
+    Keys.onTabPressed: {
+        FocusController.nextKeyTabItem()
+    }
+
+    Keys.onBacktabPressed: {
+        FocusController.previousKeyTabItem()
+    }
+
+    Keys.onUpPressed: {
+        FocusController.nextKeyUpItem()
+    }
+    
+    Keys.onDownPressed: {
+        FocusController.nextKeyDownItem()
+    }
+    
+    Keys.onLeftPressed: {
+        FocusController.nextKeyLeftItem()
+    }
+
+    Keys.onRightPressed: {
+        FocusController.nextKeyRightItem()
+    }
 
     hoverEnabled: true
 
@@ -29,6 +60,9 @@ RadioButton {
         id: background
 
         anchors.verticalCenter: parent.verticalCenter
+
+        border.color: root.focus ? root.borderFocusedColor : AmneziaStyle.color.transparent
+        border.width: root.focus ? root.borderFocusedWidth : 0
 
         implicitWidth: 56
         implicitHeight: 56
@@ -48,6 +82,10 @@ RadioButton {
         }
 
         Behavior on color {
+            PropertyAnimation { duration: 200 }
+        }
+
+        Behavior on border.color {
             PropertyAnimation { duration: 200 }
         }
 
@@ -89,11 +127,11 @@ RadioButton {
     }
 
     contentItem: Item {
-        implicitWidth: content.implicitWidth
-        implicitHeight: content.implicitHeight
-
-        anchors.fill: parent
+        anchors.left: parent.left
+        anchors.right: parent.right
         anchors.leftMargin: 8 + background.width
+
+        implicitHeight: content.implicitHeight
 
         ColumnLayout {
             id: content
@@ -126,7 +164,7 @@ RadioButton {
             CaptionTextType {
                 id: description
 
-                color: "#878B91"
+                color: AmneziaStyle.color.mutedGray
                 text: root.descriptionText
 
                 visible: root.descriptionText !== ""

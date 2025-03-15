@@ -6,21 +6,32 @@
 
 #include "containers/containers_defs.h"
 
+namespace AwgConstant {
+    const int messageInitiationSize = 148;
+    const int messageResponseSize = 92;
+}
+
 struct AwgConfig
 {
     AwgConfig(const QJsonObject &jsonConfig);
 
+    QString subnetAddress;
     QString port;
-    QString mtu;
-    QString junkPacketCount;
-    QString junkPacketMinSize;
-    QString junkPacketMaxSize;
-    QString initPacketJunkSize;
-    QString responsePacketJunkSize;
-    QString initPacketMagicHeader;
-    QString responsePacketMagicHeader;
-    QString underloadPacketMagicHeader;
-    QString transportPacketMagicHeader;
+
+    QString clientMtu;
+    QString clientJunkPacketCount;
+    QString clientJunkPacketMinSize;
+    QString clientJunkPacketMaxSize;
+
+    QString serverJunkPacketCount;
+    QString serverJunkPacketMinSize;
+    QString serverJunkPacketMaxSize;
+    QString serverInitPacketJunkSize;
+    QString serverResponsePacketJunkSize;
+    QString serverInitPacketMagicHeader;
+    QString serverResponsePacketMagicHeader;
+    QString serverUnderloadPacketMagicHeader;
+    QString serverTransportPacketMagicHeader;
 
     bool hasEqualServerSettings(const AwgConfig &other) const;
     bool hasEqualClientSettings(const AwgConfig &other) const;
@@ -33,17 +44,23 @@ class AwgConfigModel : public QAbstractListModel
 
 public:
     enum Roles {
-        PortRole = Qt::UserRole + 1,
-        MtuRole,
-        JunkPacketCountRole,
-        JunkPacketMinSizeRole,
-        JunkPacketMaxSizeRole,
-        InitPacketJunkSizeRole,
-        ResponsePacketJunkSizeRole,
-        InitPacketMagicHeaderRole,
-        ResponsePacketMagicHeaderRole,
-        UnderloadPacketMagicHeaderRole,
-        TransportPacketMagicHeaderRole
+        SubnetAddressRole = Qt::UserRole + 1,
+        PortRole,
+
+        ClientMtuRole,
+        ClientJunkPacketCountRole,
+        ClientJunkPacketMinSizeRole,
+        ClientJunkPacketMaxSizeRole,
+
+        ServerJunkPacketCountRole,
+        ServerJunkPacketMinSizeRole,
+        ServerJunkPacketMaxSizeRole,
+        ServerInitPacketJunkSizeRole,
+        ServerResponsePacketJunkSizeRole,
+        ServerInitPacketMagicHeaderRole,
+        ServerResponsePacketMagicHeaderRole,
+        ServerUnderloadPacketMagicHeaderRole,
+        ServerTransportPacketMagicHeaderRole
     };
 
     explicit AwgConfigModel(QObject *parent = nullptr);
@@ -57,12 +74,18 @@ public slots:
     void updateModel(const QJsonObject &config);
     QJsonObject getConfig();
 
+    bool isHeadersEqual(const QString &h1, const QString &h2, const QString &h3, const QString &h4);
+    bool isPacketSizeEqual(const int s1, const int s2);
+
+    bool isServerSettingsEqual();
+
 protected:
     QHash<int, QByteArray> roleNames() const override;
 
 private:
     DockerContainer m_container;
-    QJsonObject m_protocolConfig;
+    QJsonObject m_serverProtocolConfig;
+    QJsonObject m_clientProtocolConfig;
     QJsonObject m_fullConfig;
 };
 

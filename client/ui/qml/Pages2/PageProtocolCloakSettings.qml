@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import SortFilterProxyModel 0.2
 
 import PageEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -15,10 +16,8 @@ import "../Components"
 PageType {
     id: root
 
-    defaultActiveFocusItem: listview.currentItem.trafficFromField.textField
-
     ColumnLayout {
-        id: backButton
+        id: backButtonLayout
 
         anchors.top: parent.top
         anchors.left: parent.left
@@ -27,12 +26,13 @@ PageType {
         anchors.topMargin: 20
 
         BackButtonType {
+            id: backButton
         }
     }
 
     FlickableType {
         id: fl
-        anchors.top: backButton.bottom
+        anchors.top: backButtonLayout.bottom
         anchors.bottom: parent.bottom
         contentHeight: content.implicitHeight
 
@@ -48,11 +48,13 @@ PageType {
             ListView {
                 id: listview
 
+                property int selectedIndex: 0
+
                 width: parent.width
                 height: listview.contentItem.height
 
                 clip: true
-                interactive: false
+                reuseItems: true
 
                 model: CloakConfigModel
 
@@ -87,23 +89,21 @@ PageType {
                             Layout.topMargin: 32
 
                             headerText: qsTr("Disguised as traffic from")
-                            textFieldText: site
+                            textField.text: site
 
                             textField.onEditingFinished: {
-                                if (textFieldText !== site) {
-                                    var tmpText = textFieldText
+                                if (textField.text !== site) {
+                                    var tmpText = textField.text
                                     tmpText = tmpText.toLocaleLowerCase()
 
                                     var indexHttps = tmpText.indexOf("https://")
                                     if (indexHttps === 0) {
-                                        tmpText = textFieldText.substring(8)
+                                        tmpText = textField.text.substring(8)
                                     } else {
-                                        site = textFieldText
+                                        site = textField.text
                                     }
                                 }
                             }
-
-                            KeyNavigation.tab: portTextField.textField
                         }
 
                         TextFieldWithHeaderType {
@@ -113,17 +113,15 @@ PageType {
                             Layout.topMargin: 16
 
                             headerText: qsTr("Port")
-                            textFieldText: port
+                            textField.text: port
                             textField.maximumLength: 5
                             textField.validator: IntValidator { bottom: 1; top: 65535 }
 
                             textField.onEditingFinished: {
-                                if (textFieldText !== port) {
-                                    port = textFieldText
+                                if (textField.text !== port) {
+                                    port = textField.text
                                 }
                             }
-
-                            KeyNavigation.tab: saveRestartButton
                         }
 
                         DropDownType {
@@ -152,7 +150,7 @@ PageType {
                                 clickedFunction: function() {
                                     cipherDropDown.text = selectedText
                                     cipher = cipherDropDown.text
-                                    cipherDropDown.close()
+                                    cipherDropDown.closeTriggered()
                                 }
 
                                 Component.onCompleted: {
@@ -160,7 +158,7 @@ PageType {
 
                                     for (var i = 0; i < cipherListView.model.count; i++) {
                                         if (cipherListView.model.get(i).name === cipherDropDown.text) {
-                                            currentIndex = i
+                                            selectedIndex = i
                                         }
                                     }
                                 }
@@ -178,6 +176,12 @@ PageType {
 
                             clickedFunc: function() {
                                 forceActiveFocus()
+
+                                if (ConnectionController.isConnected && ServersModel.getDefaultServerData("defaultContainer") === ContainersModel.getProcessedContainerIndex()) {
+                                    PageController.showNotificationMessage(qsTr("Unable change settings while there is an active connection"))
+                                    return
+                                }
+
                                 PageController.goToPage(PageEnum.PageSetupWizardInstalling);
                                 InstallController.updateContainer(CloakConfigModel.getConfig())
                             }

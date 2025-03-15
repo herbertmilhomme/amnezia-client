@@ -2,15 +2,11 @@ set(CLIENT_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/Modules;${CMAKE_MODULE_PATH}")
 
-if(NOT IOS AND NOT ANDROID)
-   include(${CLIENT_ROOT_DIR}/3rd/SingleApplication/singleapplication.cmake)
-endif()
-
 add_subdirectory(${CLIENT_ROOT_DIR}/3rd/SortFilterProxyModel)
 set(LIBS ${LIBS} SortFilterProxyModel)
+include(${CLIENT_ROOT_DIR}/cmake/QSimpleCrypto.cmake)
 
 include(${CLIENT_ROOT_DIR}/3rd/qrcodegen/qrcodegen.cmake)
-include(${CLIENT_ROOT_DIR}/3rd/QSimpleCrypto/QSimpleCrypto.cmake)
 
 set(LIBSSH_ROOT_DIR "${CLIENT_ROOT_DIR}/3rd-prebuilt/3rd-prebuilt/libssh/")
 set(OPENSSL_ROOT_DIR "${CLIENT_ROOT_DIR}/3rd-prebuilt/3rd-prebuilt/openssl/")
@@ -83,13 +79,12 @@ set(BUILD_WITH_QT6 ON)
 add_subdirectory(${CLIENT_ROOT_DIR}/3rd/qtkeychain)
 set(LIBS ${LIBS} qt6keychain)
 
-
 include_directories(
     ${OPENSSL_INCLUDE_DIR}
     ${LIBSSH_INCLUDE_DIR}/include
     ${LIBSSH_ROOT_DIR}/include
     ${CLIENT_ROOT_DIR}/3rd/libssh/include
-    ${CLIENT_ROOT_DIR}/3rd/QSimpleCrypto/include
+    ${CLIENT_ROOT_DIR}/3rd/QSimpleCrypto/src/include
     ${CLIENT_ROOT_DIR}/3rd/qtkeychain/qtkeychain
     ${CMAKE_CURRENT_BINARY_DIR}/3rd/qtkeychain
     ${CMAKE_CURRENT_BINARY_DIR}/3rd/libssh/include

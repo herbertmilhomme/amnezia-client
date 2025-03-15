@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import SortFilterProxyModel 0.2
 
 import PageEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -24,7 +25,7 @@ PageType {
     }
 
     ColumnLayout {
-        id: backButton
+        id: backButtonLayout
 
         anchors.top: parent.top
         anchors.left: parent.left
@@ -33,12 +34,13 @@ PageType {
         anchors.topMargin: 20
 
         BackButtonType {
+            id: backButton
         }
     }
 
     FlickableType {
         id: fl
-        anchors.top: backButton.bottom
+        anchors.top: backButtonLayout.bottom
         anchors.bottom: parent.bottom
         contentHeight: content.implicitHeight
 
@@ -62,9 +64,17 @@ PageType {
 
                 model: SftpConfigModel
 
+                onFocusChanged: {
+                    if (focus) {
+                        listview.currentItem.listViewFocusItem.forceActiveFocus()
+                    }
+                }
+
                 delegate: Item {
                     implicitWidth: listview.width
                     implicitHeight: col.implicitHeight
+
+                    property alias listViewFocusItem: hostLabel.rightButton
 
                     ColumnLayout {
                         id: col
@@ -84,8 +94,11 @@ PageType {
                         }
 
                         LabelWithButtonType {
+                            id: hostLabel
                             Layout.fillWidth: true
                             Layout.topMargin: 32
+
+                            parentFlickable: fl
 
                             text: qsTr("Host")
                             descriptionText: ServersModel.getProcessedServerData("hostName")
@@ -93,15 +106,19 @@ PageType {
                             descriptionOnTop: true
 
                             rightImageSource: "qrc:/images/controls/copy.svg"
-                            rightImageColor: "#D7D8DB"
+                            rightImageColor: AmneziaStyle.color.paleGray
 
                             clickedFunction: function() {
                                 GC.copyToClipBoard(descriptionText)
                                 PageController.showNotificationMessage(qsTr("Copied"))
+                                if (!GC.isMobile()) {
+                                    this.rightButton.forceActiveFocus()
+                                }
                             }
                         }
 
                         LabelWithButtonType {
+                            id: portLabel
                             Layout.fillWidth: true
 
                             text: qsTr("Port")
@@ -109,33 +126,45 @@ PageType {
 
                             descriptionOnTop: true
 
+                            parentFlickable: fl
+
                             rightImageSource: "qrc:/images/controls/copy.svg"
-                            rightImageColor: "#D7D8DB"
+                            rightImageColor: AmneziaStyle.color.paleGray
 
                             clickedFunction: function() {
                                 GC.copyToClipBoard(descriptionText)
                                 PageController.showNotificationMessage(qsTr("Copied"))
+                                if (!GC.isMobile()) {
+                                    this.rightButton.forceActiveFocus()
+                                }
                             }
                         }
 
                         LabelWithButtonType {
+                            id: usernameLabel
                             Layout.fillWidth: true
 
-                            text: qsTr("Login")
+                            text: qsTr("User name")
                             descriptionText: username
 
                             descriptionOnTop: true
 
+                            parentFlickable: fl
+
                             rightImageSource: "qrc:/images/controls/copy.svg"
-                            rightImageColor: "#D7D8DB"
+                            rightImageColor: AmneziaStyle.color.paleGray
 
                             clickedFunction: function() {
                                 GC.copyToClipBoard(descriptionText)
                                 PageController.showNotificationMessage(qsTr("Copied"))
+                                if (!GC.isMobile()) {
+                                    this.rightButton.forceActiveFocus()
+                                }
                             }
                         }
 
                         LabelWithButtonType {
+                            id: passwordLabel
                             Layout.fillWidth: true
 
                             text: qsTr("Password")
@@ -143,16 +172,24 @@ PageType {
 
                             descriptionOnTop: true
 
+                            parentFlickable: fl
+
                             rightImageSource: "qrc:/images/controls/copy.svg"
-                            rightImageColor: "#D7D8DB"
+                            rightImageColor: AmneziaStyle.color.paleGray
+
+                            buttonImageSource: hideDescription ? "qrc:/images/controls/eye.svg" : "qrc:/images/controls/eye-off.svg"
 
                             clickedFunction: function() {
                                 GC.copyToClipBoard(descriptionText)
                                 PageController.showNotificationMessage(qsTr("Copied"))
+                                if (!GC.isMobile()) {
+                                    this.rightButton.forceActiveFocus()
+                                }
                             }
                         }
 
                         BasicButtonType {
+                            id: mountButton
                             visible: !GC.isMobile()
 
                             Layout.fillWidth: true
@@ -161,12 +198,14 @@ PageType {
                             Layout.leftMargin: 16
                             Layout.rightMargin: 16
 
-                            defaultColor: "transparent"
-                            hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                            pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                            disabledColor: "#878B91"
-                            textColor: "#D7D8DB"
+                            defaultColor: AmneziaStyle.color.transparent
+                            hoveredColor: AmneziaStyle.color.translucentWhite
+                            pressedColor: AmneziaStyle.color.sheerWhite
+                            disabledColor: AmneziaStyle.color.mutedGray
+                            textColor: AmneziaStyle.color.paleGray
                             borderWidth: 1
+
+                            parentFlickable: fl
 
                             text: qsTr("Mount folder on device")
 
@@ -216,50 +255,24 @@ PageType {
                         }
 
                         BasicButtonType {
+                            id: detailedInstructionsButton
                             Layout.topMargin: 16
                             Layout.bottomMargin: 16
                             Layout.leftMargin: 8
                             implicitHeight: 32
 
-                            defaultColor: "transparent"
-                            hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                            pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                            disabledColor: "#878B91"
-                            textColor: "#FBB26A"
+                            defaultColor: AmneziaStyle.color.transparent
+                            hoveredColor: AmneziaStyle.color.translucentWhite
+                            pressedColor: AmneziaStyle.color.sheerWhite
+                            disabledColor: AmneziaStyle.color.mutedGray
+                            textColor: AmneziaStyle.color.goldenApricot
 
                             text: qsTr("Detailed instructions")
 
+                            parentFlickable: fl
+
                             clickedFunc: function() {
 //                                Qt.openUrlExternally("https://github.com/amnezia-vpn/desktop-client/releases/latest")
-                            }
-                        }
-
-                        BasicButtonType {
-                            Layout.topMargin: 24
-                            Layout.bottomMargin: 16
-                            Layout.leftMargin: 8
-                            implicitHeight: 32
-
-                            defaultColor: "transparent"
-                            hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                            pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                            textColor: "#EB5757"
-
-                            text: qsTr("Remove SFTP and all data stored there")
-
-                            clickedFunc: function() {
-                                var headerText = qsTr("Remove SFTP and all data stored there?")
-                                var yesButtonText = qsTr("Continue")
-                                var noButtonText = qsTr("Cancel")
-
-                                var yesButtonFunction = function() {
-                                    PageController.goToPage(PageEnum.PageDeinstalling)
-                                    InstallController.removeCurrentlyProcessedContainer()
-                                }
-                                var noButtonFunction = function() {
-                                }
-
-                                showQuestionDrawer(headerText, "", yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
                             }
                         }
                     }

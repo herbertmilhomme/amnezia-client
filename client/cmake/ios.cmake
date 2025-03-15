@@ -46,7 +46,6 @@ set(SOURCES ${SOURCES}
     ${CMAKE_CURRENT_SOURCE_DIR}/platforms/ios/iosglue.mm
     ${CMAKE_CURRENT_SOURCE_DIR}/platforms/ios/QRCodeReaderBase.mm
     ${CMAKE_CURRENT_SOURCE_DIR}/platforms/ios/QtAppDelegate.mm
-    ${CMAKE_CURRENT_SOURCE_DIR}/platforms/ios/MobileUtils.mm
 )
 
 
@@ -77,11 +76,7 @@ set_target_properties(${PROJECT} PROPERTIES
     XCODE_LINK_BUILD_PHASE_MODE KNOWN_LOCATION
     XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/Frameworks"
     XCODE_EMBED_APP_EXTENSIONS networkextension
-    XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Distribution"
-    XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY[variant=Debug] "Apple Development"
-    XCODE_ATTRIBUTE_CODE_SIGN_STYLE Manual
-    XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER "match AppStore org.amnezia.AmneziaVPN"
-    XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER[variant=Debug] "match Development org.amnezia.AmneziaVPN"
+    XCODE_ATTRIBUTE_CODE_SIGN_STYLE Automatic
 )
 set_target_properties(${PROJECT} PROPERTIES
     XCODE_ATTRIBUTE_SWIFT_VERSION "5.0"
@@ -108,25 +103,28 @@ target_sources(${PROJECT} PRIVATE
     ${CLIENT_ROOT_DIR}/platforms/ios/Log.swift
     ${CLIENT_ROOT_DIR}/platforms/ios/LogRecord.swift
     ${CLIENT_ROOT_DIR}/platforms/ios/ScreenProtection.swift
+    ${CLIENT_ROOT_DIR}/platforms/ios/VPNCController.swift
 )
 
 target_sources(${PROJECT} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/ios/app/AmneziaVPNLaunchScreen.storyboard
     ${CMAKE_CURRENT_SOURCE_DIR}/ios/app/Media.xcassets
+    ${CMAKE_CURRENT_SOURCE_DIR}/ios/app/PrivacyInfo.xcprivacy
 )
 
 set_property(TARGET ${PROJECT} APPEND PROPERTY RESOURCE
     ${CMAKE_CURRENT_SOURCE_DIR}/ios/app/AmneziaVPNLaunchScreen.storyboard
     ${CMAKE_CURRENT_SOURCE_DIR}/ios/app/Media.xcassets
+    ${CMAKE_CURRENT_SOURCE_DIR}/ios/app/PrivacyInfo.xcprivacy
 )
 
 add_subdirectory(ios/networkextension)
 add_dependencies(${PROJECT} networkextension)
 
 set_property(TARGET ${PROJECT} PROPERTY XCODE_EMBED_FRAMEWORKS
-    "${CMAKE_CURRENT_SOURCE_DIR}/3rd/OpenVPNAdapter/build/Release-iphoneos/OpenVPNAdapter.framework"
+    "${CMAKE_CURRENT_SOURCE_DIR}/3rd-prebuilt/3rd-prebuilt/openvpn/apple/OpenVPNAdapter-ios/OpenVPNAdapter.framework"
 )
 
-set(CMAKE_XCODE_ATTRIBUTE_FRAMEWORK_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/3rd/OpenVPNAdapter/build/Release-iphoneos)
-target_link_libraries("networkextension" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/3rd/OpenVPNAdapter/build/Release-iphoneos/OpenVPNAdapter.framework")
+set(CMAKE_XCODE_ATTRIBUTE_FRAMEWORK_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/3rd-prebuilt/3rd-prebuilt/openvpn/apple/OpenVPNAdapter-ios/)
+target_link_libraries("networkextension" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/3rd-prebuilt/3rd-prebuilt/openvpn/apple/OpenVPNAdapter-ios/OpenVPNAdapter.framework")
 

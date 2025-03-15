@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 import PageEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -11,8 +12,6 @@ import "../Config"
 
 PageType {
     id: root
-
-    defaultActiveFocusItem: textKey.textField
 
     FlickableType {
         id: fl
@@ -30,6 +29,7 @@ PageType {
             spacing: 16
 
             BackButtonType {
+                id: backButton
                 Layout.topMargin: 20
             }
 
@@ -51,15 +51,13 @@ PageType {
                 Layout.leftMargin: 16
 
                 headerText: qsTr("Key")
-                textFieldPlaceholderText: "vpn://"
+                textField.placeholderText: "vpn://"
                 buttonText: qsTr("Insert")
 
                 clickedFunc: function() {
                     textField.text = ""
                     textField.paste()
                 }
-
-                KeyNavigation.tab: continueButton
             }
         }
     }
@@ -77,7 +75,7 @@ PageType {
         text: qsTr("Continue")
 
         clickedFunc: function() {
-            if (ImportController.extractConfigFromData(textKey.textFieldText)) {
+            if (ImportController.extractConfigFromData(textKey.textField.text)) {
                 PageController.goToPage(PageEnum.PageSetupWizardViewConfig)
             }
         }

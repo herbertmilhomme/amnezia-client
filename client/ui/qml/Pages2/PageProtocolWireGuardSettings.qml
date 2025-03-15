@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import SortFilterProxyModel 0.2
 
 import PageEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -16,7 +17,7 @@ PageType {
     id: root
 
     ColumnLayout {
-        id: backButton
+        id: backButtonLayout
 
         anchors.top: parent.top
         anchors.left: parent.left
@@ -25,12 +26,13 @@ PageType {
         anchors.topMargin: 20
 
         BackButtonType {
+            id: backButton
         }
     }
 
     FlickableType {
         id: fl
-        anchors.top: backButton.bottom
+        anchors.top: backButtonLayout.bottom
         anchors.bottom: parent.bottom
         contentHeight: content.implicitHeight
 
@@ -41,7 +43,7 @@ PageType {
             anchors.left: parent.left
             anchors.right: parent.right
 
-            enabled: ServersModel.isCurrentlyProcessedServerHasWriteAccess()
+            enabled: ServersModel.isProcessedServerHasWriteAccess()
 
             ListView {
                 id: listview
@@ -55,6 +57,11 @@ PageType {
                 model: WireGuardConfigModel
 
                 delegate: Item {
+                    id: delegateItem
+
+                    property alias focusItemId: vpnAddressSubnetTextField
+                    property bool isEnabled: ServersModel.isProcessedServerHasWriteAccess()
+
                     implicitWidth: listview.width
                     implicitHeight: col.implicitHeight
 
@@ -76,18 +83,18 @@ PageType {
                         }
 
                         TextFieldWithHeaderType {
-                            id: portTextField
+                            id: vpnAddressSubnetTextField
                             Layout.fillWidth: true
                             Layout.topMargin: 40
 
-                            headerText: qsTr("Port")
-                            textFieldText: port
-                            textField.maximumLength: 5
-                            textField.validator: IntValidator { bottom: 1; top: 65535 }
+                            enabled: delegateItem.isEnabled
+
+                            headerText: qsTr("VPN address subnet")
+                            textField.text: subnetAddress
 
                             textField.onEditingFinished: {
-                                if (textFieldText !== port) {
-                                    port = textFieldText
+                                if (textField.text !== subnetAddress) {
+                                    subnetAddress = textField.text
                                 }
                             }
 
@@ -95,78 +102,68 @@ PageType {
                         }
 
                         TextFieldWithHeaderType {
-                            id: mtuTextField
+                            id: portTextField
                             Layout.fillWidth: true
                             Layout.topMargin: 16
 
-                            headerText: qsTr("MTU")
-                            textFieldText: mtu
-                            textField.validator: IntValidator { bottom: 576; top: 65535 }
+                            enabled: delegateItem.isEnabled
+
+                            headerText: qsTr("Port")
+                            textField.text: port
+                            textField.maximumLength: 5
+                            textField.validator: IntValidator { bottom: 1; top: 65535 }
 
                             textField.onEditingFinished: {
-                                if (textFieldText === "") {
-                                    textFieldText = "0"
-                                }
-                                if (textFieldText !== mtu) {
-                                    mtu = textFieldText
+                                if (textField.text !== port) {
+                                    port = textField.text
                                 }
                             }
+
                             checkEmptyText: true
                         }
 
                         BasicButtonType {
-                            Layout.topMargin: 24
-                            Layout.leftMargin: -8
-                            implicitHeight: 32
-
-                            defaultColor: "transparent"
-                            hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                            pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                            textColor: "#EB5757"
-
-                            text: qsTr("Remove WG")
-
-                            onClicked: {
-                                questionDrawer.headerText = qsTr("Remove WG from server?")
-                                questionDrawer.descriptionText = qsTr("All users with whom you shared a connection will no longer be able to connect to it.")
-                                questionDrawer.yesButtonText = qsTr("Continue")
-                                questionDrawer.noButtonText = qsTr("Cancel")
-
-                                questionDrawer.yesButtonFunction = function() {
-                                    questionDrawer.visible = false
-                                    PageController.goToPage(PageEnum.PageDeinstalling)
-                                    InstallController.removeCurrentlyProcessedContainer()
-                                }
-                                questionDrawer.noButtonFunction = function() {
-                                    questionDrawer.visible = false
-                                }
-                                questionDrawer.visible = true
-                            }
-                        }
-
-                        BasicButtonType {
+                            id: saveButton
                             Layout.fillWidth: true
                             Layout.topMargin: 24
                             Layout.bottomMargin: 24
 
-                            enabled: mtuTextField.errorText === "" &&
-                                     portTextField.errorText === ""
+                            enabled: portTextField.errorText === "" &&
+                                     vpnAddressSubnetTextField.errorText === ""
 
                             text: qsTr("Save")
 
-                            onClicked: {
+                            onClicked: function() {
                                 forceActiveFocus()
-                                PageController.goToPage(PageEnum.PageSetupWizardInstalling);
-                                InstallController.updateContainer(WireGuardConfigModel.getConfig())
+
+                                var headerText = qsTr("Save settings?")
+                                var descriptionText = qsTr("All users with whom you shared a connection with will no longer be able to connect to it.")
+                                var yesButtonText = qsTr("Continue")
+                                var noButtonText = qsTr("Cancel")
+
+                                var yesButtonFunction = function() {
+                                    if (ConnectionController.isConnected && ServersModel.getDefaultServerData("defaultContainer") === ContainersModel.getProcessedContainerIndex()) {
+                                        PageController.showNotificationMessage(qsTr("Unable change settings while there is an active connection"))
+                                        return
+                                    }
+
+                                    PageController.goToPage(PageEnum.PageSetupWizardInstalling);
+                                    InstallController.updateContainer(WireGuardConfigModel.getConfig())
+                                }
+                                var noButtonFunction = function() {
+                                    if (!GC.isMobile()) {
+                                        saveRestartButton.forceActiveFocus()
+                                    }
+                                }
+                                showQuestionDrawer(headerText, descriptionText, yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
                             }
+
+                            Keys.onEnterPressed: saveButton.clicked()
+                            Keys.onReturnPressed: saveButton.clicked()
                         }
                     }
                 }
             }
-        }
-
-        QuestionDrawer {
-            id: questionDrawer
         }
     }
 }

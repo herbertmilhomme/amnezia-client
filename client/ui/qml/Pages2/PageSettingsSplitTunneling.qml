@@ -10,6 +10,7 @@ import SortFilterProxyModel 0.2
 import PageEnum 1.0
 import ProtocolEnum 1.0
 import ContainerProps 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -20,19 +21,15 @@ import "../Components"
 PageType {
     id: root
 
-    property var isServerFromApi: ServersModel.getDefaultServerData("isServerFromApi")
+    property var isServerFromTelegramApi: ServersModel.getDefaultServerData("isServerFromTelegramApi")
     
-    defaultActiveFocusItem: website_ip_field.textField
-
-    property bool pageEnabled: {
-        return !ConnectionController.isConnected && !isServerFromApi
-    }
+    property bool pageEnabled
 
     Component.onCompleted: {
         if (ConnectionController.isConnected) {
             PageController.showNotificationMessage(qsTr("Cannot change split tunneling settings during active connection"))
             root.pageEnabled = false
-        } else if (ServersModel.isDefaultServerDefaultContainerHasSplitTunneling && isServerFromApi) {
+        } else if (ServersModel.isDefaultServerDefaultContainerHasSplitTunneling) {
             PageController.showNotificationMessage(qsTr("Default server does not support split tunneling function"))
             root.pageEnabled = false
         } else {
@@ -94,6 +91,7 @@ PageType {
         anchors.topMargin: 20
 
         BackButtonType {
+            id: backButton
         }
 
         RowLayout {
@@ -114,11 +112,15 @@ PageType {
                 Layout.fillWidth: true
                 Layout.rightMargin: 16
 
-                checked: SitesModel.isTunnelingEnabled
-                onToggled: {                    
-                    SitesModel.toggleSplitTunneling(checked)
+                function onToggledFunc() {
+                    SitesModel.toggleSplitTunneling(this.checked)
                     selector.text = root.routeModesModel[getRouteModesModelIndex()].name
                 }
+
+                checked: SitesModel.isTunnelingEnabled
+                onToggled: { onToggledFunc() }
+                Keys.onEnterPressed: { onToggledFunc() }
+                Keys.onReturnPressed: { onToggledFunc() }
             }
         }
 
@@ -142,18 +144,18 @@ PageType {
 
                 model: root.routeModesModel
 
-                currentIndex: getRouteModesModelIndex()
+                selectedIndex: getRouteModesModelIndex()
 
                 clickedFunction: function() {
                     selector.text = selectedText
-                    selector.close()
-                    if (SitesModel.routeMode !== root.routeModesModel[currentIndex].type) {
-                        SitesModel.routeMode = root.routeModesModel[currentIndex].type
+                    selector.closeTriggered()
+                    if (SitesModel.routeMode !== root.routeModesModel[selectedIndex].type) {
+                        SitesModel.routeMode = root.routeModesModel[selectedIndex].type
                     }
                 }
 
                 Component.onCompleted: {
-                    if (root.routeModesModel[currentIndex].type === SitesModel.routeMode) {
+                    if (root.routeModesModel[selectedIndex].type === SitesModel.routeMode) {
                         selector.text = selectedText
                     } else {
                         selector.text = root.routeModesModel[0].name
@@ -163,81 +165,93 @@ PageType {
                 Connections {
                     target: SitesModel
                     function onRouteModeChanged() {
-                        currentIndex = getRouteModesModelIndex()
+                        selectedIndex = getRouteModesModelIndex()
                     }
                 }
             }
         }
     }
 
-    FlickableType {
+    ListView {
+        id: listView
+
         anchors.top: header.bottom
         anchors.topMargin: 16
-        contentHeight: col.implicitHeight + addSiteButton.implicitHeight + addSiteButton.anchors.bottomMargin + addSiteButton.anchors.topMargin
+        anchors.bottom: addSiteButton.top
+
+        width: parent.width
 
         enabled: root.pageEnabled
 
-        Column {
-            id: col
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
+        property bool isFocusable: true
 
-            ListView {
-                id: sites
-                width: parent.width
-                height: sites.contentItem.height
-
-                model: SitesModel
-
-                clip: true
-                interactive: false
-
-                delegate: Item {
-                    implicitWidth: sites.width
-                    implicitHeight: delegateContent.implicitHeight
-
-                    ColumnLayout {
-                        id: delegateContent
-
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-
-                        LabelWithButtonType {
-                            Layout.fillWidth: true
-
-                            text: url
-                            descriptionText: ip
-                            rightImageSource: "qrc:/images/controls/trash.svg"
-                            rightImageColor: "#D7D8DB"
-
-                            clickedFunction: function() {
-                                var headerText = qsTr("Remove ") + url + "?"
-                                var yesButtonText = qsTr("Continue")
-                                var noButtonText = qsTr("Cancel")
-
-                                var yesButtonFunction = function() {
-                                    SitesController.removeSite(index)
-                                }
-                                var noButtonFunction = function() {
-                                }
-
-                                showQuestionDrawer(headerText, "", yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
-                            }
-                        }
-
-                        DividerType {}
+        model: SortFilterProxyModel {
+            id: proxySitesModel
+            sourceModel: SitesModel
+            filters: [
+                AnyOf {
+                    RegExpFilter {
+                        roleName: "url"
+                        pattern: ".*" + searchField.textField.text + ".*"
+                        caseSensitivity: Qt.CaseInsensitive
+                    }
+                    RegExpFilter {
+                        roleName: "ip"
+                        pattern: ".*" + searchField.textField.text + ".*"
+                        caseSensitivity: Qt.CaseInsensitive
                     }
                 }
+            ]
+        }
+
+        clip: true
+
+        reuseItems: true
+
+        delegate: ColumnLayout {
+            id: delegateContent
+
+            width: listView.width
+
+            LabelWithButtonType {
+                id: site
+                Layout.fillWidth: true
+
+                text: url
+                descriptionText: ip
+                rightImageSource: "qrc:/images/controls/trash.svg"
+                rightImageColor: AmneziaStyle.color.paleGray
+
+                clickedFunction: function() {
+                    var headerText = qsTr("Remove ") + url + "?"
+                    var yesButtonText = qsTr("Continue")
+                    var noButtonText = qsTr("Cancel")
+
+                    var yesButtonFunction = function() {
+                        SitesController.removeSite(proxySitesModel.mapToSource(index))
+                        if (!GC.isMobile()) {
+                            site.rightButton.forceActiveFocus()
+                        }
+                    }
+                    var noButtonFunction = function() {
+                        if (!GC.isMobile()) {
+                            site.rightButton.forceActiveFocus()
+                        }
+                    }
+
+                    showQuestionDrawer(headerText, "", yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
+                }
             }
+
+            DividerType {}
         }
     }
+
 
     Rectangle {
         anchors.fill: addSiteButton
         anchors.bottomMargin: -24
-        color: "#0E0E11"
+        color: AmneziaStyle.color.midnightBlack
         opacity: 0.8
     }
 
@@ -255,31 +269,36 @@ PageType {
         anchors.bottomMargin: 24
 
         TextFieldWithHeaderType {
-            id: website_ip_field
+            id: searchField
 
             Layout.fillWidth: true
+            rightButtonClickedOnEnter: true
 
-            textFieldPlaceholderText: qsTr("website or IP")
+            textField.placeholderText: qsTr("website or IP")
             buttonImageSource: "qrc:/images/controls/plus.svg"
 
             clickedFunc: function() {
                 PageController.showBusyIndicator(true)
-                SitesController.addSite(textFieldText)
-                textFieldText = ""
+                SitesController.addSite(textField.text)
+                textField.text = ""
                 PageController.showBusyIndicator(false)
             }
         }
 
         ImageButtonType {
+            id: addSiteButtonImage
             implicitWidth: 56
             implicitHeight: 56
 
             image: "qrc:/images/controls/more-vertical.svg"
-            imageColor: "#D7D8DB"
+            imageColor: AmneziaStyle.color.paleGray
 
             onClicked: function () {
-                moreActionsDrawer.open()
+                moreActionsDrawer.openTriggered()
             }
+
+            Keys.onReturnPressed: addSiteButtonImage.clicked()
+            Keys.onEnterPressed: addSiteButtonImage.clicked()
         }
     }
 
@@ -289,7 +308,7 @@ PageType {
         anchors.fill: parent
         expandedHeight: parent.height * 0.4375
 
-        expandedContent: ColumnLayout {
+        expandedStateContent: ColumnLayout {
             id: moreActionsDrawerContent
 
             anchors.top: parent.top
@@ -304,19 +323,21 @@ PageType {
             }
 
             LabelWithButtonType {
+                id: importSitesButton
                 Layout.fillWidth: true
 
                 text: qsTr("Import")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
 
                 clickedFunction: function() {
-                    importSitesDrawer.open()
+                    importSitesDrawer.openTriggered()
                 }
             }
 
             DividerType {}
 
             LabelWithButtonType {
+                id: exportSitesButton
                 Layout.fillWidth: true
                 text: qsTr("Save site list")
 
@@ -334,7 +355,7 @@ PageType {
                     if (fileName !== "") {
                         PageController.showBusyIndicator(true)
                         SitesController.exportSites(fileName)
-                        moreActionsDrawer.close()
+                        moreActionsDrawer.closeTriggered()
                         PageController.showBusyIndicator(false)
                     }
                 }
@@ -350,7 +371,7 @@ PageType {
         anchors.fill: parent
         expandedHeight: parent.height * 0.4375
 
-        expandedContent: Item {
+        expandedStateContent: Item {
             implicitHeight: importSitesDrawer.expandedHeight
 
             BackButtonType {
@@ -362,7 +383,7 @@ PageType {
                 anchors.topMargin: 16
 
                 backButtonFunction: function() {
-                    importSitesDrawer.close()
+                    importSitesDrawer.closeTriggered()
                 }
             }
 
@@ -389,6 +410,7 @@ PageType {
                     }
 
                     LabelWithButtonType {
+                        id: importSitesButton2
                         Layout.fillWidth: true
 
                         text: qsTr("Replace site list")
@@ -405,6 +427,7 @@ PageType {
                     DividerType {}
 
                     LabelWithButtonType {
+                        id: importSitesButton3
                         Layout.fillWidth: true
                         text: qsTr("Add imported sites to existing ones")
 
@@ -421,17 +444,13 @@ PageType {
                         PageController.showBusyIndicator(true)
                         SitesController.importSites(fileName, replaceExistingSites)
                         PageController.showBusyIndicator(false)
-                        importSitesDrawer.close()
-                        moreActionsDrawer.close()
+                        importSitesDrawer.closeTriggered()
+                        moreActionsDrawer.closeTriggered()
                     }
 
                     DividerType {}
                 }
             }
         }
-    }
-
-    QuestionDrawer {
-        id: questionDrawer
     }
 }

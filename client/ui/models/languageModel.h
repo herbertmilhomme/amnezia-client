@@ -13,9 +13,12 @@ namespace LanguageSettings
         English,
         Russian,
         China_cn,
+        Ukrainian,
         Persian,
         Arabic,
-        Burmese
+        Burmese,
+        Urdu,
+        Hindi
     };
     Q_ENUM_NS(AvailableLanguageEnum)
 
@@ -56,6 +59,7 @@ public slots:
     int getCurrentLanguageIndex();
     int getLineHeightAppend();
     QString getCurrentLanguageName();
+    QString getCurrentSiteUrl();
 
 signals:
     void updateTranslations(const QLocale &locale);

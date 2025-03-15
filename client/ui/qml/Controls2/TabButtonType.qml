@@ -1,17 +1,48 @@
 import QtQuick
 import QtQuick.Controls
 
+import Style 1.0
+
 TabButton {
     id: root
 
-    property string hoveredColor: "#633303"
-    property string defaultColor: "#2C2D30"
-    property string selectedColor: "#FBB26A"
+    property string hoveredColor: AmneziaStyle.color.richBrown
+    property string defaultColor: AmneziaStyle.color.slateGray
+    property string selectedColor: AmneziaStyle.color.goldenApricot
 
-    property string textColor: "#D7D8DB"
+    property string textColor: AmneziaStyle.color.paleGray
+
+    property string borderFocusedColor: AmneziaStyle.color.paleGray
+    property int borderFocusedWidth: 1
 
     property bool isSelected: false
 
+    property bool isFocusable: true
+
+    Keys.onTabPressed: {
+        FocusController.nextKeyTabItem()
+    }
+
+    Keys.onBacktabPressed: {
+        FocusController.previousKeyTabItem()
+    }
+
+    Keys.onUpPressed: {
+        FocusController.nextKeyUpItem()
+    }
+    
+    Keys.onDownPressed: {
+        FocusController.nextKeyDownItem()
+    }
+    
+    Keys.onLeftPressed: {
+        FocusController.nextKeyLeftItem()
+    }
+
+    Keys.onRightPressed: {
+        FocusController.nextKeyRightItem()
+    }
+    
     implicitHeight: 48
 
     hoverEnabled: true
@@ -20,7 +51,10 @@ TabButton {
         id: background
 
         anchors.fill: parent
-        color: "transparent"
+        color: AmneziaStyle.color.transparent
+
+        border.color: root.activeFocus ? root.borderFocusedColor : AmneziaStyle.color.transparent
+        border.width: root.activeFocus ? root.borderFocusedWidth : 0
 
         Rectangle {
             width: parent.width

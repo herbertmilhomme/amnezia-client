@@ -6,13 +6,21 @@ import SortFilterProxyModel 0.2
 
 import PageEnum 1.0
 import ProtocolEnum 1.0
+import Style 1.0
 
 import "../Controls2"
 import "../Controls2/TextTypes"
 import "../Components"
+import "../Config"
 
 PageType {
     id: root
+
+    signal lastItemTabClickedSignal()
+
+    onFocusChanged: content.isServerWithWriteAccess ?
+                        labelWithButton.forceActiveFocus() :
+                        labelWithButton3.forceActiveFocus()
 
     Connections {
         target: InstallController
@@ -28,16 +36,6 @@ PageType {
             PageController.showErrorMessage(message)
         }
 
-        function onRemoveProcessedServerFinished(finishedMessage) {
-            if (!ServersModel.getServersCount()) {
-                PageController.replaceStartPage()
-            } else {
-                PageController.goToStartPage()
-                PageController.goToPage(PageEnum.PageSettingsServersList)
-            }
-            PageController.showNotificationMessage(finishedMessage)
-        }
-
         function onRebootProcessedServerFinished(finishedMessage) {
             PageController.showNotificationMessage(finishedMessage)
         }
@@ -47,7 +45,7 @@ PageType {
             PageController.showNotificationMessage(finishedMessage)
         }
 
-        function onRemoveCurrentlyProcessedContainerFinished(finishedMessage) {
+        function onRemoveProcessedContainerFinished(finishedMessage) {
             PageController.closePage() // close deInstalling page
             PageController.closePage() // close page with remove button
             PageController.showNotificationMessage(finishedMessage)
@@ -85,35 +83,7 @@ PageType {
             property bool isServerWithWriteAccess: ServersModel.isProcessedServerHasWriteAccess()
 
             LabelWithButtonType {
-                visible: content.isServerWithWriteAccess
-                Layout.fillWidth: true
-
-                text: qsTr("Clear Amnezia cache")
-                descriptionText: qsTr("May be needed when changing other settings")
-
-                clickedFunction: function() {
-                    var headerText = qsTr("Clear cached profiles?")
-                    var descriptionText = qsTr("")
-                    var yesButtonText = qsTr("Continue")
-                    var noButtonText = qsTr("Cancel")
-
-                    var yesButtonFunction = function() {
-                        PageController.showBusyIndicator(true)
-                        SettingsController.clearCachedProfiles()
-                        PageController.showBusyIndicator(false)
-                    }
-                    var noButtonFunction = function() {
-                    }
-
-                    showQuestionDrawer(headerText, descriptionText, yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
-                }
-            }
-
-            DividerType {
-                visible: content.isServerWithWriteAccess
-            }
-
-            LabelWithButtonType {
+                id: labelWithButton
                 visible: content.isServerWithWriteAccess
                 Layout.fillWidth: true
 
@@ -132,11 +102,12 @@ PageType {
             }
 
             LabelWithButtonType {
+                id: labelWithButton2
                 visible: content.isServerWithWriteAccess
                 Layout.fillWidth: true
 
                 text: qsTr("Reboot server")
-                textColor: "#EB5757"
+                textColor: AmneziaStyle.color.vibrantRed
 
                 clickedFunction: function() {
                     var headerText = qsTr("Do you want to reboot the server?")
@@ -145,14 +116,21 @@ PageType {
                     var noButtonText = qsTr("Cancel")
 
                     var yesButtonFunction = function() {
-                        PageController.showBusyIndicator(true)
                         if (ServersModel.isDefaultServerCurrentlyProcessed() && ConnectionController.isConnected) {
-                            ConnectionController.closeConnection()
+                            PageController.showNotificationMessage(qsTr("Cannot reboot server during active connection"))
+                        } else {
+                            PageController.showBusyIndicator(true)
+                            InstallController.rebootProcessedServer()
+                            PageController.showBusyIndicator(false)
                         }
-                        InstallController.rebootProcessedServer()
-                        PageController.showBusyIndicator(false)
+                        if (!GC.isMobile()) {
+                            labelWithButton5.forceActiveFocus()
+                        }
                     }
                     var noButtonFunction = function() {
+                        if (!GC.isMobile()) {
+                            labelWithButton2.forceActiveFocus()
+                        }
                     }
 
                     showQuestionDrawer(headerText, descriptionText, yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
@@ -164,10 +142,11 @@ PageType {
             }
 
             LabelWithButtonType {
+                id: labelWithButton3
                 Layout.fillWidth: true
 
-                text: qsTr("Remove this server from the app")
-                textColor: "#EB5757"
+                text: qsTr("Remove server from application")
+                textColor: AmneziaStyle.color.vibrantRed
 
                 clickedFunction: function() {
                     var headerText = qsTr("Do you want to remove the server from application?")
@@ -176,14 +155,21 @@ PageType {
                     var noButtonText = qsTr("Cancel")
 
                     var yesButtonFunction = function() {
-                        PageController.showBusyIndicator(true)
                         if (ServersModel.isDefaultServerCurrentlyProcessed() && ConnectionController.isConnected) {
-                            ConnectionController.closeConnection()
+                            PageController.showNotificationMessage(qsTr("Cannot remove server during active connection"))
+                        } else {
+                            PageController.showBusyIndicator(true)
+                            InstallController.removeProcessedServer()
+                            PageController.showBusyIndicator(false)
                         }
-                        InstallController.removeProcessedServer()
-                        PageController.showBusyIndicator(false)
+                        if (!GC.isMobile()) {
+                            labelWithButton5.forceActiveFocus()
+                        }
                     }
                     var noButtonFunction = function() {
+                        if (!GC.isMobile()) {
+                            labelWithButton3.forceActiveFocus()
+                        }
                     }
 
                     showQuestionDrawer(headerText, descriptionText, yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
@@ -193,26 +179,34 @@ PageType {
             DividerType {}
 
             LabelWithButtonType {
+                id: labelWithButton4
                 visible: content.isServerWithWriteAccess
                 Layout.fillWidth: true
 
-                text: qsTr("Clear server Amnezia-installed services")
-                textColor: "#EB5757"
+                text: qsTr("Clear server from Amnezia software")
+                textColor: AmneziaStyle.color.vibrantRed
 
                 clickedFunction: function() {
-                    var headerText = qsTr("Do you want to clear server Amnezia-installed services?")
-                    var descriptionText = qsTr("All containers will be deleted on the server. This means that configuration files, keys and certificates will be deleted.")
+                    var headerText = qsTr("Do you want to clear server from Amnezia software?")
+                    var descriptionText = qsTr("All users whom you shared a connection with will no longer be able to connect to it.")
                     var yesButtonText = qsTr("Continue")
                     var noButtonText = qsTr("Cancel")
 
                     var yesButtonFunction = function() {
-                        PageController.goToPage(PageEnum.PageDeinstalling)
                         if (ServersModel.isDefaultServerCurrentlyProcessed() && ConnectionController.isConnected) {
-                            ConnectionController.closeConnection()
+                            PageController.showNotificationMessage(qsTr("Cannot clear server from Amnezia software during active connection"))
+                        } else {
+                            PageController.goToPage(PageEnum.PageDeinstalling)
+                            InstallController.removeAllContainers()
                         }
-                        InstallController.removeAllContainers()
+                        if (!GC.isMobile()) {
+                            labelWithButton5.forceActiveFocus()
+                        }
                     }
                     var noButtonFunction = function() {
+                        if (!GC.isMobile()) {
+                            labelWithButton4.forceActiveFocus()
+                        }
                     }
 
                     showQuestionDrawer(headerText, descriptionText, yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
@@ -224,11 +218,12 @@ PageType {
             }
 
             LabelWithButtonType {
-                visible: ServersModel.getProcessedServerData("isServerFromApi")
+                id: labelWithButton5
+                visible: ServersModel.getProcessedServerData("isServerFromTelegramApi")
                 Layout.fillWidth: true
 
                 text: qsTr("Reset API config")
-                textColor: "#EB5757"
+                textColor: AmneziaStyle.color.vibrantRed
 
                 clickedFunction: function() {
                     var headerText = qsTr("Do you want to reset API config?")
@@ -237,11 +232,22 @@ PageType {
                     var noButtonText = qsTr("Cancel")
 
                     var yesButtonFunction = function() {
-                        PageController.showBusyIndicator(true)
-                        ApiController.clearApiConfig()
-                        PageController.showBusyIndicator(false)
+                        if (ServersModel.isDefaultServerCurrentlyProcessed() && ConnectionController.isConnected) {
+                            PageController.showNotificationMessage(qsTr("Cannot reset API config during active connection"))
+                        } else {
+                            PageController.showBusyIndicator(true)
+                            InstallController.removeApiConfig(ServersModel.processedIndex)
+                            PageController.showBusyIndicator(false)
+                        }
+
+                        if (!GC.isMobile()) {
+                            labelWithButton5.forceActiveFocus()
+                        }
                     }
                     var noButtonFunction = function() {
+                        if (!GC.isMobile()) {
+                            labelWithButton5.forceActiveFocus()
+                        }
                     }
                     
                     showQuestionDrawer(headerText, descriptionText, yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
@@ -249,7 +255,7 @@ PageType {
             }
 
             DividerType {
-                visible: ServersModel.getProcessedServerData("isServerFromApi")
+                visible: ServersModel.getProcessedServerData("isServerFromTelegramApi")
             }
         }
     }

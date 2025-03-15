@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import SortFilterProxyModel 0.2
 
 import PageEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -16,7 +17,7 @@ PageType {
     id: root
 
     ColumnLayout {
-        id: backButton
+        id: backButtonLayout
 
         anchors.top: parent.top
         anchors.left: parent.left
@@ -25,12 +26,13 @@ PageType {
         anchors.topMargin: 20
 
         BackButtonType {
+            id: backButton
         }
     }
 
     FlickableType {
         id: fl
-        anchors.top: backButton.bottom
+        anchors.top: backButtonLayout.bottom
         anchors.bottom: parent.bottom
         contentHeight: content.implicitHeight
 
@@ -48,7 +50,7 @@ PageType {
                 Layout.rightMargin: 16
                 Layout.leftMargin: 16
 
-                headerText: "Amnezia DNS"
+                headerText: "AmneziaDNS"
                 descriptionText: qsTr("A DNS service is installed on your server, and it is only accessible via VPN.\n") +
                                  qsTr("The DNS address is the same as the address of your server. You can configure DNS in the settings, under the connections tab.")
             }
@@ -59,19 +61,28 @@ PageType {
                 Layout.topMargin: 24
                 width: parent.width
 
-                text: qsTr("Remove ") + ContainersModel.getCurrentlyProcessedContainerName()
-                textColor: "#EB5757"
+                text: qsTr("Remove ") + ContainersModel.getProcessedContainerName()
+                textColor: AmneziaStyle.color.vibrantRed
 
                 clickedFunction: function() {
-                    var headerText = qsTr("Remove %1 from server?").arg(ContainersModel.getCurrentlyProcessedContainerName())
+                    var headerText = qsTr("Remove %1 from server?").arg(ContainersModel.getProcessedContainerName())
                     var yesButtonText = qsTr("Continue")
                     var noButtonText = qsTr("Cancel")
 
                     var yesButtonFunction = function() {
-                        PageController.goToPage(PageEnum.PageDeinstalling)
-                        InstallController.removeCurrentlyProcessedContainer()
+                        if (ServersModel.isDefaultServerCurrentlyProcessed() && ConnectionController.isConnected
+                        && SettingsController.isAmneziaDnsEnabled()) {
+                            PageController.showNotificationMessage(qsTr("Cannot remove AmneziaDNS from running server"))
+                        } else
+                        {
+                            PageController.goToPage(PageEnum.PageDeinstalling)
+                            InstallController.removeProcessedContainer()
+                        }
                     }
                     var noButtonFunction = function() {
+                        if (!GC.isMobile()) {
+                            removeButton.rightButton.forceActiveFocus()
+                        }
                     }
 
                     showQuestionDrawer(headerText, "", yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
@@ -83,8 +94,6 @@ PageType {
                     enabled: false
                 }
             }
-
-            DividerType {}
         }
     }
 }

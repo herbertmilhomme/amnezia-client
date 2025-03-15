@@ -115,6 +115,9 @@ public:
     RouteMode routeMode() const;
     void setRouteMode(RouteMode mode) { setValue("Conf/routeMode", mode); }
 
+    bool isSitesSplitTunnelingEnabled() const;
+    void setSitesSplitTunnelingEnabled(bool enabled);
+
     QVariantMap vpnSites(RouteMode mode) const
     {
         return value("Conf/" + routeModeString(mode)).toMap();
@@ -157,9 +160,6 @@ public:
         setValue("Conf/secondaryDns", secondaryDns);
     }
 
-    static const char cloudFlareNs1[];
-    static const char cloudFlareNs2[];
-
     //    static constexpr char openNicNs5[] = "94.103.153.176";
     //    static constexpr char openNicNs13[] = "144.76.103.143";
 
@@ -183,7 +183,7 @@ public:
 
     bool isScreenshotsEnabled() const
     {
-        return value("Conf/screenshotsEnabled", false).toBool();
+        return value("Conf/screenshotsEnabled", true).toBool();
     }
     void setScreenshotsEnabled(bool enabled)
     {
@@ -192,6 +192,38 @@ public:
     }
 
     void clearSettings();
+
+    enum AppsRouteMode {
+        VpnAllApps,
+        VpnOnlyForwardApps,
+        VpnAllExceptApps
+    };
+    Q_ENUM(AppsRouteMode)
+
+    QString appsRouteModeString(AppsRouteMode mode) const;
+
+    AppsRouteMode getAppsRouteMode() const;
+    void setAppsRouteMode(AppsRouteMode mode);
+
+    QVector<InstalledAppInfo> getVpnApps(AppsRouteMode mode) const;
+    void setVpnApps(AppsRouteMode mode, const QVector<InstalledAppInfo> &apps);
+
+    bool isAppsSplitTunnelingEnabled() const;
+    void setAppsSplitTunnelingEnabled(bool enabled);
+
+    bool isKillSwitchEnabled() const;
+    void setKillSwitchEnabled(bool enabled);
+    QString getInstallationUuid(const bool needCreate);
+
+    void resetGatewayEndpoint();
+    void setGatewayEndpoint(const QString &endpoint);
+    void setDevGatewayEndpoint();
+    QString getGatewayEndpoint();
+    bool isDevGatewayEnv();
+    void toggleDevGatewayEnv(bool enabled);
+
+    bool isHomeAdLabelVisible();
+    void disableHomeAdLabel();
 
 signals:
     void saveLogsChanged(bool enabled);
@@ -203,7 +235,12 @@ private:
     QVariant value(const QString &key, const QVariant &defaultValue = QVariant()) const;
     void setValue(const QString &key, const QVariant &value);
 
+    void setInstallationUuid(const QString &uuid);
+
     mutable SecureQSettings m_settings;
+
+    QString m_gatewayEndpoint;
+    bool m_isDevGatewayEnv = false;
 };
 
 #endif // SETTINGS_H

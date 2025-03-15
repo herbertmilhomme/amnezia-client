@@ -9,31 +9,21 @@ Item {
 
     property StackView stackView: StackView.view
 
-    property var defaultActiveFocusItem: null
-
-//    MouseArea {
-//        id: globalMouseArea
-//        z: 99
-//        anchors.fill: parent
-
-//        enabled: true
-
-//        onPressed: function(mouse) {
-//            forceActiveFocus()
-//            mouse.accepted = false
-//        }
-//    }
+    onVisibleChanged: {
+        if (visible) {
+            timer.start()
+        }
+    }
 
     // Set a timer to set focus after a short delay
     Timer {
         id: timer
-        interval: 100 // Milliseconds
+        interval: 200 // Milliseconds
         onTriggered: {
-            if (defaultActiveFocusItem) {
-                defaultActiveFocusItem.forceActiveFocus()
-            }
+            FocusController.resetRootObject()
+            FocusController.setFocusOnDefaultItem()
         }
         repeat: false // Stop the timer after one trigger
-        running: !GC.isMobile()  // Start the timer
+        running: true // Start the timer
     }
 }
