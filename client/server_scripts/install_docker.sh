@@ -10,15 +10,28 @@ if ! command -v sudo > /dev/null 2>&1; then $pm $check_pkgs; $pm $silent_inst su
 if ! command -v fuser > /dev/null 2>&1; then sudo $pm $check_pkgs; sudo $pm $silent_inst psmisc; fi;\
 if ! command -v lsof > /dev/null 2>&1; then sudo $pm $check_pkgs; sudo $pm $silent_inst lsof; fi;\
 if ! command -v docker > /dev/null 2>&1; then \
-  sudo $pm $check_pkgs; sudo $pm $silent_inst $docker_pkg;\
-  sleep 5; sudo systemctl enable --now $check_srv; sleep 5;\
+  sudo $pm $check_pkgs;\
+  if [ -n "$(sudo $pm $wh_pkg $docker_pkg 2>/dev/null | grep moby-engine)" ]; \
+  then echo "Docker is not supported"; exit 1;\
+  else sudo $pm $silent_inst $docker_pkg;\
+  fi;\
+  if [ -n "$(sudo docker --version 2>/dev/null | grep podman)" ]; then docker_pkg="podman-docker"; check_srv="podman.socket podman";\
+    if [ -n "$(sudo docker --version 2>&1 | grep /etc/containers/nodocker)" ]; then sudo touch /etc/containers/nodocker; fi;\
+  fi;\
+  sleep 5; sudo systemctl enable --now $check_srv 2>/dev/null; sleep 5;\
+fi;\
+if [ -n "$(sudo docker --version 2>&1 | grep moby-engine)" ]; then echo "Docker is not supported"; exit 1;\
+elif [ -n "$(sudo docker --version 2>&1 | grep podman)" ]; then check_srv="podman.socket podman"; docker_pkg="podman-docker";\
+  if [ -n "$(sudo docker --version 2>&1 | grep /etc/containers/nodocker)" ]; then sudo touch /etc/containers/nodocker; fi;\
 fi;\
 if [ "$(cat /sys/module/apparmor/parameters/enabled 2>/dev/null)" = "Y" ]; then \
   if ! command -v apparmor_parser > /dev/null 2>&1; then sudo $pm $check_pkgs; sudo $pm $silent_inst apparmor; fi;\
 fi;\
-if [ "$(systemctl is-active $check_srv)" != "active" ]; then \
+if [ "$(systemctl is-active $check_srv | head -n1)" != "active" ]; then \
   sudo $pm $check_pkgs; sudo $pm $silent_inst $docker_pkg;\
   sleep 5; sudo systemctl start $check_srv; sleep 5;\
-  if [ "$(systemctl is-active $check_srv)" != "active" ]; then echo "Failed docker status"; fi;\
+  if [ "$(systemctl is-active $check_srv | head -n1)" != "active" ]; then echo "Failed docker status"; fi;\
 fi;\
 sudo docker --version
+
+# To allow autoinstallation of podman-docker, remove ' || [ -n "$(sudo $pm $wh_pkg $docker_pkg 2>/dev/null | grep podman-docker)" ]' and ' || [ -n "$(sudo docker --version 2>&1 | grep podman)" ]'
