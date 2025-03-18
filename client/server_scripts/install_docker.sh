@@ -5,11 +5,7 @@ elif which pacman > /dev/null 2>&1; then pm=$(which pacman); silent_inst="-S --n
 else echo "Packet manager not found"; exit 1; fi;\
 echo "Dist: $dist, Packet manager: $pm, Install command: $silent_inst, Check pkgs command: $check_pkgs, What pkg command: $wh_pkg, Docker pkg: $docker_pkg, Check service: $check_srv";\
 if [ "$dist" = "debian" ]; then export DEBIAN_FRONTEND=noninteractive; fi;\
-if [ -z "$(echo $LANG | grep -E 'en_US.UTF-8|C.UTF-8')" ]; then \
-  if [ -n "$(locale -a | grep en_US.utf8)" ]; then export LC_ALL=en_US.UTF-8;\
-  elif [ -n "$(locale -a | grep C.utf8)" ]; then export LC_ALL=C.UTF-8;\
-  fi;\
-fi;\
+echo $LANG | grep -qE '^(en_US.UTF-8|C.UTF-8|C)$' || export LC_ALL=C;\
 if ! command -v sudo > /dev/null 2>&1; then $pm $check_pkgs; $pm $silent_inst sudo || sudo 2>&1 > /dev/null || exit 1; fi;\
 if ! command -v fuser > /dev/null 2>&1; then sudo $pm $check_pkgs; sudo $pm $silent_inst psmisc || fuser 2>&1 > /dev/null || exit 1; fi;\
 if ! command -v lsof > /dev/null 2>&1; then sudo $pm $check_pkgs; sudo $pm $silent_inst lsof || lsof 2>&1 > /dev/null || exit 1; fi;\
