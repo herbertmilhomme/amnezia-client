@@ -11,21 +11,21 @@ if ! command -v fuser > /dev/null 2>&1; then sudo $pm $check_pkgs; sudo $pm $sil
 if ! command -v lsof > /dev/null 2>&1; then sudo $pm $check_pkgs; sudo $pm $silent_inst lsof; fi;\
 if ! command -v docker > /dev/null 2>&1; then \
   sudo $pm $check_pkgs;\
-  if [ -n "$(sudo $pm $wh_pkg $docker_pkg 2>/dev/null | grep moby-engine)" ]; \
+  if [ -n "$(sudo $pm $wh_pkg $docker_pkg 2>/dev/null | grep moby-engine)" ];\
   then echo "Docker is not supported"; exit 1;\
   else sudo $pm $silent_inst $docker_pkg;\
   fi;\
-  if [ -n "$(sudo docker --version 2>/dev/null | grep podman)" ]; then docker_pkg="podman-docker"; check_srv="podman.socket podman";\
+  if [ -n "$(sudo docker --version 2>/dev/null | grep podman)" ]; then check_srv="podman.socket podman"; docker_pkg="podman-docker";\
     if [ -n "$(sudo docker --version 2>&1 | grep /etc/containers/nodocker)" ]; then sudo touch /etc/containers/nodocker; fi;\
   fi;\
   sleep 5; sudo systemctl enable --now $check_srv 2>/dev/null; sleep 5;\
 fi;\
-if [ -n "$(sudo docker --version 2>&1 | grep moby-engine)" ]; then echo "Docker is not supported"; exit 1;\
-elif [ -n "$(sudo docker --version 2>&1 | grep podman)" ]; then check_srv="podman.socket podman"; docker_pkg="podman-docker";\
-  if [ -n "$(sudo docker --version 2>&1 | grep /etc/containers/nodocker)" ]; then sudo touch /etc/containers/nodocker; fi;\
-fi;\
 if [ "$(cat /sys/module/apparmor/parameters/enabled 2>/dev/null)" = "Y" ]; then \
   if ! command -v apparmor_parser > /dev/null 2>&1; then sudo $pm $check_pkgs; sudo $pm $silent_inst apparmor; fi;\
+fi;\
+if [ -n "$(sudo docker --version 2>&1 | grep moby-engine)" ]; then echo "Docker is not supported"; exit 1;\
+elif [ -n "$(sudo docker --version 2>/dev/null | grep podman)" ]; then check_srv="podman.socket podman"; docker_pkg="podman-docker";\
+  if [ -n "$(sudo docker --version 2>&1 | grep /etc/containers/nodocker)" ]; then sudo touch /etc/containers/nodocker; fi;\
 fi;\
 if [ "$(systemctl is-active $check_srv | head -n1)" != "active" ]; then \
   sudo $pm $check_pkgs; sudo $pm $silent_inst $docker_pkg;\
