@@ -411,6 +411,8 @@ ErrorCode ServerController::installDockerWorker(const ServerCredentials &credent
         return ErrorCode::ServerPacketManagerError;
     if (stdOut.contains("sudo:") && stdOut.contains("not found"))
         return ErrorCode::ServerDockerFailedError;
+    if (stdOut.contains("Docker is not supported"))
+        return ErrorCode::ServerDockerNotSupported;
     if (stdOut.contains("Failed docker status"))
         return ErrorCode::ServerDockerStatusNotActive;
 

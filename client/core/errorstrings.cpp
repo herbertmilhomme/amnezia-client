@@ -26,6 +26,7 @@ QString errorString(ErrorCode code) {
     case(ErrorCode::ServerUserDirectoryNotAccessible): errorMessage = QObject::tr("The server user's home directory is not accessible"); break;
     case(ErrorCode::ServerUserNotAllowedInSudoers): errorMessage = QObject::tr("Action not allowed in sudoers"); break;
     case(ErrorCode::ServerUserPasswordRequired): errorMessage = QObject::tr("The user's password is required"); break;
+    case(ErrorCode::ServerDockerNotSupported): errorMessage = QObject::tr("Docker, which is offered for installation by default by the server's OS, is not supported"); break;
     case(ErrorCode::ServerDockerStatusNotActive): errorMessage = QObject::tr("Docker service status is not active"); break;
 
     // Libssh errors
