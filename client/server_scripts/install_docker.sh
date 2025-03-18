@@ -3,7 +3,7 @@ elif which dnf > /dev/null 2>&1; then pm=$(which dnf); silent_inst="-yq install"
 elif which yum > /dev/null 2>&1; then pm=$(which yum); silent_inst="-y -q install"; check_pkgs="-y -q check-update"; wh_pkg="--assumeno install --setopt=tsflags=test"; docker_pkg="docker"; check_srv="docker"; dist="centos";\
 elif which pacman > /dev/null 2>&1; then pm=$(which pacman); silent_inst="-S --noconfirm --noprogressbar --quiet"; check_pkgs="-Sup"; wh_pkg="-Sp"; docker_pkg="docker"; check_srv="docker"; dist="archlinux";\
 else echo "Packet manager not found"; exit 1; fi;\
-echo "Dist: $dist, Packet manager: $pm, Install command: $silent_inst, Check pkgs command: $check_pkgs, What pkg command: $wh_pkg, Docker pkg: $docker_pkg", Check service: $check_srv";\
+echo "Dist: $dist, Packet manager: $pm, Install command: $silent_inst, Check pkgs command: $check_pkgs, What pkg command: $wh_pkg, Docker pkg: $docker_pkg, Check service: $check_srv";\
 if [ "$dist" = "debian" ]; then export DEBIAN_FRONTEND=noninteractive; fi;\
 echo $LANG | grep -qE '^(en_US.UTF-8|C.UTF-8|C)$' || export LC_ALL=C;\
 if ! command -v sudo > /dev/null 2>&1; then $pm $check_pkgs; $pm $silent_inst sudo; fi;\
@@ -19,6 +19,6 @@ fi;\
 if [ "$(systemctl is-active $check_srv)" != "active" ]; then \
   sudo $pm $check_pkgs; sudo $pm $silent_inst $docker_pkg;\
   sleep 5; sudo systemctl start $check_srv; sleep 5;\
+  if [ "$(systemctl is-active $check_srv)" != "active" ]; then echo "Failed docker status"; fi;\
 fi;\
-if ! command -v sudo > /dev/null 2>&1; then echo "Failed to install sudo, command not found"; exit 1; fi;\
-docker --version
+sudo docker --version
