@@ -65,28 +65,13 @@ PageType {
         displayMarginEnd: 40
         
         ScrollBar.vertical: ScrollBarType { }
-
-        footer: AddSitePanel {
-            id: addSitePanel
-            
+        
+        footer: Item {
             width: listView.width
-            z: 10
-            
-            enabled: root.pageEnabled
-            placeholderText: qsTr("IPv4 address")
-
-            onAddClicked: function(text) {
-                PageController.showBusyIndicator(true)
-                AllowedDnsController.addDns(text)
-                PageController.showBusyIndicator(false)
-            }
-
-            onMoreClicked: {
-                moreActionsDrawer.openTriggered()
-            }
+            height: addSitePanel.height
         }
         
-        footerPositioning: ListView.OverlayFooter
+        footerPositioning: ListView.InlineFooter
 
         model: SortFilterProxyModel {
             id: dnsFilterModel
@@ -139,6 +124,27 @@ PageType {
             }
 
             DividerType {}
+        }
+    }
+
+    AddSitePanel {
+        id: addSitePanel
+        
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        
+        enabled: root.pageEnabled
+        placeholderText: qsTr("IPv4 address")
+
+        onAddClicked: function(text) {
+            PageController.showBusyIndicator(true)
+            AllowedDnsController.addDns(text)
+            PageController.showBusyIndicator(false)
+        }
+
+        onMoreClicked: {
+            moreActionsDrawer.openTriggered()
         }
     }
 
