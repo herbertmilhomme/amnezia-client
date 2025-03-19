@@ -54,7 +54,7 @@ namespace amnezia
         ServerCancelInstallation = 204,
         ServerUserNotInSudo = 205,
         ServerPacketManagerError = 206,
-        ServerSudoPackageIsNotPreinstalled = 207,
+        SudoPackageIsNotPreinstalled = 207,
         ServerUserDirectoryNotAccessible = 208,
         ServerUserNotAllowedInSudoers = 209,
         ServerUserPasswordRequired = 210,
