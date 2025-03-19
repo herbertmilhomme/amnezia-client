@@ -771,7 +771,7 @@ ErrorCode ServerController::isUserInSudo(const ServerCredentials &credentials, D
     ErrorCode error = runScript(credentials, replaceVars(scriptData, genVarsForScript(credentials)), cbReadStdOut, cbReadStdErr);
 
     if (credentials.userName != "root" && stdOut.contains("sudo:") && !stdOut.contains("uname:") && stdOut.contains("not found"))
-        return ErrorCode::SudoPackageIsNotPreinstalled;
+        return ErrorCode::ServerSudoPackageIsNotPreinstalled;
     if (credentials.userName != "root" && !stdOut.contains("sudo") && !stdOut.contains("wheel"))
         return ErrorCode::ServerUserNotInSudo;
     if (stdOut.contains("can't cd to") || stdOut.contains("Permission denied") || stdOut.contains("No such file or directory"))
