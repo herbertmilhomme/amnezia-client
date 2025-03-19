@@ -18,6 +18,7 @@ sudo docker network connect amnezia-dns-net $CONTAINER_NAME
 
 # Create service for podman
 if [ -n "$(sudo docker --version 2>/dev/null | grep podman)" ]; then \
-  sudo sh -c "podman generate systemd --restart-policy=always -t 1 --name $CONTAINER_NAME 2>/dev/null > $DOCKERFILE_FOLDER/container-$CONTAINER_NAME.service";\
-  sudo sh -c "systemctl enable --now $DOCKERFILE_FOLDER/container-$CONTAINER_NAME.service && docker update --restart no $CONTAINER_NAME > /dev/null";\
+  sudo sh -c "podman generate systemd --restart-policy=always -t 10 --name $CONTAINER_NAME 2>/dev/null > $DOCKERFILE_FOLDER/container-$CONTAINER_NAME.service";\
+  sudo cp $DOCKERFILE_FOLDER/container-$CONTAINER_NAME.service /etc/systemd/system/;\
+  sudo systemctl daemon-reload && sudo systemctl enable --now container-$CONTAINER_NAME.service && sudo docker update --restart no $CONTAINER_NAME > /dev/null;\
 fi
