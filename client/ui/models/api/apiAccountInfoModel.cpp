@@ -53,6 +53,8 @@ QVariant ApiAccountInfoModel::data(const QModelIndex &index, int role) const
         } else if (m_accountInfoData.configType == apiDefs::ConfigType::AmneziaFreeV3) {
             return tr("Free unlimited access to a basic set of websites such as Facebook, Instagram, Twitter (X), Discord, Telegram and "
                       "more. YouTube is not included in the free plan.");
+        } else {
+            return "";
         }
     }
     case IsComponentVisibleRole: {
@@ -93,6 +95,8 @@ void ApiAccountInfoModel::updateModel(const QJsonObject &accountInfoObject, cons
 
     m_accountInfoData = accountInfoData;
 
+    m_supportInfo = accountInfoObject.value(apiDefs::key::supportInfo).toObject();
+
     endResetModel();
 }
 
@@ -121,12 +125,27 @@ QJsonArray ApiAccountInfoModel::getIssuedConfigsInfo()
 
 QString ApiAccountInfoModel::getTelegramBotLink()
 {
-    if (m_accountInfoData.configType == apiDefs::ConfigType::AmneziaFreeV3) {
-        return tr("amnezia_free_support_bot");
-    } else if (m_accountInfoData.configType == apiDefs::ConfigType::AmneziaPremiumV2) {
-        return tr("amnezia_premium_support_bot");
-    }
-    return "";
+    return m_supportInfo.value(apiDefs::key::telegram).toString();
+}
+
+QString ApiAccountInfoModel::getEmailLink()
+{
+    return m_supportInfo.value(apiDefs::key::email).toString();
+}
+
+QString ApiAccountInfoModel::getBillingEmailLink()
+{
+    return m_supportInfo.value(apiDefs::key::billingEmail).toString();
+}
+
+QString ApiAccountInfoModel::getSiteLink()
+{
+    return m_supportInfo.value(apiDefs::key::websiteName).toString();
+}
+
+QString ApiAccountInfoModel::getFullSiteLink()
+{
+    return m_supportInfo.value(apiDefs::key::website).toString();
 }
 
 QHash<int, QByteArray> ApiAccountInfoModel::roleNames() const
