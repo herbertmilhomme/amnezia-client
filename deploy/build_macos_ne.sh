@@ -109,7 +109,6 @@ echo "Deploying MAC Network Extension App..."
 echo "xcode build"
 xcodebuild \
 "OTHER_CODE_SIGN_FLAGS=--keychain '$KEYCHAIN_FILE'" \
-OTHER_CODE_SIGN_FLAGS=--deep \
 -configuration Release \
 -scheme AmneziaVPN \
 -destination "platform=macOS" \
