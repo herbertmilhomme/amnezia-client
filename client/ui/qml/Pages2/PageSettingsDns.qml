@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 import PageEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -13,13 +14,6 @@ import "../Components"
 PageType {
     id: root
 
-    defaultActiveFocusItem: primaryDns.textField
-
-    Item {
-        id: focusItem
-        KeyNavigation.tab: backButton
-    }
-
     BackButtonType {
         id: backButton
 
@@ -27,8 +21,6 @@ PageType {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.topMargin: 20
-
-        KeyNavigation.tab: root.defaultActiveFocusItem
     }
 
     FlickableType {
@@ -37,13 +29,13 @@ PageType {
         anchors.bottom: parent.bottom
         contentHeight: content.height
 
-        property var isServerFromApi: ServersModel.getDefaultServerData("isServerFromApi")
+        property var isServerFromApi: ServersModel.isServerFromApi(ServersModel.defaultIndex)
 
         enabled: !isServerFromApi
 
         Component.onCompleted: {
             if (isServerFromApi) {
-                PageController.showNotificationMessage(qsTr("Default server does not support custom dns"))
+                PageController.showNotificationMessage(qsTr("Default server does not support custom DNS"))
             }
         }
 
@@ -75,12 +67,10 @@ PageType {
                 Layout.fillWidth: true
                 headerText: qsTr("Primary DNS")
 
-                textFieldText: SettingsController.primaryDns
+                textField.text: SettingsController.primaryDns
                 textField.validator: RegularExpressionValidator {
                     regularExpression: InstallController.ipAddressRegExp()
                 }
-
-                KeyNavigation.tab: secondaryDns.textField
             }
 
             TextFieldWithHeaderType {
@@ -89,23 +79,21 @@ PageType {
                 Layout.fillWidth: true
                 headerText: qsTr("Secondary DNS")
 
-                textFieldText: SettingsController.secondaryDns
+                textField.text: SettingsController.secondaryDns
                 textField.validator: RegularExpressionValidator {
                     regularExpression: InstallController.ipAddressRegExp()
                 }
-
-                KeyNavigation.tab: restoreDefaultButton
             }
 
             BasicButtonType {
                 id: restoreDefaultButton
                 Layout.fillWidth: true
 
-                defaultColor: "transparent"
-                hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-                pressedColor: Qt.rgba(1, 1, 1, 0.12)
-                disabledColor: "#878B91"
-                textColor: "#D7D8DB"
+                defaultColor: AmneziaStyle.color.transparent
+                hoveredColor: AmneziaStyle.color.translucentWhite
+                pressedColor: AmneziaStyle.color.sheerWhite
+                disabledColor: AmneziaStyle.color.mutedGray
+                textColor: AmneziaStyle.color.paleGray
                 borderWidth: 1
 
                 text: qsTr("Restore default")
@@ -117,25 +105,16 @@ PageType {
 
                     var yesButtonFunction = function() {
                         SettingsController.primaryDns = "1.1.1.1"
-                        primaryDns.textFieldText = SettingsController.primaryDns
+                        primaryDns.textField.text = SettingsController.primaryDns
                         SettingsController.secondaryDns = "1.0.0.1"
-                        secondaryDns.textFieldText = SettingsController.secondaryDns
+                        secondaryDns.textField.text = SettingsController.secondaryDns
                         PageController.showNotificationMessage(qsTr("Settings have been reset"))
-
-                        if (!GC.isMobile()) {
-                            defaultActiveFocusItem.forceActiveFocus()
-                        }
                     }
                     var noButtonFunction = function() {
-                        if (!GC.isMobile()) {
-                            defaultActiveFocusItem.forceActiveFocus()
-                        }
                     }
 
                     showQuestionDrawer(headerText, "", yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
                 }
-
-                KeyNavigation.tab: saveButton
             }
 
             BasicButtonType {
@@ -146,16 +125,14 @@ PageType {
                 text: qsTr("Save")
 
                 clickedFunc: function() {
-                    if (primaryDns.textFieldText !== SettingsController.primaryDns) {
-                        SettingsController.primaryDns = primaryDns.textFieldText
+                    if (primaryDns.textField.text !== SettingsController.primaryDns) {
+                        SettingsController.primaryDns = primaryDns.textField.text
                     }
-                    if (secondaryDns.textFieldText !== SettingsController.secondaryDns) {
-                        SettingsController.secondaryDns = secondaryDns.textFieldText
+                    if (secondaryDns.textField.text !== SettingsController.secondaryDns) {
+                        SettingsController.secondaryDns = secondaryDns.textField.text
                     }
                     PageController.showNotificationMessage(qsTr("Settings saved"))
                 }
-
-                Keys.onTabPressed: lastItemTabClicked(focusItem)
             }
         }
     }

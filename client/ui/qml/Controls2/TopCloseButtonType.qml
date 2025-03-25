@@ -14,18 +14,18 @@ Popup {
     visible: false
 
     Overlay.modal: Rectangle {
-        color: Qt.rgba(14/255, 14/255, 17/255, 0.8)
+        color: AmneziaStyle.color.translucentMidnightBlack
     }
 
     background: Rectangle {
-        color: "transparent"
+        color: AmneziaStyle.color.transparent
     }
 
     ImageButtonType {
         id: button
 
         image: "qrc:/images/svg/close_black_24dp.svg"
-        imageColor: "#D7D8DB"
+        imageColor: AmneziaStyle.color.paleGray
 
         implicitWidth: 40
         implicitHeight: 40

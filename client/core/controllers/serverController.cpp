@@ -83,7 +83,6 @@ ErrorCode ServerController::runScript(const ServerCredentials &credentials, QStr
         }
 
         qDebug().noquote() << lineToExec;
-        Logger::appendSshLog("Run command:" + lineToExec);
 
         error = m_sshClient.executeCommand(lineToExec, cbReadStdOut, cbReadStdErr);
         if (error != ErrorCode::NoError) {
@@ -100,13 +99,13 @@ ErrorCode ServerController::runContainerScript(const ServerCredentials &credenti
                                                const std::function<ErrorCode(const QString &, libssh::Client &)> &cbReadStdErr)
 {
     QString fileName = "/opt/amnezia/" + Utils::getRandomString(16) + ".sh";
-    Logger::appendSshLog("Run container script for " + ContainerProps::containerToString(container) + ":\n" + script);
 
     ErrorCode e = uploadTextFileToContainer(container, credentials, script, fileName);
     if (e)
         return e;
 
-    QString runner = QString("sudo docker exec -i $CONTAINER_NAME bash %1 ").arg(fileName);
+    QString runner =
+            QString("sudo docker exec -i $CONTAINER_NAME %2 %1 ").arg(fileName, (container == DockerContainer::Socks5Proxy ? "sh" : "bash"));
     e = runScript(credentials, replaceVars(runner, genVarsForScript(credentials, container)), cbReadStdOut, cbReadStdErr);
 
     QString remover = QString("sudo docker exec -i $CONTAINER_NAME rm %1 ").arg(fileName);
@@ -347,7 +346,9 @@ bool ServerController::isReinstallContainerRequired(DockerContainer container, c
     }
 
     if (container == DockerContainer::Awg) {
-        if ((oldProtoConfig.value(config_key::port).toString(protocols::awg::defaultPort)
+        if ((oldProtoConfig.value(config_key::subnet_address).toString(protocols::wireguard::defaultSubnetAddress)
+             != newProtoConfig.value(config_key::subnet_address).toString(protocols::wireguard::defaultSubnetAddress))
+            || (oldProtoConfig.value(config_key::port).toString(protocols::awg::defaultPort)
              != newProtoConfig.value(config_key::port).toString(protocols::awg::defaultPort))
             || (oldProtoConfig.value(config_key::junkPacketCount).toString(protocols::awg::defaultJunkPacketCount)
                 != newProtoConfig.value(config_key::junkPacketCount).toString(protocols::awg::defaultJunkPacketCount))
@@ -371,9 +372,15 @@ bool ServerController::isReinstallContainerRequired(DockerContainer container, c
     }
 
     if (container == DockerContainer::WireGuard) {
-        if (oldProtoConfig.value(config_key::port).toString(protocols::wireguard::defaultPort)
-            != newProtoConfig.value(config_key::port).toString(protocols::wireguard::defaultPort))
+        if ((oldProtoConfig.value(config_key::subnet_address).toString(protocols::wireguard::defaultSubnetAddress)
+             != newProtoConfig.value(config_key::subnet_address).toString(protocols::wireguard::defaultSubnetAddress))
+            || (oldProtoConfig.value(config_key::port).toString(protocols::wireguard::defaultPort)
+            != newProtoConfig.value(config_key::port).toString(protocols::wireguard::defaultPort)))
             return true;
+    }
+
+    if (container == DockerContainer::Socks5Proxy) {
+        return true;
     }
 
     return false;
@@ -416,11 +423,16 @@ ErrorCode ServerController::prepareHostWorker(const ServerCredentials &credentia
 
 ErrorCode ServerController::buildContainerWorker(const ServerCredentials &credentials, DockerContainer container, const QJsonObject &config)
 {
-    ErrorCode e = uploadFileToHost(credentials, amnezia::scriptData(ProtocolScriptType::dockerfile, container).toUtf8(),
-                                   amnezia::server::getDockerfileFolder(container) + "/Dockerfile");
+    QString dockerFilePath = amnezia::server::getDockerfileFolder(container) + "/Dockerfile";
+    QString scriptString = QString("sudo rm %1").arg(dockerFilePath);
+    ErrorCode errorCode = runScript(credentials, replaceVars(scriptString, genVarsForScript(credentials, container)));
+    if (errorCode)
+        return errorCode;
 
-    if (e)
-        return e;
+    errorCode = uploadFileToHost(credentials, amnezia::scriptData(ProtocolScriptType::dockerfile, container).toUtf8(), dockerFilePath);
+
+    if (errorCode)
+        return errorCode;
 
     QString stdOut;
     auto cbReadStdOut = [&](const QString &data, libssh::Client &) {
@@ -428,13 +440,14 @@ ErrorCode ServerController::buildContainerWorker(const ServerCredentials &creden
         return ErrorCode::NoError;
     };
 
-    e = runScript(credentials,
-                  replaceVars(amnezia::scriptData(SharedScriptType::build_container), genVarsForScript(credentials, container, config)),
-                  cbReadStdOut);
-    if (e)
-        return e;
+    errorCode =
+            runScript(credentials,
+                      replaceVars(amnezia::scriptData(SharedScriptType::build_container), genVarsForScript(credentials, container, config)),
+                      cbReadStdOut);
+    if (errorCode)
+        return errorCode;
 
-    return e;
+    return errorCode;
 }
 
 ErrorCode ServerController::runContainerWorker(const ServerCredentials &credentials, DockerContainer container, QJsonObject &config)
@@ -511,6 +524,7 @@ ServerController::Vars ServerController::genVarsForScript(const ServerCredential
     const QJsonObject &amneziaWireguarConfig = config.value(ProtocolProps::protoToString(Proto::Awg)).toObject();
     const QJsonObject &xrayConfig = config.value(ProtocolProps::protoToString(Proto::Xray)).toObject();
     const QJsonObject &sftpConfig = config.value(ProtocolProps::protoToString(Proto::Sftp)).toObject();
+    const QJsonObject &socks5ProxyConfig = config.value(ProtocolProps::protoToString(Proto::Socks5Proxy)).toObject();
 
     Vars vars;
 
@@ -559,6 +573,7 @@ ServerController::Vars ServerController::genVarsForScript(const ServerCredential
 
     // Xray vars
     vars.append({ { "$XRAY_SITE_NAME", xrayConfig.value(config_key::site).toString(protocols::xray::defaultSite) } });
+    vars.append({ { "$XRAY_SERVER_PORT", xrayConfig.value(config_key::port).toString(protocols::xray::defaultPort) } });
 
     // Wireguard vars
     vars.append({ { "$WIREGUARD_SUBNET_IP",
@@ -596,6 +611,8 @@ ServerController::Vars ServerController::genVarsForScript(const ServerCredential
     vars.append({ { "$SFTP_PASSWORD", sftpConfig.value(config_key::password).toString() } });
 
     // Amnezia wireguard vars
+    vars.append({ { "$AWG_SUBNET_IP",
+                    amneziaWireguarConfig.value(config_key::subnet_address).toString(protocols::wireguard::defaultSubnetAddress) } });
     vars.append({ { "$AWG_SERVER_PORT", amneziaWireguarConfig.value(config_key::port).toString(protocols::awg::defaultPort) } });
 
     vars.append({ { "$JUNK_PACKET_COUNT", amneziaWireguarConfig.value(config_key::junkPacketCount).toString() } });
@@ -608,7 +625,17 @@ ServerController::Vars ServerController::genVarsForScript(const ServerCredential
     vars.append({ { "$UNDERLOAD_PACKET_MAGIC_HEADER", amneziaWireguarConfig.value(config_key::underloadPacketMagicHeader).toString() } });
     vars.append({ { "$TRANSPORT_PACKET_MAGIC_HEADER", amneziaWireguarConfig.value(config_key::transportPacketMagicHeader).toString() } });
 
-    QString serverIp = NetworkUtilities::getIPAddress(credentials.hostName);
+    // Socks5 proxy vars
+    vars.append({ { "$SOCKS5_PROXY_PORT", socks5ProxyConfig.value(config_key::port).toString(protocols::socks5Proxy::defaultPort) } });
+    auto username = socks5ProxyConfig.value(config_key::userName).toString();
+    auto password = socks5ProxyConfig.value(config_key::password).toString();
+    QString socks5user = (!username.isEmpty() && !password.isEmpty()) ? QString("users %1:CL:%2").arg(username, password) : "";
+    vars.append({ { "$SOCKS5_USER", socks5user } });
+    vars.append({ { "$SOCKS5_AUTH_TYPE", socks5user.isEmpty() ? "none" : "strong" } });
+
+    QString serverIp = (container != DockerContainer::Awg && container != DockerContainer::WireGuard && container != DockerContainer::Xray)
+            ? NetworkUtilities::getIPAddress(credentials.hostName)
+            : credentials.hostName;
     if (!serverIp.isEmpty()) {
         vars.append({ { "$SERVER_IP_ADDRESS", serverIp } });
     } else {
@@ -682,10 +709,35 @@ ErrorCode ServerController::isServerPortBusy(const ServerCredentials &credential
     QString transportProto = containerConfig.value(config_key::transport_proto).toString(defaultTransportProto);
 
     // TODO reimplement with netstat
-    QString script = QString("which lsof &>/dev/null || true && sudo lsof -i -P -n 2>/dev/null | grep -E ':%1 ").arg(port);
+    QString script = QString("which lsof > /dev/null 2>&1 || true && sudo lsof -i -P -n 2>/dev/null | grep -E ':%1 ").arg(port);
     for (auto &port : fixedPorts) {
         script = script.append("|:%1").arg(port);
     }
+
+    if (transportProto == "tcpandudp") {
+        QString tcpProtoScript = script;
+        QString udpProtoScript = script;
+        tcpProtoScript.append("' | grep -i tcp");
+        udpProtoScript.append("' | grep -i udp");
+        tcpProtoScript.append(" | grep LISTEN");
+
+        ErrorCode errorCode =
+                runScript(credentials, replaceVars(tcpProtoScript, genVarsForScript(credentials, container)), cbReadStdOut, cbReadStdErr);
+        if (errorCode != ErrorCode::NoError) {
+            return errorCode;
+        }
+
+        errorCode = runScript(credentials, replaceVars(udpProtoScript, genVarsForScript(credentials, container)), cbReadStdOut, cbReadStdErr);
+        if (errorCode != ErrorCode::NoError) {
+            return errorCode;
+        }
+
+        if (!stdOut.isEmpty()) {
+            return ErrorCode::ServerPortAlreadyAllocatedError;
+        }
+        return ErrorCode::NoError;
+    }
+
     script = script.append("' | grep -i %1").arg(transportProto);
 
     if (transportProto == "tcp") {
@@ -705,10 +757,6 @@ ErrorCode ServerController::isServerPortBusy(const ServerCredentials &credential
 
 ErrorCode ServerController::isUserInSudo(const ServerCredentials &credentials, DockerContainer container)
 {
-    if (credentials.userName == "root") {
-        return ErrorCode::NoError;
-    }
-
     QString stdOut;
     auto cbReadStdOut = [&](const QString &data, libssh::Client &) {
         stdOut += data + "\n";
@@ -722,8 +770,16 @@ ErrorCode ServerController::isUserInSudo(const ServerCredentials &credentials, D
     const QString scriptData = amnezia::scriptData(SharedScriptType::check_user_in_sudo);
     ErrorCode error = runScript(credentials, replaceVars(scriptData, genVarsForScript(credentials)), cbReadStdOut, cbReadStdErr);
 
-    if (!stdOut.contains("sudo"))
+    if (credentials.userName != "root" && stdOut.contains("sudo:") && !stdOut.contains("uname:") && stdOut.contains("not found"))
+        return ErrorCode::ServerSudoPackageIsNotPreinstalled;
+    if (credentials.userName != "root" && !stdOut.contains("sudo") && !stdOut.contains("wheel"))
         return ErrorCode::ServerUserNotInSudo;
+    if (stdOut.contains("can't cd to") || stdOut.contains("Permission denied") || stdOut.contains("No such file or directory"))
+        return ErrorCode::ServerUserDirectoryNotAccessible;
+    if (stdOut.contains("sudoers") || stdOut.contains("is not allowed to run sudo on"))
+        return ErrorCode::ServerUserNotAllowedInSudoers;
+    if (stdOut.contains("password is required"))
+        return ErrorCode::ServerUserPasswordRequired;
 
     return error;
 }

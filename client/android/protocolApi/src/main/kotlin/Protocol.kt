@@ -1,6 +1,5 @@
 package org.amnezia.vpn.protocol
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.net.IpPrefix
 import android.net.VpnService
@@ -8,9 +7,6 @@ import android.net.VpnService.Builder
 import android.os.Build
 import android.system.OsConstants
 import androidx.annotation.RequiresApi
-import java.io.File
-import java.io.FileOutputStream
-import java.util.zip.ZipFile
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.amnezia.vpn.util.Log
 import org.amnezia.vpn.util.net.InetNetwork
@@ -27,15 +23,22 @@ private const val SPLIT_TUNNEL_EXCLUDE = 2
 abstract class Protocol {
 
     abstract val statistics: Statistics
+    protected lateinit var context: Context
     protected lateinit var state: MutableStateFlow<ProtocolState>
     protected lateinit var onError: (String) -> Unit
+    protected var isInitialized: Boolean = false
 
-    open fun initialize(context: Context, state: MutableStateFlow<ProtocolState>, onError: (String) -> Unit) {
+    fun initialize(context: Context, state: MutableStateFlow<ProtocolState>, onError: (String) -> Unit) {
+        this.context = context
         this.state = state
         this.onError = onError
+        internalInit()
+        isInitialized = true
     }
 
-    abstract fun startVpn(config: JSONObject, vpnBuilder: Builder, protect: (Int) -> Boolean)
+    protected abstract fun internalInit()
+
+    abstract suspend fun startVpn(config: JSONObject, vpnBuilder: Builder, protect: (Int) -> Boolean)
 
     abstract fun stopVpn()
 
@@ -150,60 +153,6 @@ abstract class Protocol {
         vpnBuilder.setUnderlyingNetworks(null)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
             vpnBuilder.setMetered(false)
-    }
-
-    companion object {
-        private fun extractLibrary(context: Context, libraryName: String, destination: File): Boolean {
-            Log.d(TAG, "Extracting library: $libraryName")
-            val apks = hashSetOf<String>()
-            context.applicationInfo.run {
-                sourceDir?.let { apks += it }
-                splitSourceDirs?.let { apks += it }
-            }
-            for (abi in Build.SUPPORTED_ABIS) {
-                for (apk in apks) {
-                    ZipFile(File(apk), ZipFile.OPEN_READ).use { zipFile ->
-                        val mappedName = System.mapLibraryName(libraryName)
-                        val libraryZipPath = listOf("lib", abi, mappedName).joinToString(File.separator)
-                        val zipEntry = zipFile.getEntry(libraryZipPath)
-                        zipEntry?.let {
-                            Log.d(TAG, "Extracting apk:/$libraryZipPath to ${destination.absolutePath}")
-                            FileOutputStream(destination).use { outStream ->
-                                zipFile.getInputStream(zipEntry).use { inStream ->
-                                    inStream.copyTo(outStream, 32 * 1024)
-                                    outStream.fd.sync()
-                                }
-                            }
-                        }
-                        return true
-                    }
-                }
-            }
-            return false
-        }
-
-        @SuppressLint("UnsafeDynamicallyLoadedCode")
-        fun loadSharedLibrary(context: Context, libraryName: String) {
-            Log.d(TAG, "Loading library: $libraryName")
-            try {
-                System.loadLibrary(libraryName)
-                return
-            } catch (_: UnsatisfiedLinkError) {
-                Log.d(TAG, "Failed to load library, try to extract it from apk")
-            }
-            var tempFile: File? = null
-            try {
-                tempFile = File.createTempFile("lib", ".so", context.codeCacheDir)
-                if (extractLibrary(context, libraryName, tempFile)) {
-                    System.load(tempFile.absolutePath)
-                    return
-                }
-            } catch (e: Exception) {
-                throw LoadLibraryException("Failed to load library apk: $libraryName", e)
-            } finally {
-                tempFile?.delete()
-            }
-        }
     }
 }
 

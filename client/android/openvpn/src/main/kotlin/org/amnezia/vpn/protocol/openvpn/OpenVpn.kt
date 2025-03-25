@@ -1,43 +1,24 @@
 package org.amnezia.vpn.protocol.openvpn
 
-import android.content.Context
 import android.net.VpnService.Builder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import net.openvpn.ovpn3.ClientAPI_Config
 import org.amnezia.vpn.protocol.BadConfigException
 import org.amnezia.vpn.protocol.Protocol
-import org.amnezia.vpn.protocol.ProtocolState
 import org.amnezia.vpn.protocol.ProtocolState.DISCONNECTED
 import org.amnezia.vpn.protocol.Statistics
 import org.amnezia.vpn.protocol.VpnStartException
+import org.amnezia.vpn.util.LibraryLoader.loadSharedLibrary
 import org.amnezia.vpn.util.net.InetNetwork
 import org.amnezia.vpn.util.net.getLocalNetworks
 import org.amnezia.vpn.util.net.parseInetAddress
 import org.json.JSONObject
 
-/**
- *    Config Example:
- *    {
- *     "protocol": "openvpn",
- *     "description": "Server 1",
- *     "dns1": "1.1.1.1",
- *     "dns2": "1.0.0.1",
- *     "hostName": "100.100.100.0",
- *     "splitTunnelSites": [
- *     ],
- *     "splitTunnelType": 0,
- *     "openvpn_config_data": {
- *           "config": "openVpnConfig"
- *     }
- * }
- */
-
 open class OpenVpn : Protocol() {
 
-    private lateinit var context: Context
     private var openVpnClient: OpenVpnClient? = null
     private lateinit var scope: CoroutineScope
 
@@ -53,14 +34,18 @@ open class OpenVpn : Protocol() {
             return Statistics.EMPTY_STATISTICS
         }
 
-    override fun initialize(context: Context, state: MutableStateFlow<ProtocolState>, onError: (String) -> Unit) {
-        super.initialize(context, state, onError)
-        loadSharedLibrary(context, "ovpn3")
-        this.context = context
+    override fun internalInit() {
+        if (!isInitialized) {
+            loadSharedLibrary(context, "ovpn3")
+            loadSharedLibrary(context, "ovpnutil")
+        }
+        if (this::scope.isInitialized) {
+            scope.cancel()
+        }
         scope = CoroutineScope(Dispatchers.IO)
     }
 
-    override fun startVpn(config: JSONObject, vpnBuilder: Builder, protect: (Int) -> Boolean) {
+    override suspend fun startVpn(config: JSONObject, vpnBuilder: Builder, protect: (Int) -> Boolean) {
         val configBuilder = OpenVpnConfig.Builder()
 
         openVpnClient = OpenVpnClient(

@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+import Style 1.0
+
 import "../Controls2"
 import "../Controls2/TextTypes"
 
@@ -18,7 +20,7 @@ DrawerType2 {
     property var yesButtonFunction
     property var noButtonFunction
 
-    expandedContent: ColumnLayout {
+    expandedStateContent: ColumnLayout {
         id: content
 
         anchors.top: parent.top
@@ -29,14 +31,6 @@ DrawerType2 {
 
         onImplicitHeightChanged: {
             root.expandedHeight = content.implicitHeight + 32
-        }
-
-        Connections {
-            target: root
-            enabled: !GC.isMobile()
-            function onOpened() {
-                focusItem.forceActiveFocus()
-            }
         }
 
         Header2TextType {
@@ -57,11 +51,6 @@ DrawerType2 {
             text: descriptionText
         }
 
-        Item {
-            id: focusItem
-            KeyNavigation.tab: yesButton
-        }
-
         BasicButtonType {
             id: yesButton
             Layout.fillWidth: true
@@ -76,8 +65,6 @@ DrawerType2 {
                     yesButtonFunction()
                 }
             }
-
-            KeyNavigation.tab: noButton
         }
 
         BasicButtonType {
@@ -86,11 +73,11 @@ DrawerType2 {
             Layout.rightMargin: 16
             Layout.leftMargin: 16
 
-            defaultColor: "transparent"
-            hoveredColor: Qt.rgba(1, 1, 1, 0.08)
-            pressedColor: Qt.rgba(1, 1, 1, 0.12)
-            disabledColor: "#878B91"
-            textColor: "#D7D8DB"
+            defaultColor: AmneziaStyle.color.transparent
+            hoveredColor: AmneziaStyle.color.translucentWhite
+            pressedColor: AmneziaStyle.color.sheerWhite
+            disabledColor: AmneziaStyle.color.mutedGray
+            textColor: AmneziaStyle.color.paleGray
             borderWidth: 1
 
             text: noButtonText
@@ -100,8 +87,6 @@ DrawerType2 {
                     noButtonFunction()
                 }
             }
-
-            KeyNavigation.tab: focusItem
         }
     }
 }

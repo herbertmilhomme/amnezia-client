@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import SortFilterProxyModel 0.2
 
 import PageEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -14,15 +15,6 @@ import "../Components"
 
 PageType {
     id: root
-
-    defaultActiveFocusItem: listview.currentItem.focusItemId.enabled ?
-                                listview.currentItem.focusItemId.textField :
-                                focusItem
-
-    Item {
-        id: focusItem
-        KeyNavigation.tab: backButton
-    }
 
     ColumnLayout {
         id: backButtonLayout
@@ -35,9 +27,6 @@ PageType {
 
         BackButtonType {
             id: backButton
-            KeyNavigation.tab: listview.currentItem.focusItemId.enabled ?
-                                   listview.currentItem.focusItemId.textField :
-                                   focusItem
         }
     }
 
@@ -92,7 +81,7 @@ PageType {
                         HeaderType {
                             Layout.fillWidth: true
 
-                            headerText: qsTr("ShadowSocks settings")
+                            headerText: qsTr("Shadowsocks settings")
                         }
 
                         TextFieldWithHeaderType {
@@ -104,17 +93,15 @@ PageType {
                             enabled: isPortEditable
 
                             headerText: qsTr("Port")
-                            textFieldText: port
+                            textField.text: port
                             textField.maximumLength: 5
                             textField.validator: IntValidator { bottom: 1; top: 65535 }
 
                             textField.onEditingFinished: {
-                                if (textFieldText !== port) {
-                                    port = textFieldText
+                                if (textField.text !== port) {
+                                    port = textField.text
                                 }
                             }
-
-                            KeyNavigation.tab: cipherDropDown
                         }
 
                         DropDownType {
@@ -128,9 +115,9 @@ PageType {
                             headerText: qsTr("Cipher")
 
                             drawerParent: root
-                            KeyNavigation.tab: saveRestartButton
 
                             listView: ListViewWithRadioButtonType {
+
                                 id: cipherListView
 
                                 rootWidth: root.width
@@ -146,7 +133,7 @@ PageType {
                                 clickedFunction: function() {
                                     cipherDropDown.text = selectedText
                                     cipher = cipherDropDown.text
-                                    cipherDropDown.close()
+                                    cipherDropDown.closeTriggered()
                                 }
 
                                 Component.onCompleted: {
@@ -171,7 +158,6 @@ PageType {
                             enabled: isPortEditable | isCipherEditable
 
                             text: qsTr("Save")
-                            Keys.onTabPressed: lastItemTabClicked(focusItem)
 
                             clickedFunc: function() {
                                 forceActiveFocus()

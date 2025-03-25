@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QJsonDocument>
 #include <QProcess>
+#include <QRegularExpression>
 #include <QString>
 #include <QTemporaryDir>
 #include <QTemporaryFile>
@@ -19,13 +20,17 @@
 #include "settings.h"
 #include "utilities.h"
 
-WireguardConfigurator::WireguardConfigurator(std::shared_ptr<Settings> settings, const QSharedPointer<ServerController> &serverController,
-                                             bool isAwg, QObject *parent)
+WireguardConfigurator::WireguardConfigurator(std::shared_ptr<Settings> settings,
+                                             const QSharedPointer<ServerController> &serverController, bool isAwg,
+                                             QObject *parent)
     : ConfiguratorBase(settings, serverController, parent), m_isAwg(isAwg)
 {
-    m_serverConfigPath = m_isAwg ? amnezia::protocols::awg::serverConfigPath : amnezia::protocols::wireguard::serverConfigPath;
-    m_serverPublicKeyPath = m_isAwg ? amnezia::protocols::awg::serverPublicKeyPath : amnezia::protocols::wireguard::serverPublicKeyPath;
-    m_serverPskKeyPath = m_isAwg ? amnezia::protocols::awg::serverPskKeyPath : amnezia::protocols::wireguard::serverPskKeyPath;
+    m_serverConfigPath =
+            m_isAwg ? amnezia::protocols::awg::serverConfigPath : amnezia::protocols::wireguard::serverConfigPath;
+    m_serverPublicKeyPath =
+            m_isAwg ? amnezia::protocols::awg::serverPublicKeyPath : amnezia::protocols::wireguard::serverPublicKeyPath;
+    m_serverPskKeyPath =
+            m_isAwg ? amnezia::protocols::awg::serverPskKeyPath : amnezia::protocols::wireguard::serverPskKeyPath;
     m_configTemplate = m_isAwg ? ProtocolScriptType::awg_template : ProtocolScriptType::wireguard_template;
 
     m_protocolName = m_isAwg ? config_key::awg : config_key::wireguard;
@@ -67,9 +72,31 @@ WireguardConfigurator::ConnectionData WireguardConfigurator::genClientKeys()
     return connData;
 }
 
+QList<QHostAddress> WireguardConfigurator::getIpsFromConf(const QString &input)
+{
+    QRegularExpression regex("AllowedIPs = (\\d+\\.\\d+\\.\\d+\\.\\d+)");
+    QRegularExpressionMatchIterator matchIterator = regex.globalMatch(input);
+
+    QList<QHostAddress> ips;
+
+    while (matchIterator.hasNext()) {
+        QRegularExpressionMatch match = matchIterator.next();
+        const QString address_string { match.captured(1) };
+        const QHostAddress address { address_string };
+        if (address.isNull()) {
+            qWarning() << "Couldn't recognize the ip address: " << address_string;
+        } else {
+            ips << address;
+        }
+    }
+
+    return ips;
+}
+
 WireguardConfigurator::ConnectionData WireguardConfigurator::prepareWireguardConfig(const ServerCredentials &credentials,
                                                                                     DockerContainer container,
-                                                                                    const QJsonObject &containerConfig, ErrorCode &errorCode)
+                                                                                    const QJsonObject &containerConfig,
+                                                                                    ErrorCode &errorCode)
 {
     WireguardConfigurator::ConnectionData connData = WireguardConfigurator::genClientKeys();
     connData.host = credentials.hostName;
@@ -80,11 +107,8 @@ WireguardConfigurator::ConnectionData WireguardConfigurator::prepareWireguardCon
         return connData;
     }
 
-    ErrorCode e = ErrorCode::NoError;
-    ServerController serverController(m_settings);
-
     if (container == DockerContainer::Awg) {
-        if (serverController.isNewAwgContainer(credentials)) {
+        if (m_serverController->isNewAwgContainer(credentials)) {
             m_serverConfigPath = amnezia::protocols::awg::serverConfigPath;
             m_interfaceName = protocols::awg::interfaceName;
             m_wgBinaryName = protocols::awg::wgBinaryName;
@@ -97,53 +121,45 @@ WireguardConfigurator::ConnectionData WireguardConfigurator::prepareWireguardCon
         }
     }
 
-    // Get list of already created clients (only IP addresses)
-    QString nextIpNumber;
-    {
-        QString script = QString("cat %1 | grep AllowedIPs").arg(m_serverConfigPath);
-        QString stdOut;
-        auto cbReadStdOut = [&](const QString &data, libssh::Client &) {
-            stdOut += data + "\n";
-            return ErrorCode::NoError;
-        };
+    QString getIpsScript = QString("cat %1 | grep AllowedIPs").arg(m_serverConfigPath);
+    QString stdOut;
+    auto cbReadStdOut = [&](const QString &data, libssh::Client &) {
+        stdOut += data + "\n";
+        return ErrorCode::NoError;
+    };
 
-        errorCode = m_serverController->runContainerScript(credentials, container, script, cbReadStdOut);
-        if (errorCode != ErrorCode::NoError) {
-            return connData;
-        }
+    errorCode = m_serverController->runContainerScript(credentials, container, getIpsScript, cbReadStdOut);
+    if (errorCode != ErrorCode::NoError) {
+        return connData;
+    }
+    auto ips = getIpsFromConf(stdOut);
 
-        stdOut.replace("AllowedIPs = ", "");
-        stdOut.replace("/32", "");
-        QStringList ips = stdOut.split("\n", Qt::SkipEmptyParts);
-
-        // Calc next IP address
-        if (ips.isEmpty()) {
-            nextIpNumber = "2";
+    QHostAddress nextIp = [&] {
+        QHostAddress result;
+        QHostAddress lastIp;
+        if (ips.empty()) {
+            lastIp.setAddress(containerConfig.value(m_protocolName)
+                                      .toObject()
+                                      .value(config_key::subnet_address)
+                                      .toString(protocols::wireguard::defaultSubnetAddress));
         } else {
-            int next = ips.last().split(".").last().toInt() + 1;
-            if (next > 254) {
-                errorCode = ErrorCode::AddressPoolError;
-                return connData;
-            }
-            nextIpNumber = QString::number(next);
+            lastIp = ips.last();
         }
-    }
-
-    QString subnetIp = containerConfig.value(config_key::subnet_address).toString(protocols::wireguard::defaultSubnetAddress);
-    {
-        QStringList l = subnetIp.split(".", Qt::SkipEmptyParts);
-        if (l.isEmpty()) {
-            errorCode = ErrorCode::AddressPoolError;
-            return connData;
+        quint8 lastOctet = static_cast<quint8>(lastIp.toIPv4Address());
+        switch (lastOctet) {
+        case 254: result.setAddress(lastIp.toIPv4Address() + 3); break;
+        case 255: result.setAddress(lastIp.toIPv4Address() + 2); break;
+        default: result.setAddress(lastIp.toIPv4Address() + 1); break;
         }
-        l.removeLast();
-        l.append(nextIpNumber);
 
-        connData.clientIP = l.join(".");
-    }
+        return result;
+    }();
+
+    connData.clientIP = nextIp.toString();
 
     // Get keys
-    connData.serverPubKey = m_serverController->getTextFileFromContainer(container, credentials, m_serverPublicKeyPath, errorCode);
+    connData.serverPubKey =
+            m_serverController->getTextFileFromContainer(container, credentials, m_serverPublicKeyPath, errorCode);
     connData.serverPubKey.replace("\n", "");
     if (errorCode != ErrorCode::NoError) {
         return connData;
@@ -174,7 +190,8 @@ WireguardConfigurator::ConnectionData WireguardConfigurator::prepareWireguardCon
                              .arg(m_serverConfigPath, m_interfaceName, m_wgQuickBinaryName, m_wgBinaryName);
 
     errorCode = m_serverController->runScript(
-            credentials, m_serverController->replaceVars(script, m_serverController->genVarsForScript(credentials, container)));
+            credentials,
+            m_serverController->replaceVars(script, m_serverController->genVarsForScript(credentials, container)));
 
     return connData;
 }
@@ -183,8 +200,8 @@ QString WireguardConfigurator::createConfig(const ServerCredentials &credentials
                                             const QJsonObject &containerConfig, ErrorCode &errorCode)
 {
     QString scriptData = amnezia::scriptData(m_configTemplate, container);
-    QString config =
-            m_serverController->replaceVars(scriptData, m_serverController->genVarsForScript(credentials, container, containerConfig));
+    QString config = m_serverController->replaceVars(
+            scriptData, m_serverController->genVarsForScript(credentials, container, containerConfig));
 
     ConnectionData connData = prepareWireguardConfig(credentials, container, containerConfig, errorCode);
     if (errorCode != ErrorCode::NoError) {
@@ -209,21 +226,25 @@ QString WireguardConfigurator::createConfig(const ServerCredentials &credentials
     jConfig[config_key::server_pub_key] = connData.serverPubKey;
     jConfig[config_key::mtu] = wireguarConfig.value(config_key::mtu).toString(protocols::wireguard::defaultMtu);
 
+    jConfig[config_key::persistent_keep_alive] = "25";
+    QJsonArray allowedIps { "0.0.0.0/0", "::/0" };
+    jConfig[config_key::allowed_ips] = allowedIps;
+
     jConfig[config_key::clientId] = connData.clientPubKey;
 
     return QJsonDocument(jConfig).toJson();
 }
 
-QString WireguardConfigurator::processConfigWithLocalSettings(const QPair<QString, QString> &dns, const bool isApiConfig,
-                                                              QString &protocolConfigString)
+QString WireguardConfigurator::processConfigWithLocalSettings(const QPair<QString, QString> &dns,
+                                                              const bool isApiConfig, QString &protocolConfigString)
 {
     processConfigWithDnsSettings(dns, protocolConfigString);
 
     return protocolConfigString;
 }
 
-QString WireguardConfigurator::processConfigWithExportSettings(const QPair<QString, QString> &dns, const bool isApiConfig,
-                                                               QString &protocolConfigString)
+QString WireguardConfigurator::processConfigWithExportSettings(const QPair<QString, QString> &dns,
+                                                               const bool isApiConfig, QString &protocolConfigString)
 {
     processConfigWithDnsSettings(dns, protocolConfigString);
 

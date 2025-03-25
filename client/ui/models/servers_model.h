@@ -3,8 +3,8 @@
 
 #include <QAbstractListModel>
 
-#include "settings.h"
 #include "core/controllers/serverController.h"
+#include "settings.h"
 
 class ServersModel : public QAbstractListModel
 {
@@ -30,7 +30,13 @@ public:
         DefaultContainerRole,
 
         HasInstalledContainers,
-        IsServerFromApiRole,
+
+        IsServerFromTelegramApiRole,
+        IsServerFromGatewayApiRole,
+        ApiConfigRole,
+        IsCountrySelectionAvailableRole,
+        ApiAvailableCountriesRole,
+        ApiServerCountryCodeRole,
 
         HasAmneziaDns
     };
@@ -40,6 +46,7 @@ public:
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
 
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
+    bool setData(const int index, const QVariant &value, int role = Qt::EditRole);
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     QVariant data(const int index, int role = Qt::DisplayRole) const;
 
@@ -49,8 +56,10 @@ public:
     Q_PROPERTY(QString defaultServerName READ getDefaultServerName NOTIFY defaultServerNameChanged)
     Q_PROPERTY(QString defaultServerDefaultContainerName READ getDefaultServerDefaultContainerName NOTIFY defaultServerDefaultContainerChanged)
     Q_PROPERTY(QString defaultServerDescriptionCollapsed READ getDefaultServerDescriptionCollapsed NOTIFY defaultServerDefaultContainerChanged)
+    Q_PROPERTY(QString defaultServerImagePathCollapsed READ getDefaultServerImagePathCollapsed NOTIFY defaultServerDefaultContainerChanged)
     Q_PROPERTY(QString defaultServerDescriptionExpanded READ getDefaultServerDescriptionExpanded NOTIFY defaultServerDefaultContainerChanged)
-    Q_PROPERTY(bool isDefaultServerDefaultContainerHasSplitTunneling READ isDefaultServerDefaultContainerHasSplitTunneling NOTIFY defaultServerDefaultContainerChanged)
+    Q_PROPERTY(bool isDefaultServerDefaultContainerHasSplitTunneling READ isDefaultServerDefaultContainerHasSplitTunneling NOTIFY
+                       defaultServerDefaultContainerChanged)
     Q_PROPERTY(bool isDefaultServerFromApi READ isDefaultServerFromApi NOTIFY defaultServerIndexChanged)
 
     Q_PROPERTY(int processedIndex READ getProcessedServerIndex WRITE setProcessedServerIndex NOTIFY processedServerIndexChanged)
@@ -60,6 +69,7 @@ public slots:
     const int getDefaultServerIndex();
     const QString getDefaultServerName();
     const QString getDefaultServerDescriptionCollapsed();
+    const QString getDefaultServerImagePathCollapsed();
     const QString getDefaultServerDescriptionExpanded();
     const QString getDefaultServerDefaultContainerName();
     bool isDefaultServerCurrentlyProcessed();
@@ -101,18 +111,27 @@ public slots:
     QPair<QString, QString> getDnsPair(const int serverIndex);
 
     bool isServerFromApiAlreadyExists(const quint16 crc);
+    bool isServerFromApiAlreadyExists(const QString &userCountryCode, const QString &serviceType, const QString &serviceProtocol);
 
     QVariant getDefaultServerData(const QString roleString);
 
     QVariant getProcessedServerData(const QString roleString);
+    bool setProcessedServerData(const QString &roleString, const QVariant &value);
 
     bool isDefaultServerDefaultContainerHasSplitTunneling();
+
+    bool isServerFromApi(const int serverIndex);
+    bool isApiKeyExpired(const int serverIndex);
+    void removeApiConfig(const int serverIndex);
 
 protected:
     QHash<int, QByteArray> roleNames() const override;
 
 signals:
     void processedServerIndexChanged(const int index);
+    // emitted when the processed server index or processed server data is changed
+    void processedServerChanged();
+
     void defaultServerIndexChanged(const int index);
     void defaultServerNameChanged();
     void defaultServerDescriptionChanged();
@@ -120,6 +139,9 @@ signals:
     void containersUpdated(const QJsonArray &containers);
     void defaultServerContainersUpdated(const QJsonArray &containers);
     void defaultServerDefaultContainerChanged(const int containerIndex);
+
+    void updateApiCountryModel();
+    void updateApiServicesModel();
 
 private:
     ServerCredentials serverCredentials(int index) const;

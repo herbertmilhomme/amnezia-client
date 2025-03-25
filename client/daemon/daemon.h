@@ -8,6 +8,8 @@
 #include <QDateTime>
 #include <QTimer>
 
+#include "daemon/daemonerrors.h"
+#include "daemonerrors.h"
 #include "dnsutils.h"
 #include "interfaceconfig.h"
 #include "iputils.h"
@@ -51,7 +53,7 @@ class Daemon : public QObject {
    */
   void activationFailure();
   void disconnected();
-  void backendFailure();
+  void backendFailure(DaemonError reason = DaemonError::ERROR_FATAL);
 
  private:
   bool maybeUpdateResolvers(const InterfaceConfig& config);
@@ -69,7 +71,6 @@ class Daemon : public QObject {
   virtual WireguardUtils* wgutils() const = 0;
   virtual bool supportIPUtils() const { return false; }
   virtual IPUtils* iputils() { return nullptr; }
-  virtual bool supportDnsUtils() const { return false; }
   virtual DnsUtils* dnsutils() { return nullptr; }
 
   static bool parseStringList(const QJsonObject& obj, const QString& name,

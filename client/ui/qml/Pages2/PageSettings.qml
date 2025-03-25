@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 
 import PageEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -12,8 +13,6 @@ import "../Config"
 
 PageType {
     id: root
-
-    defaultActiveFocusItem: header
 
     FlickableType {
         id: fl
@@ -38,8 +37,6 @@ PageType {
                 Layout.leftMargin: 16
 
                 headerText: qsTr("Settings")
-
-                KeyNavigation.tab: account.rightButton
             }
 
             LabelWithButtonType {
@@ -54,8 +51,6 @@ PageType {
                 clickedFunction: function() {
                     PageController.goToPage(PageEnum.PageSettingsServersList)
                 }
-
-                KeyNavigation.tab: connection.rightButton
             }
 
             DividerType {}
@@ -71,8 +66,6 @@ PageType {
                 clickedFunction: function() {
                     PageController.goToPage(PageEnum.PageSettingsConnection)
                 }
-
-                KeyNavigation.tab: application.rightButton
             }
 
             DividerType {}
@@ -88,8 +81,6 @@ PageType {
                 clickedFunction: function() {
                     PageController.goToPage(PageEnum.PageSettingsApplication)
                 }
-
-                KeyNavigation.tab: backup.rightButton
             }
 
             DividerType {}
@@ -105,8 +96,6 @@ PageType {
                 clickedFunction: function() {
                     PageController.goToPage(PageEnum.PageSettingsBackup)
                 }
-
-                KeyNavigation.tab: about.rightButton
             }
 
             DividerType {}
@@ -122,11 +111,27 @@ PageType {
                 clickedFunction: function() {
                     PageController.goToPage(PageEnum.PageSettingsAbout)
                 }
-                KeyNavigation.tab: close
-
             }
 
             DividerType {}
+
+            LabelWithButtonType {
+                id: devConsole
+                visible: SettingsController.isDevModeEnabled
+                Layout.fillWidth: true
+
+                text: qsTr("Dev console")
+                rightImageSource: "qrc:/images/controls/chevron-right.svg"
+                leftImageSource: "qrc:/images/controls/bug.svg"
+
+                clickedFunction: function() {
+                    PageController.goToPage(PageEnum.PageDevMenu)
+                }
+            }
+
+            DividerType {
+                visible: SettingsController.isDevModeEnabled
+            }
 
             LabelWithButtonType {
                 id: close
@@ -136,9 +141,7 @@ PageType {
 
                 text: qsTr("Close application")
                 leftImageSource: "qrc:/images/controls/x-circle.svg"
-                isLeftImageHoverEnabled: false                
-
-                Keys.onTabPressed: lastItemTabClicked(header)
+                isLeftImageHoverEnabled: false
 
                 clickedFunction: function() {
                     PageController.closeApplication()

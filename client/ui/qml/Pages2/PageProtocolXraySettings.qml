@@ -6,6 +6,7 @@ import SortFilterProxyModel 0.2
 
 import PageEnum 1.0
 import ContainerEnum 1.0
+import Style 1.0
 
 import "./"
 import "../Controls2"
@@ -15,13 +16,6 @@ import "../Components"
 
 PageType {
     id: root
-
-    defaultActiveFocusItem: listview
-
-    Item {
-        id: focusItem
-        KeyNavigation.tab: backButton
-    }
 
     ColumnLayout {
         id: backButtonLayout
@@ -34,7 +28,6 @@ PageType {
 
         BackButtonType {
             id: backButton
-            KeyNavigation.tab: listview
         }
     }
 
@@ -63,13 +56,6 @@ PageType {
                 interactive: false
 
                 model: XrayConfigModel
-
-                activeFocusOnTab: true
-                onActiveFocusChanged: {
-                    if (activeFocus) {
-                        listview.itemAtIndex(0)?.focusItemId.forceActiveFocus()
-                    }
-                }
 
                 delegate: Item {
                     property alias focusItemId: textFieldWithHeaderType.textField
@@ -100,20 +86,18 @@ PageType {
                             Layout.topMargin: 32
 
                             headerText: qsTr("Disguised as traffic from")
-                            textFieldText: site
-
-                            KeyNavigation.tab: basicButton
+                            textField.text: site
 
                             textField.onEditingFinished: {
-                                if (textFieldText !== site) {
-                                    var tmpText = textFieldText
+                                if (textField.text !== site) {
+                                    var tmpText = textField.text
                                     tmpText = tmpText.toLocaleLowerCase()
 
                                     var indexHttps = tmpText.indexOf("https://")
                                     if (indexHttps === 0) {
-                                        tmpText = textFieldText.substring(8)
+                                        tmpText = textField.text.substring(8)
                                     } else {
-                                        site = textFieldText
+                                        site = textField.text
                                     }
                                 }
                             }
@@ -126,8 +110,6 @@ PageType {
                             Layout.bottomMargin: 24
 
                             text: qsTr("Save")
-
-                            Keys.onTabPressed: lastItemTabClicked(focusItem)
 
                             onClicked: {
                                 forceActiveFocus()

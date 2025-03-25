@@ -7,7 +7,6 @@
 class IpcInterface
 {
     SLOT( int createPrivilegedProcess() ); // return local pid
-    //SIGNAL(sendMessage(const QByteArray &message));
 
     // Route functions
     SLOT( int routeAddList(const QString &gw, const QStringList &ips) );
@@ -21,6 +20,7 @@ class IpcInterface
 
     SLOT( void cleanUp() );
     SLOT( void setLogsEnabled(bool enabled) );
+    SLOT( void clearLogs() );
 
     SLOT( bool createTun(const QString &dev, const QString &subnet) );
     SLOT( bool deleteTun(const QString &dev) );

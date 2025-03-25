@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+import Style 1.0
+
 import "TextTypes"
 
 Item {
@@ -18,26 +20,53 @@ Item {
     property string buttonImageSource
     property string rightImageSource
     property string leftImageSource
-    property bool isLeftImageHoverEnabled: true //todo separete this qml file to 3
+    property bool isLeftImageHoverEnabled: true
+    property bool isSmallLeftImage: false
 
     property alias rightButton: rightImage
     property alias eyeButton: eyeImage
     property FlickableType parentFlickable
 
-    property string textColor: "#d7d8db"
-    property string textDisabledColor: "#878B91"
-    property string descriptionColor: "#878B91"
-    property string descriptionDisabledColor: "#494B50"
+    property string textColor: AmneziaStyle.color.paleGray
+    property string textDisabledColor: AmneziaStyle.color.mutedGray
+    property string descriptionColor: AmneziaStyle.color.mutedGray
+    property string descriptionDisabledColor: AmneziaStyle.color.charcoalGray
     property real textOpacity: 1.0
 
-    property string borderFocusedColor: "#D7D8DB"
+    property string borderFocusedColor: AmneziaStyle.color.paleGray
     property int borderFocusedWidth: 1
 
-    property string rightImageColor: "#d7d8db"
+    property string rightImageColor: AmneziaStyle.color.paleGray
 
     property bool descriptionOnTop: false
     property bool hideDescription: true
 
+    property bool isFocusable: !(eyeImage.visible || rightImage.visible) // TODO: this component already has focusable items
+
+    Keys.onTabPressed: {
+        FocusController.nextKeyTabItem()
+    }
+
+    Keys.onBacktabPressed: {
+        FocusController.previousKeyTabItem()
+    }
+
+    Keys.onUpPressed: {
+        FocusController.nextKeyUpItem()
+    }
+    
+    Keys.onDownPressed: {
+        FocusController.nextKeyDownItem()
+    }
+    
+    Keys.onLeftPressed: {
+        FocusController.nextKeyLeftItem()
+    }
+
+    Keys.onRightPressed: {
+        FocusController.nextKeyRightItem()
+    }
+    
     implicitWidth: content.implicitWidth + content.anchors.topMargin + content.anchors.bottomMargin
     implicitHeight: content.implicitHeight + content.anchors.leftMargin + content.anchors.rightMargin
 
@@ -112,12 +141,12 @@ Item {
 
             visible: leftImageSource ? true : false
 
-            Layout.preferredHeight: rightImageSource || !isLeftImageHoverEnabled ? leftImage.implicitHeight : 56
-            Layout.preferredWidth: rightImageSource || !isLeftImageHoverEnabled ? leftImage.implicitWidth : 56
-            Layout.rightMargin: rightImageSource || !isLeftImageHoverEnabled ? 16 : 0
+            Layout.preferredHeight: (rightImageSource || !isLeftImageHoverEnabled || isSmallLeftImage) ? 40 : 56
+            Layout.preferredWidth: (rightImageSource || !isLeftImageHoverEnabled || isSmallLeftImage)? 40 : 56
+            Layout.rightMargin: isSmallLeftImage ? 8 : (rightImageSource || !isLeftImageHoverEnabled) ? 16 : 0
 
             radius: 12
-            color: "transparent"
+            color: AmneziaStyle.color.transparent
 
             Behavior on color {
                 PropertyAnimation { duration: 200 }
@@ -220,7 +249,7 @@ Item {
                 id: eyeImageBackground
                 anchors.fill: parent
                 radius: 12
-                color: "transparent"
+                color: AmneziaStyle.color.transparent
 
                 Behavior on color {
                     PropertyAnimation { duration: 200 }
@@ -257,7 +286,7 @@ Item {
                 id: rightImageBackground
                 anchors.fill: parent
                 radius: 12
-                color: "transparent"
+                color: AmneziaStyle.color.transparent
 
                 Behavior on color {
                     PropertyAnimation { duration: 200 }
@@ -274,9 +303,9 @@ Item {
     Rectangle {
         id: background
         anchors.fill: root
-        color: "transparent"
+        color: AmneziaStyle.color.transparent
 
-        border.color: root.activeFocus ? root.borderFocusedColor : "transparent"
+        border.color: root.activeFocus ? root.borderFocusedColor : AmneziaStyle.color.transparent
         border.width: root.activeFocus ? root.borderFocusedWidth : 0
 
 

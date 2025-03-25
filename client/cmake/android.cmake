@@ -1,6 +1,6 @@
 message("Client android ${CMAKE_ANDROID_ARCH_ABI} build")
 
-set(APP_ANDROID_MIN_SDK 24)
+set(APP_ANDROID_MIN_SDK 26)
 set(ANDROID_PLATFORM "android-${APP_ANDROID_MIN_SDK}" CACHE STRING
     "The minimum API level supported by the application or library" FORCE)
 
@@ -27,7 +27,6 @@ link_directories(${CMAKE_CURRENT_SOURCE_DIR}/platforms/android)
 set(HEADERS ${HEADERS}
     ${CMAKE_CURRENT_SOURCE_DIR}/platforms/android/android_controller.h
     ${CMAKE_CURRENT_SOURCE_DIR}/platforms/android/android_utils.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/platforms/android/authResultReceiver.h
     ${CMAKE_CURRENT_SOURCE_DIR}/protocols/android_vpnprotocol.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core/installedAppsImageProvider.h
 )
@@ -35,7 +34,6 @@ set(HEADERS ${HEADERS}
 set(SOURCES ${SOURCES}
     ${CMAKE_CURRENT_SOURCE_DIR}/platforms/android/android_controller.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/platforms/android/android_utils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/platforms/android/authResultReceiver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/protocols/android_vpnprotocol.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/installedAppsImageProvider.cpp
 )
@@ -52,3 +50,6 @@ foreach(abi IN ITEMS ${QT_ANDROID_ABIS})
         ${CMAKE_CURRENT_SOURCE_DIR}/3rd-prebuilt/3rd-prebuilt/libssh/android/${abi}/libssh.so
     )
 endforeach()
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/3rd-prebuilt/3rd-prebuilt/xray/android/libxray.aar
+        DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/android/xray/libXray)

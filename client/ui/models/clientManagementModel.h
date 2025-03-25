@@ -17,7 +17,8 @@ public:
         CreationDateRole,
         LatestHandshakeRole,
         DataReceivedRole,
-        DataSentRole
+        DataSentRole,
+        AllowedIpsRole
     };
 
     struct WgShowData
@@ -26,6 +27,7 @@ public:
         QString latestHandshake;
         QString dataReceived;
         QString dataSent;
+        QString allowedIps;
     };
 
     ClientManagementModel(std::shared_ptr<Settings> settings, QObject *parent = nullptr);
@@ -38,6 +40,8 @@ public slots:
                           const QSharedPointer<ServerController> &serverController);
     ErrorCode appendClient(const DockerContainer container, const ServerCredentials &credentials, const QJsonObject &containerConfig,
                            const QString &clientName, const QSharedPointer<ServerController> &serverController);
+    ErrorCode appendClient(QJsonObject &protocolConfig, const QString &clientName,const DockerContainer container,
+                           const ServerCredentials &credentials, const QSharedPointer<ServerController> &serverController);
     ErrorCode appendClient(const QString &clientId, const QString &clientName, const DockerContainer container,
                            const ServerCredentials &credentials, const QSharedPointer<ServerController> &serverController);
     ErrorCode renameClient(const int row, const QString &userName, const DockerContainer container, const ServerCredentials &credentials,
@@ -62,11 +66,15 @@ private:
                             const QSharedPointer<ServerController> &serverController);
     ErrorCode revokeWireGuard(const int row, const DockerContainer container, const ServerCredentials &credentials,
                               const QSharedPointer<ServerController> &serverController);
+    ErrorCode revokeXray(const int row, const DockerContainer container, const ServerCredentials &credentials,
+                         const QSharedPointer<ServerController> &serverController);
 
     ErrorCode getOpenVpnClients(const DockerContainer container, const ServerCredentials &credentials,
                                 const QSharedPointer<ServerController> &serverController, int &count);
     ErrorCode getWireGuardClients(const DockerContainer container, const ServerCredentials &credentials,
                                   const QSharedPointer<ServerController> &serverController, int &count);
+    ErrorCode getXrayClients(const DockerContainer container, const ServerCredentials& credentials,
+                             const QSharedPointer<ServerController> &serverController, int &count);
 
     ErrorCode wgShow(const DockerContainer container, const ServerCredentials &credentials,
                      const QSharedPointer<ServerController> &serverController, std::vector<WgShowData> &data);
