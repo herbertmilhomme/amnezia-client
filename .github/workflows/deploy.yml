@@ -318,7 +318,7 @@ jobs:
 
 # ------------------------------------------------------
   Build-MacOS-NE:
-    runs-on: macos-latest
+    runs-on: macos-15
 
     env:
       QT_VERSION: 6.8.0
@@ -334,7 +334,7 @@ jobs:
     - name: 'Setup Xcode'
       uses: maxim-lobanov/setup-xcode@v1
       with:
-        xcode-version: '16.1'
+        xcode-version: '16.2'
 
     - name: 'Install desktop Qt'
       uses: jurplel/install-qt-action@v3
@@ -375,11 +375,11 @@ jobs:
         set -o pipefail
         export QT_BIN_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/macos/bin" 
         export QT_MACOS_ROOT_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/macos" 
-        bash deploy/build_macos_ne.sh | \
-          sed -e '/-Xcc -DPROD_AGW_PUBLIC_KEY/,/-Xcc/ { /-Xcc/!d; }' -e '/-Xcc -DPROD_AGW_PUBLIC_KEY/d' | \
-          sed -e '/-Xcc -DDEV_AGW_PUBLIC_KEY/,/-Xcc/ { /-Xcc/!d; }' -e '/-Xcc -DDEV_AGW_PUBLIC_KEY/d' | \
-          sed -e '/-DPROD_AGW_PUBLIC_KEY/,/-D/ { /-D/!d; }' -e '/-DPROD_AGW_PUBLIC_KEY/d' | \
-          sed -e '/-DDEV_AGW_PUBLIC_KEY/,/-D/ { /-D/!d; }' -e '/-DDEV_AGW_PUBLIC_KEY/d'
+        bash deploy/build_macos_ne.sh 
+          # sed -u -e '/-Xcc -DPROD_AGW_PUBLIC_KEY/,/-Xcc/ { /-Xcc/!d; }' -e '/-Xcc -DPROD_AGW_PUBLIC_KEY/d' | \
+          # sed -u -e '/-Xcc -DDEV_AGW_PUBLIC_KEY/,/-Xcc/ { /-Xcc/!d; }' -e '/-Xcc -DDEV_AGW_PUBLIC_KEY/d' | \
+          # sed -u -e '/-DPROD_AGW_PUBLIC_KEY/,/-D/ { /-D/!d; }' -e '/-DPROD_AGW_PUBLIC_KEY/d' | \
+          # sed -u -e '/-DDEV_AGW_PUBLIC_KEY/,/-D/ { /-D/!d; }' -e '/-DDEV_AGW_PUBLIC_KEY/d'
 
       env:
         MAC_TRUST_CERT_BASE64: ${{ secrets.MAC_TRUST_CERT_BASE64 }}
