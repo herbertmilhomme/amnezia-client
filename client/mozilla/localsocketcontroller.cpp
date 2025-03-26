@@ -15,10 +15,8 @@
 #include <QStandardPaths>
 #include <QThread>
 
-#include "ipaddress.h"
 #include "leakdetector.h"
 #include "logger.h"
-#include "models/server.h"
 #include "daemon/daemonerrors.h"
 
 #include "core/ipcclient.h"
@@ -128,7 +126,6 @@ void LocalSocketController::daemonConnected() {
 }
 
 void LocalSocketController::activate(const QJsonObject &rawConfig) {
-
   m_RawConfig = rawConfig;
 
   QString protocolName = rawConfig.value("protocol").toString();
@@ -230,7 +227,6 @@ void LocalSocketController::activate(const QJsonObject &rawConfig) {
 
   json.insert("allowedIPAddressRanges", jsAllowedIPAddesses);
 
-
   QJsonArray jsExcludedAddresses;
   jsExcludedAddresses.append(wgConfig.value(amnezia::config_key::hostName));
   if (splitTunnelType == 2) {
@@ -275,7 +271,6 @@ void LocalSocketController::activate(const QJsonObject &rawConfig) {
     json.insert(amnezia::config_key::underloadPacketMagicHeader, wgConfig.value(amnezia::config_key::underloadPacketMagicHeader));
     json.insert(amnezia::config_key::transportPacketMagicHeader, wgConfig.value(amnezia::config_key::transportPacketMagicHeader));
   }
-
 
   write(json);
 }

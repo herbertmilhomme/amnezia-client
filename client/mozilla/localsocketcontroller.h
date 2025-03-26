@@ -65,7 +65,6 @@ class LocalSocketController final : public ControllerImpl {
   QJsonObject m_RawConfig;
 
   QTimer m_initializingTimer;
-  QTimer m_statusTimer;
   uint32_t m_initializingRetry = 0;
 };
 

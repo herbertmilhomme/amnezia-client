@@ -196,7 +196,6 @@ bool IpcServer::startNetworkCheck(const QString& serverIpv4Gateway, const QStrin
 
 bool IpcServer::stopNetworkCheck()
 {
-
     qDebug() << "stopNetworkCheck";
     m_pingHelper.stop();
     return true;
