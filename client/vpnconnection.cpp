@@ -86,8 +86,13 @@ void VpnConnection::onConnectionStateChanged(Vpn::ConnectionState state)
                 }
             }
 
+            if (container != DockerContainer::Ipsec) {
+                IpcClient::Interface()->startNetworkCheck(remoteAddress(), m_vpnProtocol->vpnLocalAddress());
+            }
+
         } else if (state == Vpn::ConnectionState::Error) {
             IpcClient::Interface()->flushDns();
+            IpcClient::Interface()->stopNetworkCheck();
 
             if (m_settings->isSitesSplitTunnelingEnabled()) {
                 if (m_settings->routeMode() == Settings::VpnOnlyForwardSites) {
@@ -97,6 +102,7 @@ void VpnConnection::onConnectionStateChanged(Vpn::ConnectionState state)
         } else if (state == Vpn::ConnectionState::Connecting) {
 
         } else if (state == Vpn::ConnectionState::Disconnected) {
+            IpcClient::Interface()->stopNetworkCheck();
         }
     }
 #endif
@@ -237,6 +243,9 @@ void VpnConnection::connectToVpn(int serverIndex, const ServerCredentials &crede
     emit connectionStateChanged(Vpn::ConnectionState::Connecting);
 
     m_vpnConfiguration = vpnConfiguration;
+    m_serverIndex = serverIndex;
+    m_serverCredentials = credentials;
+    m_dockerContainer = container;
 
 #ifdef AMNEZIA_DESKTOP
     if (m_vpnProtocol) {
@@ -281,6 +290,15 @@ void VpnConnection::createProtocolConnections()
     connect(m_vpnProtocol.data(), SIGNAL(connectionStateChanged(Vpn::ConnectionState)), this,
             SLOT(onConnectionStateChanged(Vpn::ConnectionState)));
     connect(m_vpnProtocol.data(), SIGNAL(bytesChanged(quint64, quint64)), this, SLOT(onBytesChanged(quint64, quint64)));
+
+    connect(IpcClient::Interface().data(), &IpcInterfaceReplica::connectionLose,
+            this, [this]() {
+                qDebug() << "Connection Lose";
+                auto result = IpcClient::Interface()->stopNetworkCheck();
+                result.waitForFinished(3000);
+                this->disconnectFromVpn();
+                this->connectToVpn(m_serverIndex, m_serverCredentials, m_dockerContainer, m_vpnConfiguration);
+            });
 }
 
 void VpnConnection::appendKillSwitchConfig()

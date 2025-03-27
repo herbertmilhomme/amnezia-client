@@ -63,6 +63,7 @@ public:
 
     QString routeGateway() const;
     QString vpnGateway() const;
+    QString vpnLocalAddress() const;
 
     static VpnProtocol* factory(amnezia::DockerContainer container, const QJsonObject &configuration);
 

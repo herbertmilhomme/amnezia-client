@@ -50,14 +50,7 @@ LocalSocketController::LocalSocketController() {
   connect(&m_initializingTimer, &QTimer::timeout, this,
           &LocalSocketController::initializeInternal);
 
-  connect(IpcClient::Interface().data(), &IpcInterfaceReplica::connectionLose,
-          this, [this]() {
-      logger.debug() << "Connection Lose";
-      auto result = IpcClient::Interface()->stopNetworkCheck();
-      result.waitForFinished(3000);
-      this->deactivate();
-      this->activate(m_RawConfig);
-  });
+
 
 }
 
@@ -126,8 +119,6 @@ void LocalSocketController::daemonConnected() {
 }
 
 void LocalSocketController::activate(const QJsonObject &rawConfig) {
-  m_RawConfig = rawConfig;
-
   QString protocolName = rawConfig.value("protocol").toString();
 
   int splitTunnelType = rawConfig.value("splitTunnelType").toInt();
@@ -143,6 +134,7 @@ void LocalSocketController::activate(const QJsonObject &rawConfig) {
   //  json.insert("hopindex", QJsonValue((double)hop.m_hopindex));
   json.insert("privateKey", wgConfig.value(amnezia::config_key::client_priv_key));
   json.insert("deviceIpv4Address", wgConfig.value(amnezia::config_key::client_ip));
+  m_deviceIpv4 = wgConfig.value(amnezia::config_key::client_ip).toString();
 
   // set up IPv6 unique-local-address, ULA, with "fd00::/8" prefix, not globally routable.
   // this will be default IPv6 gateway, OS recognizes that IPv6 link
@@ -435,9 +427,6 @@ void LocalSocketController::parseCommand(const QByteArray& command) {
       return;
     }
 
-    IpcClient::Interface()->startNetworkCheck(serverIpv4Gateway.toString(),
-                                              deviceIpv4Address.toString());
-
     QJsonValue txBytes = obj.value("txBytes");
     if (!txBytes.isDouble()) {
       logger.error() << "Unexpected txBytes value";
@@ -470,8 +459,14 @@ void LocalSocketController::parseCommand(const QByteArray& command) {
 
     logger.debug() << "Handshake completed with:"
                    << pubkey.toString();
-    emit connected(pubkey.toString());
+
     checkStatus();
+
+    emit statusUpdated("",
+                       m_deviceIpv4, 0,
+                       0);
+
+    emit connected(pubkey.toString());
     return;
   }
 

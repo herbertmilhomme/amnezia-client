@@ -60,9 +60,8 @@ class LocalSocketController final : public ControllerImpl {
 
   QByteArray m_buffer;
 
+  QString m_deviceIpv4;
   std::function<void(const QString&)> m_logCallback = nullptr;
-
-  QJsonObject m_RawConfig;
 
   QTimer m_initializingTimer;
   uint32_t m_initializingRetry = 0;

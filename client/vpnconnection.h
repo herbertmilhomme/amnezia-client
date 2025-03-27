@@ -77,6 +77,10 @@ private:
     QJsonObject m_routeMode;
     QString m_remoteAddress;
 
+    ServerCredentials m_serverCredentials;
+    int m_serverIndex;
+    DockerContainer m_dockerContainer;
+
     // Only for iOS for now, check counters
     QTimer m_checkTimer;
 
