@@ -54,7 +54,6 @@ void VpnConnection::onBytesChanged(quint64 receivedBytes, quint64 sentBytes)
 
 void VpnConnection::onConnectionStateChanged(Vpn::ConnectionState state)
 {
-
 #ifdef AMNEZIA_DESKTOP
     auto container = m_settings->defaultContainer(m_settings->defaultServerIndex());
 
@@ -291,6 +290,7 @@ void VpnConnection::createProtocolConnections()
             SLOT(onConnectionStateChanged(Vpn::ConnectionState)));
     connect(m_vpnProtocol.data(), SIGNAL(bytesChanged(quint64, quint64)), this, SLOT(onBytesChanged(quint64, quint64)));
 
+#ifdef AMNEZIA_DESKTOP
     connect(IpcClient::Interface().data(), &IpcInterfaceReplica::connectionLose,
             this, [this]() {
                 qDebug() << "Connection Lose";
@@ -299,6 +299,7 @@ void VpnConnection::createProtocolConnections()
                 this->disconnectFromVpn();
                 this->connectToVpn(m_serverIndex, m_serverCredentials, m_dockerContainer, m_vpnConfiguration);
             });
+#endif
 }
 
 void VpnConnection::appendKillSwitchConfig()
