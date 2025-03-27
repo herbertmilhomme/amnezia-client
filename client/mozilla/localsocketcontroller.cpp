@@ -49,9 +49,6 @@ LocalSocketController::LocalSocketController() {
   m_initializingTimer.setSingleShot(true);
   connect(&m_initializingTimer, &QTimer::timeout, this,
           &LocalSocketController::initializeInternal);
-
-
-
 }
 
 LocalSocketController::~LocalSocketController() {
@@ -279,8 +276,6 @@ void LocalSocketController::deactivate() {
   QJsonObject json;
   json.insert("type", "deactivate");
   write(json);
-  auto result = IpcClient::Interface()->stopNetworkCheck();
-  result.waitForFinished(3000);
   emit disconnected();
 }
 
@@ -462,9 +457,7 @@ void LocalSocketController::parseCommand(const QByteArray& command) {
 
     checkStatus();
 
-    emit statusUpdated("",
-                       m_deviceIpv4, 0,
-                       0);
+    emit statusUpdated("", m_deviceIpv4, 0, 0);
 
     emit connected(pubkey.toString());
     return;

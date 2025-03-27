@@ -11,7 +11,6 @@
 #include <functional>
 
 #include "controllerimpl.h"
-#include "qjsonobject.h"
 
 
 class QJsonObject;

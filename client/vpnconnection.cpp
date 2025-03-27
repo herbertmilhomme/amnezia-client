@@ -6,7 +6,6 @@
 #include <QHostInfo>
 #include <QJsonObject>
 
-#include "core/controllers/serverController.h"
 #include <configurators/cloak_configurator.h>
 #include <configurators/openvpn_configurator.h>
 #include <configurators/shadowsocks_configurator.h>
@@ -14,7 +13,6 @@
 
 #ifdef AMNEZIA_DESKTOP
     #include "core/ipcclient.h"
-    #include "ipc.h"
     #include <protocols/wireguardprotocol.h>
 #endif
 
@@ -91,7 +89,8 @@ void VpnConnection::onConnectionStateChanged(Vpn::ConnectionState state)
 
         } else if (state == Vpn::ConnectionState::Error) {
             IpcClient::Interface()->flushDns();
-            IpcClient::Interface()->stopNetworkCheck();
+            auto result = IpcClient::Interface()->stopNetworkCheck();
+            result.waitForFinished(3000);
 
             if (m_settings->isSitesSplitTunnelingEnabled()) {
                 if (m_settings->routeMode() == Settings::VpnOnlyForwardSites) {
@@ -101,7 +100,8 @@ void VpnConnection::onConnectionStateChanged(Vpn::ConnectionState state)
         } else if (state == Vpn::ConnectionState::Connecting) {
 
         } else if (state == Vpn::ConnectionState::Disconnected) {
-            IpcClient::Interface()->stopNetworkCheck();
+            auto result = IpcClient::Interface()->stopNetworkCheck();
+            result.waitForFinished(3000);
         }
     }
 #endif
