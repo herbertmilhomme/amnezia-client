@@ -13,13 +13,10 @@
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QStandardPaths>
-#include <QThread>
 
 #include "leakdetector.h"
 #include "logger.h"
 #include "daemon/daemonerrors.h"
-
-#include "core/ipcclient.h"
 
 #include "protocols/protocols_defs.h"
 
