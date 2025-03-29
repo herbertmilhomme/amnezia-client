@@ -89,8 +89,6 @@ void VpnConnection::onConnectionStateChanged(Vpn::ConnectionState state)
 
         } else if (state == Vpn::ConnectionState::Error) {
             IpcClient::Interface()->flushDns();
-            auto result = IpcClient::Interface()->stopNetworkCheck();
-            result.waitForFinished(3000);
 
             if (m_settings->isSitesSplitTunnelingEnabled()) {
                 if (m_settings->routeMode() == Settings::VpnOnlyForwardSites) {
@@ -224,6 +222,11 @@ void VpnConnection::connectToVpn(int serverIndex, const ServerCredentials &crede
                         .arg(serverIndex)
                         .arg(ContainerProps::containerToString(container));
 #if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
+    if (m_IpcClient) {
+        m_IpcClient->close();
+        m_IpcClient = nullptr;
+    }
+
     if (!m_IpcClient) {
         m_IpcClient = new IpcClient(this);
     }

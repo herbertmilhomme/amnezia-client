@@ -161,9 +161,6 @@ void WindowsPingSender::sendPing(const QHostAddress& dest, quint16 sequence) {
   DWORD status = GetLastError();
   if (status != ERROR_IO_PENDING) {
     QString errmsg = WindowsUtils::getErrorMessage();
-    if (status == ERROR_INVALID_NETNAME) {
-        emit criticalPingError();
-    }
     logger.error() << "failed to start Code: " << status
                    << " Message: " << errmsg
                    << " dest:" << logger.sensitive(dest.toString());

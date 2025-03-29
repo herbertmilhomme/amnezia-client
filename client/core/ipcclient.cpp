@@ -18,6 +18,12 @@ bool IpcClient::isSocketConnected() const
     return m_isSocketConnected;
 }
 
+void IpcClient::close()
+{
+    if (m_localSocket)
+        m_localSocket->close();
+}
+
 IpcClient *IpcClient::Instance()
 {
     return m_instance;
