@@ -4,7 +4,7 @@ elif which yum > /dev/null 2>&1; then pm=$(which yum); opt="--version";\
 elif which pacman > /dev/null 2>&1; then pm=$(which pacman); opt="--version";\
 else pm="uname"; opt="-a";\
 fi;\
-CUR_USER=$(whoami 2>/dev/null || echo ~ | sed 's/.*\///');\
+CUR_USER=$(whoami 2>/dev/null || echo $HOME | sed 's/.*\///');\
 echo $LANG | grep -qE '^(en_US.UTF-8|C.UTF-8|C)$' || export LC_ALL=C;\
 sudo -K;\
 cd ~;\
