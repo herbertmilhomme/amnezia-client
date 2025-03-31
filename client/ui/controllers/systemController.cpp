@@ -58,7 +58,9 @@ void SystemController::saveFile(const QString &fileName, const QString &data)
     const auto url = fi.absoluteDir().absolutePath();
 #endif
 
+#ifndef MACOS_NE
     QDesktopServices::openUrl(url);
+#endif
 #endif
 }
 
