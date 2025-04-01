@@ -407,6 +407,21 @@ ErrorCode ServerController::installDockerWorker(const ServerCredentials &credent
                       cbReadStdOut, cbReadStdErr);
 
     qDebug().noquote() << "ServerController::installDockerWorker" << stdOut;
+    if (container == DockerContainer::Awg) {
+        QRegularExpression regex(R"(Linux\s+(\d+)\.(\d+))");
+        QRegularExpressionMatch match = regex.match(stdOut);
+        if (match.hasMatch()) {
+            int major = match.captured(1).toInt();
+            int minor = match.captured(2).toInt();
+
+            if (major > 4 || (major == 4 && minor >= 0)) {
+                qDebug() << "Linux version is acceptable:" << major << "." << minor;
+            } else {
+                qDebug() << "Linux version is too low:" << major << "." << minor;
+                return ErrorCode::ServerLinuxKernelTooOld;
+            }
+        }
+    }
     if (stdOut.contains("lock"))
         return ErrorCode::ServerPacketManagerError;
     if (stdOut.contains("command not found"))
