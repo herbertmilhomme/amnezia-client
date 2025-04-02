@@ -84,7 +84,7 @@ void VpnConnection::onConnectionStateChanged(Vpn::ConnectionState state)
             }
 
             if (container != DockerContainer::Ipsec) {
-                IpcClient::Interface()->startNetworkCheck(remoteAddress(), m_vpnProtocol->vpnLocalAddress());
+                IpcClient::Interface()->startNetworkCheck(m_vpnProtocol->vpnLocalAddress(), m_vpnProtocol->vpnLocalAddress());
             }
 
         } else if (state == Vpn::ConnectionState::Error) {
