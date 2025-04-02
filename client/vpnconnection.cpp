@@ -286,6 +286,12 @@ void VpnConnection::connectToVpn(int serverIndex, const ServerCredentials &crede
         emit connectionStateChanged(Vpn::ConnectionState::Error);
 }
 
+void VpnConnection::restartConnection()
+{
+    this->disconnectFromVpn();
+    this->connectToVpn(m_serverIndex, m_serverCredentials, m_dockerContainer, m_vpnConfiguration);
+}
+
 void VpnConnection::createProtocolConnections()
 {
     connect(m_vpnProtocol.data(), &VpnProtocol::protocolError, this, &VpnConnection::vpnProtocolError);
@@ -299,8 +305,12 @@ void VpnConnection::createProtocolConnections()
                 qDebug() << "Connection Lose";
                 auto result = IpcClient::Interface()->stopNetworkCheck();
                 result.waitForFinished(3000);
-                this->disconnectFromVpn();
-                this->connectToVpn(m_serverIndex, m_serverCredentials, m_dockerContainer, m_vpnConfiguration);
+                this->restartConnection();
+            });
+    connect(IpcClient::Interface().data(), &IpcInterfaceReplica::networkChange,
+            this, [this]() {
+                qDebug() << "Network change";
+                this->restartConnection();
             });
 #endif
 }

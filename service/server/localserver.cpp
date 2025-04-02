@@ -5,9 +5,7 @@
 
 #include "ipc.h"
 #include "localserver.h"
-#include "utilities.h"
 
-#include "router.h"
 #include "logger.h"
 
 #ifdef Q_OS_WIN
@@ -46,6 +44,10 @@ LocalServer::LocalServer(QObject *parent) : QObject(parent),
         logger.error() << "Failed to initialize the server";
         return;
     }
+
+    m_networkWatcher.initialize();
+
+    connect(&m_networkWatcher, &NetworkWatcher::sleepMode, &m_ipcServer, &IpcServer::networkChange);
 
 #ifdef Q_OS_LINUX
     // Signal handling for a proper shutdown.

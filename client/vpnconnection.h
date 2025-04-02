@@ -51,6 +51,7 @@ public slots:
         const ServerCredentials &credentials, DockerContainer container, const QJsonObject &vpnConfiguration);
 
     void disconnectFromVpn();
+    void restartConnection();
 
 
     void addRoutes(const QStringList &ips);

@@ -51,7 +51,7 @@ NetworkWatcher::NetworkWatcher() { MZ_COUNT_CTOR(NetworkWatcher); }
 NetworkWatcher::~NetworkWatcher() { MZ_COUNT_DTOR(NetworkWatcher); }
 
 void NetworkWatcher::initialize() {
-  logger.debug() << "Initialize";
+  logger.debug() << "Initialize NetworkWatcher";
 
 #if defined(MZ_WINDOWS)
   m_impl = new WindowsNetworkWatcher(this);
@@ -73,6 +73,8 @@ void NetworkWatcher::initialize() {
           &NetworkWatcher::unsecuredNetwork);
   connect(m_impl, &NetworkWatcherImpl::networkChanged, this,
           &NetworkWatcher::networkChange);
+  connect(m_impl, &NetworkWatcherImpl::sleepMode, this,
+          &NetworkWatcher::sleepMode);
 
   m_impl->initialize();
 

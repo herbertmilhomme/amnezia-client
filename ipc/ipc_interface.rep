@@ -35,6 +35,7 @@ class IpcInterface
     SLOT( bool startNetworkCheck(const QString& serverIpv4Gateway, const QString& deviceIpv4Address) );
     SLOT( bool stopNetworkCheck() );
 
-    SIGNAL(  connectionLose() );
+    SIGNAL( connectionLose() );
+    SIGNAL( networkChange() );
 };
 

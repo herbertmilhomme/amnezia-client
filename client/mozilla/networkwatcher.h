@@ -33,6 +33,7 @@ public:
 
 signals:
     void networkChange();
+    void sleepMode();
 
 private:
     void settingsChanged();

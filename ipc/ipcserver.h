@@ -42,9 +42,6 @@ public:
     virtual bool startNetworkCheck(const QString& serverIpv4Gateway, const QString& deviceIpv4Address) override;
     virtual bool stopNetworkCheck() override;
 
-signals:
-    void ConnectionLose();
-
 private:
     int m_localpid = 0;
 
