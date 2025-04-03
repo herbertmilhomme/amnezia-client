@@ -11,7 +11,6 @@
 #include "logger.h"
 //#include "mozillavpn.h"
 #include "networkwatcherimpl.h"
-#include "platforms/dummy/dummynetworkwatcher.h"
 //#include "settingsholder.h"
 
 #ifdef MZ_WINDOWS
@@ -69,14 +68,15 @@ void NetworkWatcher::initialize() {
   m_impl = new DummyNetworkWatcher(this);
 #endif
 
+
   connect(m_impl, &NetworkWatcherImpl::unsecuredNetwork, this,
           &NetworkWatcher::unsecuredNetwork);
   connect(m_impl, &NetworkWatcherImpl::networkChanged, this,
           &NetworkWatcher::networkChange);
   connect(m_impl, &NetworkWatcherImpl::sleepMode, this,
-          &NetworkWatcher::sleepMode);
-
+          &NetworkWatcher::onSleepMode);
   m_impl->initialize();
+
 
 
 // TODO: IMPL FOR AMNEZIA
@@ -119,11 +119,16 @@ void NetworkWatcher::settingsChanged() {
 #endif
 }
 
+void NetworkWatcher::onSleepMode()
+{
+  logger.debug() << "Resumed from sleep mode";
+  emit sleepMode();
+}
+
 void NetworkWatcher::unsecuredNetwork(const QString& networkName,
                                       const QString& networkId) {
   logger.debug() << "Unsecured network:" << logger.sensitive(networkName)
                  << "id:" << logger.sensitive(networkId);
-
 #ifndef UNIT_TEST
   if (!m_reportUnsecuredNetwork) {
     logger.debug() << "Disabled. Ignoring unsecured network";
