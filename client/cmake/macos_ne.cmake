@@ -81,7 +81,7 @@ set_target_properties(${PROJECT} PROPERTIES
 
     XCODE_LINK_BUILD_PHASE_MODE KNOWN_LOCATION
     XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/../Frameworks"
-    XCODE_EMBED_APP_EXTENSIONS networkextension
+    XCODE_EMBED_APP_EXTENSIONS AmneziaVPNNetworkExtension
 )
 
 if(DEPLOY)
@@ -136,7 +136,7 @@ set_property(TARGET ${PROJECT} APPEND PROPERTY RESOURCE
 )
 
 add_subdirectory(macos/networkextension)
-add_dependencies(${PROJECT} networkextension)
+add_dependencies(${PROJECT} AmneziaVPNNetworkExtension)
 
 get_target_property(QtCore_location Qt6::Core LOCATION)
 message("QtCore_location")
@@ -149,7 +149,7 @@ set_property(TARGET ${PROJECT} PROPERTY XCODE_EMBED_FRAMEWORKS
 )
 
 set(CMAKE_XCODE_ATTRIBUTE_FRAMEWORK_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/3rd-prebuilt/3rd-prebuilt/openvpn/apple/OpenVPNAdapter-macos)
-target_link_libraries("networkextension" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/3rd-prebuilt/3rd-prebuilt/openvpn/apple/OpenVPNAdapter-macos/OpenVPNAdapter.framework")
+target_link_libraries("AmneziaVPNNetworkExtension" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/3rd-prebuilt/3rd-prebuilt/openvpn/apple/OpenVPNAdapter-macos/OpenVPNAdapter.framework")
 
 add_custom_command(TARGET ${PROJECT} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory
