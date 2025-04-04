@@ -414,7 +414,7 @@ ErrorCode ServerController::installDockerWorker(const ServerCredentials &credent
             int major = match.captured(1).toInt();
             int minor = match.captured(2).toInt();
 
-            if (major < 4 || (major == 4 && minor <= 1)) {
+            if (major < 4 || (major == 4 && minor < 14)) {
                 return ErrorCode::ServerLinuxKernelTooOld;
             }
         }
