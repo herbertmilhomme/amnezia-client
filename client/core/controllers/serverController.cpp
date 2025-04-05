@@ -411,10 +411,10 @@ ErrorCode ServerController::installDockerWorker(const ServerCredentials &credent
         QRegularExpression regex(R"(Linux\s+(\d+)\.(\d+)[^\d]*)");
         QRegularExpressionMatch match = regex.match(stdOut);
         if (match.hasMatch()) {
-            int major = match.captured(1).toInt();
-            int minor = match.captured(2).toInt();
+            int majorVersion = match.captured(1).toInt();
+            int minorVersion = match.captured(2).toInt();
 
-            if (major < 4 || (major == 4 && minor < 14)) {
+            if (majorVersion < 4 || (majorVersion == 4 && minorVersion < 14)) {
                 return ErrorCode::ServerLinuxKernelTooOld;
             }
         }
