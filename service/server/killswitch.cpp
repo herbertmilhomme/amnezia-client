@@ -165,6 +165,10 @@ bool KillSwitch::allowTrafficTo(const QStringList &ranges) {
     MacOSFirewall::setAnchorTable(QStringLiteral("110.allowNets"), true, QStringLiteral("allownets"), ranges);
 #endif
 
+#ifdef Q_OS_WIN
+    WindowsFirewall::create(this)->allowTrafficRange(ranges);
+#endif
+
     return true;
 }
 

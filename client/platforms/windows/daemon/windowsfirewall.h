@@ -44,6 +44,7 @@ class WindowsFirewall final : public QObject {
   bool disablePeerTraffic(const QString& pubkey);
   bool disableKillSwitch();
   bool allowAllTraffic();
+  bool allowTrafficRange(const QStringList& ranges);
 
  private:
   static bool initSublayer();

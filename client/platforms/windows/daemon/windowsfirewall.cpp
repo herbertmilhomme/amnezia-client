@@ -241,6 +241,37 @@ bool WindowsFirewall::enableLanBypass(const QList<IPAddress>& ranges) {
   return true;
 }
 
+// Allow unprotected traffic sent to the following address ranges.
+bool WindowsFirewall::allowTrafficRange(const QStringList& ranges) {
+  // Start the firewall transaction
+  auto result = FwpmTransactionBegin(m_sessionHandle, NULL);
+  if (result != ERROR_SUCCESS) {
+    disableKillSwitch();
+    return false;
+  }
+  auto cleanup = qScopeGuard([&] {
+      FwpmTransactionAbort0(m_sessionHandle);
+      disableKillSwitch();
+  });
+
+  for (const QString& addr : ranges) {
+    logger.debug() << "Allow killswitch exclude: " << addr;
+    if (!allowTrafficTo(QHostAddress(addr), LOW_WEIGHT + 1, "Allow killswitch bypass traffic")) {
+      return false;
+    }
+  }
+
+  result = FwpmTransactionCommit0(m_sessionHandle);
+  if (result != ERROR_SUCCESS) {
+    logger.error() << "FwpmTransactionCommit0 failed with error:" << result;
+    return false;
+  }
+
+  cleanup.dismiss();
+  return true;
+}
+
+
 bool WindowsFirewall::enablePeerTraffic(const InterfaceConfig& config) {
   // Start the firewall transaction
   auto result = FwpmTransactionBegin(m_sessionHandle, NULL);
