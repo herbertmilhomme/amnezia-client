@@ -289,6 +289,9 @@ void VpnConnection::connectToVpn(int serverIndex, const ServerCredentials &crede
 void VpnConnection::restartConnection()
 {
     this->disconnectFromVpn();
+#ifdef (Q_OS_LINUX)
+    QThread::msleep(5000);
+#endif
     this->connectToVpn(m_serverIndex, m_serverCredentials, m_dockerContainer, m_vpnConfiguration);
 }
 
