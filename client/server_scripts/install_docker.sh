@@ -10,9 +10,9 @@ if ! command -v fuser > /dev/null 2>&1; then sudo $pm $check_pkgs; sudo $pm $sil
 if ! command -v lsof > /dev/null 2>&1; then sudo $pm $check_pkgs; sudo $pm $silent_inst lsof; fi;\
 if ! command -v docker > /dev/null 2>&1; then \
   sudo $pm $check_pkgs;\
-  if [ -n "$(sudo $pm $what_pkg $docker_pkg 2>/dev/null | grep podman)" ];\
-  then echo "Docker is not supported"; exit 1;\
-  else sudo $pm $silent_inst $docker_pkg;\
+  if [ -z "$(sudo $pm $what_pkg $docker_pkg 2>/dev/null | grep podman)" ];\
+  then sudo $pm $silent_inst $docker_pkg;\
+  else echo "Docker is not supported"; exit 1;\
   fi;\
   sleep 5; sudo systemctl enable --now docker; sleep 5;\
 fi;\
@@ -20,8 +20,15 @@ if [ "$(cat /sys/module/apparmor/parameters/enabled 2>/dev/null)" = "Y" ]; then 
   if ! command -v apparmor_parser > /dev/null 2>&1; then sudo $pm $check_pkgs; sudo $pm $silent_inst apparmor; fi;\
 fi;\
 if [ "$(systemctl is-active docker)" != "active" ]; then \
-  sudo $pm $check_pkgs; sudo $pm $silent_inst $docker_pkg;\
-  sleep 5; sudo systemctl start docker; sleep 5;\
+  if [ -z "$(sudo docker --version 2>/dev/null | grep podman)" ];\
+  then \
+    sudo $pm $check_pkgs;\
+    if [ -z "$(sudo $pm $what_pkg $docker_pkg 2>/dev/null | grep podman)" ];\
+    then sudo $pm $silent_inst $docker_pkg;\
+    fi;\
+    sleep 5; sudo systemctl start docker; sleep 5;\
+  else echo "Docker is not supported";\
+  fi;\
 fi;\
 if ! command -v sudo > /dev/null 2>&1; then echo "Failed to install sudo, command not found"; exit 1; fi;\
 docker --version
