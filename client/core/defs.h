@@ -59,6 +59,7 @@ namespace amnezia
         ServerUserNotAllowedInSudoers = 209,
         ServerUserPasswordRequired = 210,
         ServerPodmanIsNotSupported = 211,
+        ServerDockerStatusIsNotActive = 212,
 
         // Ssh connection errors
         SshRequestDeniedError = 300,

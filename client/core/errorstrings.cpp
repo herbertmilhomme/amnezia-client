@@ -27,6 +27,7 @@ QString errorString(ErrorCode code) {
     case(ErrorCode::ServerUserNotAllowedInSudoers): errorMessage = QObject::tr("Action not allowed in sudoers"); break;
     case(ErrorCode::ServerUserPasswordRequired): errorMessage = QObject::tr("The user's password is required"); break;
     case(ErrorCode::ServerPodmanIsNotSupported): errorMessage = QObject::tr("Server error: podman-docker is not supported"); break;
+    case(ErrorCode::ServerDockerStatusIsNotActive): errorMessage = QObject::tr("Server error: Docker status is not active"); break;
 
     // Libssh errors
     case(ErrorCode::SshRequestDeniedError): errorMessage = QObject::tr("SSH request was denied"); break;
