@@ -409,6 +409,8 @@ ErrorCode ServerController::installDockerWorker(const ServerCredentials &credent
     qDebug().noquote() << "ServerController::installDockerWorker" << stdOut;
     if (stdOut.contains("lock"))
         return ErrorCode::ServerPacketManagerError;
+    if (stdOut.contains("Docker is not supported"))
+        return ErrorCode::ServerDockerNotSupported;
     if (stdOut.contains("command not found"))
         return ErrorCode::ServerDockerFailedError;
 
