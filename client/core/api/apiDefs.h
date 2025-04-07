@@ -11,7 +11,7 @@ namespace apiDefs
         AmneziaPremiumV1,
         AmneziaPremiumV2,
         SelfHosted,
-        ExternalV1
+        ExternalPremium
     };
 
     enum ConfigSource {
