@@ -35,12 +35,11 @@ apiDefs::ConfigType apiUtils::getConfigType(const QJsonObject &serverConfigObjec
         constexpr QLatin1String serviceExternalPremium("external-premium");
 
         auto apiConfigObject = serverConfigObject.value(apiDefs::key::apiConfig).toObject();
-        auto stackType = apiConfigObject.value(apiDefs::key::stackType).toString();
         auto serviceType = apiConfigObject.value(apiDefs::key::serviceType).toString();
 
-        if (serviceType == servicePremium || stackType == stackPremium) {
+        if (serviceType == servicePremium) {
             return apiDefs::ConfigType::AmneziaPremiumV2;
-        } else if (serviceType == serviceFree || stackType == stackFree) {
+        } else if (serviceType == serviceFree) {
             return apiDefs::ConfigType::AmneziaFreeV3;
         } else if (serviceType == serviceExternalPremium) {
             return apiDefs::ConfigType::ExternalPremium;

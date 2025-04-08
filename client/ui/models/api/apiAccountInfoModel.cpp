@@ -48,7 +48,8 @@ QVariant ApiAccountInfoModel::data(const QModelIndex &index, int role) const
     }
     case ServiceDescriptionRole: {
         if (m_accountInfoData.configType == apiDefs::ConfigType::AmneziaPremiumV2) {
-            return tr("Classic VPN for seamless work, downloading large files, and watching videos. Access all websites and online resources. "
+            return tr("Classic VPN for seamless work, downloading large files, and watching videos. Access all websites and online "
+                      "resources. "
                       "Speeds up to 200 Mbps");
         } else if (m_accountInfoData.configType == apiDefs::ConfigType::AmneziaFreeV3) {
             return tr("Free unlimited access to a basic set of websites such as Facebook, Instagram, Twitter (X), Discord, Telegram and "
@@ -58,7 +59,8 @@ QVariant ApiAccountInfoModel::data(const QModelIndex &index, int role) const
         }
     }
     case IsComponentVisibleRole: {
-        return m_accountInfoData.configType == apiDefs::ConfigType::AmneziaPremiumV2;
+        return m_accountInfoData.configType == apiDefs::ConfigType::AmneziaPremiumV2
+                || m_accountInfoData.configType == apiDefs::ConfigType::ExternalPremium;
     }
     case HasExpiredWorkerRole: {
         for (int i = 0; i < m_issuedConfigsInfo.size(); i++) {
