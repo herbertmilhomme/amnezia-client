@@ -359,6 +359,10 @@ void VpnConnection::appendSplitTunnelingConfig()
         }
     }
 
+    if (sitesJsonArray.isEmpty()) {
+        sitesRouteMode = Settings::RouteMode::VpnAllSites;
+    }
+
     m_vpnConfiguration.insert(config_key::splitTunnelType, sitesRouteMode);
     m_vpnConfiguration.insert(config_key::splitTunnelSites, sitesJsonArray);
 
@@ -371,6 +375,10 @@ void VpnConnection::appendSplitTunnelingConfig()
         for (const auto &app : apps) {
             appsJsonArray.append(app.appPath.isEmpty() ? app.packageName : app.appPath);
         }
+    }
+
+    if (appsJsonArray.isEmpty()) {
+        appsRouteMode = Settings::AppsRouteMode::VpnAllApps;
     }
 
     m_vpnConfiguration.insert(config_key::appSplitTunnelType, appsRouteMode);
