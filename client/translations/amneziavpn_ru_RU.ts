@@ -4038,13 +4038,13 @@ and will not be shared or disclosed to the Amnezia or any third parties</source>
     </message>
     <message>
         <location filename="../core/errorstrings.cpp" line="23"/>
-        <source>The user does not have permission to use sudo</source>
-        <translation>У пользователя нет прав на использование sudo</translation>
+        <source>The user is not a member of the sudo group</source>
+        <translation>Пользователь не входит в группу sudo</translation>
     </message>
     <message>
         <location filename="../core/errorstrings.cpp" line="24"/>
-        <source>Server error: Packet manager error</source>
-        <translation>Ошибка сервера: ошибка менеджера пакетов</translation>
+        <source>Server error: Package manager error</source>
+        <translation>Ошибка сервера: Ошибка менеджера пакетов</translation>
     </message>
     <message>
         <location filename="../core/errorstrings.cpp" line="27"/>
