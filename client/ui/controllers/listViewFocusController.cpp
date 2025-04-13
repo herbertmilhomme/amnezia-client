@@ -207,6 +207,7 @@ void ListViewFocusController::focusNextItem()
     m_focusedItemIndex++;
     m_focusedItem = qobject_cast<QQuickItem *>(m_focusChain.at(m_focusedItemIndex));
     m_focusedItem->forceActiveFocus(Qt::TabFocusReason);
+    qDebug() << "Next focus is set to item: " << m_focusedItem;
 }
 
 void ListViewFocusController::focusPreviousItem()
@@ -238,6 +239,7 @@ void ListViewFocusController::resetFocusChain()
     m_focusChain.clear();
     m_focusedItem = nullptr;
     m_focusedItemIndex = -1;
+    qDebug() << "Focus chain was resetted";
 }
 
 void ListViewFocusController::reloadFocusChain()

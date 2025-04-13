@@ -40,7 +40,7 @@ PageType {
         }
     }
 
-    ListView {
+    ListViewType {
         id: servicesListView
 
         anchors.top: header.bottom
@@ -48,16 +48,10 @@ PageType {
         anchors.left: parent.left
         anchors.bottom: parent.bottom
         anchors.topMargin: 16
+
         spacing: 0
 
-        property bool isFocusable: true
-        
-        clip: true
-        reuseItems: true
-
         model: ApiServicesModel
-
-        ScrollBar.vertical: ScrollBarType {}
 
         delegate: Item {
             implicitWidth: servicesListView.width

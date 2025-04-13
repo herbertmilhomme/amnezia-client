@@ -16,162 +16,136 @@ import "../Components"
 PageType {
     id: root
 
-    ColumnLayout {
-        id: backButtonLayout
+    BackButtonType {
+        id: backButton
 
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-
         anchors.topMargin: 20
 
-        BackButtonType {
-            id: backButton
+        onFocusChanged: {
+            if (this.activeFocus) {
+                listView.positionViewAtBeginning()
+            }
         }
     }
 
-    FlickableType {
-        id: fl
-        anchors.top: backButtonLayout.bottom
+    ListViewType {
+        id: listView
+
+        anchors.top: backButton.bottom
         anchors.bottom: parent.bottom
-        contentHeight: content.implicitHeight
+        anchors.right: parent.right
+        anchors.left: parent.left
 
-        Column {
-            id: content
+        enabled: ServersModel.isProcessedServerHasWriteAccess()
 
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
+        model: ShadowSocksConfigModel
 
-            enabled: ServersModel.isProcessedServerHasWriteAccess()
+        delegate: ColumnLayout {
+            width: listView.width
 
-            ListView {
-                id: listview
+            spacing: 0
 
-                width: parent.width
-                height: listview.contentItem.height
+            BaseHeaderType {
+                Layout.fillWidth: true
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
 
-                clip: true
-                interactive: false
+                headerText: qsTr("Shadowsocks settings")
+            }
 
-                model: ShadowSocksConfigModel
+            TextFieldWithHeaderType {
+                id: portTextField
 
-                delegate: Item {
-                    implicitWidth: listview.width
-                    implicitHeight: col.implicitHeight
+                Layout.fillWidth: true
+                Layout.topMargin: 40
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
 
-                    property var focusItemId: portTextField.enabled ?
-                                                    portTextField :
-                                                    cipherDropDown.enabled ?
-                                                        cipherDropDown :
-                                                        saveRestartButton
+                enabled: isPortEditable
 
-                    ColumnLayout {
-                        id: col
+                headerText: qsTr("Port")
+                textField.text: port
+                textField.maximumLength: 5
+                textField.validator: IntValidator { bottom: 1; top: 65535 }
 
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
+                textField.onEditingFinished: {
+                    if (textField.text !== port) {
+                        port = textField.text
+                    }
+                }
+            }
 
-                        anchors.leftMargin: 16
-                        anchors.rightMargin: 16
+            DropDownType {
+                id: cipherDropDown
 
-                        spacing: 0
+                Layout.fillWidth: true
+                Layout.topMargin: 20
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
 
-                        BaseHeaderType {
-                            Layout.fillWidth: true
+                enabled: isCipherEditable
 
-                            headerText: qsTr("Shadowsocks settings")
-                        }
+                descriptionText: qsTr("Cipher")
+                headerText: qsTr("Cipher")
 
-                        TextFieldWithHeaderType {
-                            id: portTextField
+                drawerParent: root
 
-                            Layout.fillWidth: true
-                            Layout.topMargin: 40
+                listView: ListViewWithRadioButtonType {
 
-                            enabled: isPortEditable
+                    id: cipherListView
 
-                            headerText: qsTr("Port")
-                            textField.text: port
-                            textField.maximumLength: 5
-                            textField.validator: IntValidator { bottom: 1; top: 65535 }
+                    rootWidth: root.width
 
-                            textField.onEditingFinished: {
-                                if (textField.text !== port) {
-                                    port = textField.text
-                                }
-                            }
-                        }
+                    model: ListModel {
+                        ListElement { name : "chacha20-ietf-poly1305" }
+                        ListElement { name : "xchacha20-ietf-poly1305" }
+                        ListElement { name : "aes-256-gcm" }
+                        ListElement { name : "aes-192-gcm" }
+                        ListElement { name : "aes-128-gcm" }
+                    }
 
-                        DropDownType {
-                            id: cipherDropDown
-                            Layout.fillWidth: true
-                            Layout.topMargin: 20
+                    clickedFunction: function() {
+                        cipherDropDown.text = selectedText
+                        cipher = cipherDropDown.text
+                        cipherDropDown.closeTriggered()
+                    }
 
-                            enabled: isCipherEditable
+                    Component.onCompleted: {
+                        cipherDropDown.text = cipher
 
-                            descriptionText: qsTr("Cipher")
-                            headerText: qsTr("Cipher")
-
-                            drawerParent: root
-
-                            listView: ListViewWithRadioButtonType {
-
-                                id: cipherListView
-
-                                rootWidth: root.width
-
-                                model: ListModel {
-                                    ListElement { name : "chacha20-ietf-poly1305" }
-                                    ListElement { name : "xchacha20-ietf-poly1305" }
-                                    ListElement { name : "aes-256-gcm" }
-                                    ListElement { name : "aes-192-gcm" }
-                                    ListElement { name : "aes-128-gcm" }
-                                }
-
-                                clickedFunction: function() {
-                                    cipherDropDown.text = selectedText
-                                    cipher = cipherDropDown.text
-                                    cipherDropDown.closeTriggered()
-                                }
-
-                                Component.onCompleted: {
-                                    cipherDropDown.text = cipher
-
-                                    for (var i = 0; i < cipherListView.model.count; i++) {
-                                        if (cipherListView.model.get(i).name === cipherDropDown.text) {
-                                            currentIndex = i
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        BasicButtonType {
-                            id: saveRestartButton
-
-                            Layout.fillWidth: true
-                            Layout.topMargin: 24
-                            Layout.bottomMargin: 24
-
-                            enabled: isPortEditable | isCipherEditable
-
-                            text: qsTr("Save")
-
-                            clickedFunc: function() {
-                                forceActiveFocus()
-
-                                if (ConnectionController.isConnected && ServersModel.getDefaultServerData("defaultContainer") === ContainersModel.getProcessedContainerIndex()) {
-                                    PageController.showNotificationMessage(qsTr("Unable change settings while there is an active connection"))
-                                    return
-                                }
-
-                                PageController.goToPage(PageEnum.PageSetupWizardInstalling);
-                                InstallController.updateContainer(ShadowSocksConfigModel.getConfig())
+                        for (var i = 0; i < cipherListView.model.count; i++) {
+                            if (cipherListView.model.get(i).name === cipherDropDown.text) {
+                                currentIndex = i
                             }
                         }
                     }
+                }
+            }
+
+            BasicButtonType {
+                id: saveRestartButton
+
+                Layout.fillWidth: true
+                Layout.topMargin: 24
+                Layout.bottomMargin: 24
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+
+                enabled: isPortEditable | isCipherEditable
+
+                text: qsTr("Save")
+
+                clickedFunc: function() {
+                    if (ConnectionController.isConnected && ServersModel.getDefaultServerData("defaultContainer") === ContainersModel.getProcessedContainerIndex()) {
+                        PageController.showNotificationMessage(qsTr("Unable change settings while there is an active connection"))
+                        return
+                    }
+
+                    PageController.goToPage(PageEnum.PageSetupWizardInstalling);
+                    InstallController.updateContainer(ShadowSocksConfigModel.getConfig())
                 }
             }
         }

@@ -27,20 +27,12 @@ PageType {
         }
     }
 
-    ListView {
+    ListViewType {
         id: listView
 
         anchors.fill: parent
 
-        property bool isFocusable: true
-
-        ScrollBar.vertical: ScrollBarType {}
-
         model: variants
-
-        clip: true
-
-        reuseItems: true
 
         header: ColumnLayout {
             width: listView.width

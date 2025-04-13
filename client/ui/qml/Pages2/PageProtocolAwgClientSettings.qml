@@ -30,233 +30,223 @@ PageType {
         }
     }
 
-    ListView {
-        id: listview
+    ListViewType {
+        id: listView
 
         anchors.top: backButtonLayout.bottom
         anchors.bottom: saveButton.top
 
         width: parent.width
 
-        clip: true
-
-        property bool isFocusable: true
-
-        Keys.onTabPressed: {
-            FocusController.nextKeyTabItem()
-        }
-
-        Keys.onBacktabPressed: {
-            FocusController.previousKeyTabItem()
-        }
-
-        Keys.onUpPressed: {
-            FocusController.nextKeyUpItem()
-        }
-
-        Keys.onDownPressed: {
-            FocusController.nextKeyDownItem()
-        }
-
-        Keys.onLeftPressed: {
-            FocusController.nextKeyLeftItem()
-        }
-
-        Keys.onRightPressed: {
-            FocusController.nextKeyRightItem()
-        }
-
         model: AwgConfigModel
 
-        delegate: Item {
-            id: delegateItem
-            implicitWidth: listview.width
-            implicitHeight: col.implicitHeight
+        delegate: ColumnLayout {
+            width: listView.width
 
-            property alias mtuTextField: mtuTextField
             property bool isSaveButtonEnabled: mtuTextField.errorText === "" &&
                                                junkPacketMaxSizeTextField.errorText === "" &&
                                                junkPacketMinSizeTextField.errorText === "" &&
                                                junkPacketCountTextField.errorText === ""
 
-            ColumnLayout {
-                id: col
+            spacing: 0
 
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
+            BaseHeaderType {
+                Layout.fillWidth: true
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
 
-                anchors.leftMargin: 16
-                anchors.rightMargin: 16
+                headerText: qsTr("AmneziaWG settings")
+            }
 
-                spacing: 0
+            TextFieldWithHeaderType {
+                id: mtuTextField
 
-                BaseHeaderType {
-                    Layout.fillWidth: true
+                Layout.fillWidth: true
+                Layout.topMargin: 40
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
 
-                    headerText: qsTr("AmneziaWG settings")
-                }
+                headerText: qsTr("MTU")
+                textField.text: clientMtu
+                textField.validator: IntValidator { bottom: 576; top: 65535 }
 
-                TextFieldWithHeaderType {
-                    id: mtuTextField
-                    Layout.fillWidth: true
-                    Layout.topMargin: 40
-
-                    headerText: qsTr("MTU")
-                    textField.text: clientMtu
-                    textField.validator: IntValidator { bottom: 576; top: 65535 }
-
-                    textField.onEditingFinished: {
-                        if (textField.text !== clientMtu) {
-                            clientMtu = textField.text
-                        }
+                textField.onEditingFinished: {
+                    if (textField.text !== clientMtu) {
+                        clientMtu = textField.text
                     }
-                    checkEmptyText: true
-                    KeyNavigation.tab: junkPacketCountTextField.textField
                 }
+                checkEmptyText: true
+            }
 
-                TextFieldWithHeaderType {
-                    id: junkPacketCountTextField
-                    Layout.fillWidth: true
-                    Layout.topMargin: 16
+            TextFieldWithHeaderType {
+                id: junkPacketCountTextField
 
-                    headerText: "Jc - Junk packet count"
-                    textField.text: clientJunkPacketCount
-                    textField.validator: IntValidator { bottom: 0 }
+                Layout.fillWidth: true
+                Layout.topMargin: 16
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
 
-                    textField.onEditingFinished: {
-                        if (textField.text !== clientJunkPacketCount) {
-                            clientJunkPacketCount = textField.text
-                        }
+                headerText: "Jc - Junk packet count"
+                textField.text: clientJunkPacketCount
+                textField.validator: IntValidator { bottom: 0 }
+
+                textField.onEditingFinished: {
+                    if (textField.text !== clientJunkPacketCount) {
+                        clientJunkPacketCount = textField.text
                     }
-
-                    checkEmptyText: true
-
-                    KeyNavigation.tab: junkPacketMinSizeTextField.textField
                 }
 
-                TextFieldWithHeaderType {
-                    id: junkPacketMinSizeTextField
-                    Layout.fillWidth: true
-                    Layout.topMargin: 16
+                checkEmptyText: true
+            }
 
-                    headerText: "Jmin - Junk packet minimum size"
-                    textField.text: clientJunkPacketMinSize
-                    textField.validator: IntValidator { bottom: 0 }
+            TextFieldWithHeaderType {
+                id: junkPacketMinSizeTextField
 
-                    textField.onEditingFinished: {
-                        if (textField.text !== clientJunkPacketMinSize) {
-                            clientJunkPacketMinSize = textField.text
-                        }
+                Layout.fillWidth: true
+                Layout.topMargin: 16
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+
+                headerText: "Jmin - Junk packet minimum size"
+                textField.text: clientJunkPacketMinSize
+                textField.validator: IntValidator { bottom: 0 }
+
+                textField.onEditingFinished: {
+                    if (textField.text !== clientJunkPacketMinSize) {
+                        clientJunkPacketMinSize = textField.text
                     }
-
-                    checkEmptyText: true
-
-                    KeyNavigation.tab: junkPacketMaxSizeTextField.textField
                 }
 
-                TextFieldWithHeaderType {
-                    id: junkPacketMaxSizeTextField
-                    Layout.fillWidth: true
-                    Layout.topMargin: 16
+                checkEmptyText: true
+            }
 
-                    headerText: "Jmax - Junk packet maximum size"
-                    textField.text: clientJunkPacketMaxSize
-                    textField.validator: IntValidator { bottom: 0 }
+            TextFieldWithHeaderType {
+                id: junkPacketMaxSizeTextField
 
-                    textField.onEditingFinished: {
-                        if (textField.text !== clientJunkPacketMaxSize) {
-                            clientJunkPacketMaxSize = textField.text
-                        }
+                Layout.fillWidth: true
+                Layout.topMargin: 16
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+
+                headerText: "Jmax - Junk packet maximum size"
+                textField.text: clientJunkPacketMaxSize
+                textField.validator: IntValidator { bottom: 0 }
+
+                textField.onEditingFinished: {
+                    if (textField.text !== clientJunkPacketMaxSize) {
+                        clientJunkPacketMaxSize = textField.text
                     }
-
-                    checkEmptyText: true
-
                 }
 
-                Header2TextType {
-                    Layout.fillWidth: true
-                    Layout.topMargin: 16
+                checkEmptyText: true
 
-                    text: qsTr("Server settings")
-                }
+            }
 
-                TextFieldWithHeaderType {
-                    id: portTextField
-                    Layout.fillWidth: true
-                    Layout.topMargin: 8
+            Header2TextType {
+                Layout.fillWidth: true
+                Layout.topMargin: 16
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
 
-                    enabled: false
+                text: qsTr("Server settings")
+            }
 
-                    headerText: qsTr("Port")
-                    textField.text: port
-                }
+            TextFieldWithHeaderType {
+                id: portTextField
 
-                TextFieldWithHeaderType {
-                    id: initPacketJunkSizeTextField
-                    Layout.fillWidth: true
-                    Layout.topMargin: 16
+                Layout.fillWidth: true
+                Layout.topMargin: 8
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
 
-                    enabled: false
+                enabled: false
 
-                    headerText: "S1 - Init packet junk size"
-                    textField.text: serverInitPacketJunkSize
-                }
+                headerText: qsTr("Port")
+                textField.text: port
+            }
 
-                TextFieldWithHeaderType {
-                    id: responsePacketJunkSizeTextField
-                    Layout.fillWidth: true
-                    Layout.topMargin: 16
+            TextFieldWithHeaderType {
+                id: initPacketJunkSizeTextField
 
-                    enabled: false
+                Layout.fillWidth: true
+                Layout.topMargin: 16
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
 
-                    headerText: "S2 - Response packet junk size"
-                    textField.text: serverResponsePacketJunkSize
-                }
+                enabled: false
 
-                TextFieldWithHeaderType {
-                    id: initPacketMagicHeaderTextField
-                    Layout.fillWidth: true
-                    Layout.topMargin: 16
+                headerText: "S1 - Init packet junk size"
+                textField.text: serverInitPacketJunkSize
+            }
 
-                    enabled: false
+            TextFieldWithHeaderType {
+                id: responsePacketJunkSizeTextField
 
-                    headerText: "H1 - Init packet magic header"
-                    textField.text: serverInitPacketMagicHeader
-                }
+                Layout.fillWidth: true
+                Layout.topMargin: 16
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
 
-                TextFieldWithHeaderType {
-                    id: responsePacketMagicHeaderTextField
-                    Layout.fillWidth: true
-                    Layout.topMargin: 16
+                enabled: false
 
-                    enabled: false
+                headerText: "S2 - Response packet junk size"
+                textField.text: serverResponsePacketJunkSize
+            }
 
-                    headerText: "H2 - Response packet magic header"
-                    textField.text: serverResponsePacketMagicHeader
-                }
+            TextFieldWithHeaderType {
+                id: initPacketMagicHeaderTextField
 
-                TextFieldWithHeaderType {
-                    id: underloadPacketMagicHeaderTextField
-                    Layout.fillWidth: true
-                    Layout.topMargin: 16
+                Layout.fillWidth: true
+                Layout.topMargin: 16
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
 
-                    enabled: false
+                enabled: false
 
-                    headerText: "H3 - Underload packet magic header"
-                    textField.text: serverUnderloadPacketMagicHeader
-                }
+                headerText: "H1 - Init packet magic header"
+                textField.text: serverInitPacketMagicHeader
+            }
 
-                TextFieldWithHeaderType {
-                    id: transportPacketMagicHeaderTextField
-                    Layout.fillWidth: true
-                    Layout.topMargin: 16
+            TextFieldWithHeaderType {
+                id: responsePacketMagicHeaderTextField
 
-                    enabled: false
+                Layout.fillWidth: true
+                Layout.topMargin: 16
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
 
-                    headerText: "H4 - Transport packet magic header"
-                    textField.text: serverTransportPacketMagicHeader
-                }
+                enabled: false
+
+                headerText: "H2 - Response packet magic header"
+                textField.text: serverResponsePacketMagicHeader
+            }
+
+            TextFieldWithHeaderType {
+                id: underloadPacketMagicHeaderTextField
+
+                Layout.fillWidth: true
+                Layout.topMargin: 16
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+
+                enabled: false
+
+                headerText: "H3 - Underload packet magic header"
+                textField.text: serverUnderloadPacketMagicHeader
+            }
+
+            TextFieldWithHeaderType {
+                id: transportPacketMagicHeaderTextField
+
+                Layout.fillWidth: true
+                Layout.topMargin: 16
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+
+                enabled: false
+
+                headerText: "H4 - Transport packet magic header"
+                textField.text: serverTransportPacketMagicHeader
             }
         }
     }
@@ -273,18 +263,17 @@ PageType {
         anchors.rightMargin: 16
         anchors.leftMargin: 16
 
-        enabled: listview.currentItem.isSaveButtonEnabled
+        enabled: listView.currentItem.isSaveButtonEnabled
 
         text: qsTr("Save")
 
         onActiveFocusChanged: {
             if(activeFocus) {
-                listview.positionViewAtEnd()
+                listView.positionViewAtEnd()
             }
         }
 
         clickedFunc: function() {
-            forceActiveFocus()
             var headerText = qsTr("Save settings?")
             var descriptionText = qsTr("Only the settings for this device will be changed")
             var yesButtonText = qsTr("Continue")
@@ -299,11 +288,9 @@ PageType {
                 PageController.goToPage(PageEnum.PageSetupWizardInstalling);
                 InstallController.updateContainer(AwgConfigModel.getConfig())
             }
-            var noButtonFunction = function() {
-                if (!GC.isMobile()) {
-                    saveButton.forceActiveFocus()
-                }
-            }
+
+            var noButtonFunction = function() {}
+
             showQuestionDrawer(headerText, descriptionText, yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
         }
     }

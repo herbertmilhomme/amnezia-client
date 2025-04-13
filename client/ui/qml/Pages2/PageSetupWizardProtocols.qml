@@ -44,16 +44,12 @@ PageType {
         anchors.topMargin: 20
     }
 
-    ListView {
+    ListViewType {
         id: listView
         anchors.top: backButton.bottom
         anchors.bottom: parent.bottom
         anchors.right: parent.right
         anchors.left: parent.left
-
-        property bool isFocusable: true
-
-        ScrollBar.vertical: ScrollBarType {}
 
         header: ColumnLayout {
             width: listView.width
@@ -72,9 +68,8 @@ PageType {
         }
 
         model: proxyContainersModel
-        clip: true
+
         spacing: 0
-        reuseItems: true
         snapMode: ListView.SnapToItem
 
         delegate: ColumnLayout {
@@ -87,9 +82,9 @@ PageType {
                 descriptionText: description
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
 
-                clickedFunction: function() {
-                    ContainersModel.setProcessedContainerIndex(proxyContainersModel.mapToSource(index))
-                    PageController.goToPage(PageEnum.PageSetupWizardProtocolSettings)
+                clickedFunction: function () {
+                    ContainersModel.setProcessedContainerIndex(proxyContainersModel.mapToSource(index));
+                    PageController.goToPage(PageEnum.PageSetupWizardProtocolSettings);
                 }
             }
 

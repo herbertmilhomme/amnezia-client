@@ -23,20 +23,16 @@ PageType {
         anchors.topMargin: 20
     }
 
-    FlickableType {
-        id: fl
+    ListViewType {
+        id: listView
+
         anchors.top: backButton.bottom
         anchors.bottom: parent.bottom
-        contentHeight: content.height
+        anchors.left: parent.left
+        anchors.right: parent.right
 
-        ColumnLayout {
-            id: content
-
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-
-            spacing: 0
+        header: ColumnLayout {
+            width: listView.width
 
             BaseHeaderType {
                 Layout.fillWidth: true
@@ -45,9 +41,17 @@ PageType {
 
                 headerText: qsTr("Application")
             }
+        }
+
+        model: 1 // fake model to force the ListView to be created without a model
+
+        delegate: ColumnLayout {
+
+            width: listView.width
 
             SwitcherType {
-                id: switcher
+                id: switcherAllowScreenshots
+
                 visible: GC.isMobile()
 
                 Layout.fillWidth: true
@@ -61,10 +65,6 @@ PageType {
                         SettingsController.toggleScreenshotsEnabled(checked)
                     }
                 }
-
-                // KeyNavigation.tab: Qt.platform.os === "android" && !SettingsController.isNotificationPermissionGranted ?
-                //     labelWithButtonNotification.rightButton : labelWithButtonLanguage.rightButton
-                parentFlickable: fl
             }
 
             DividerType {
@@ -73,14 +73,14 @@ PageType {
 
             LabelWithButtonType {
                 id: labelWithButtonNotification
+
                 visible: Qt.platform.os === "android" && !SettingsController.isNotificationPermissionGranted
+
                 Layout.fillWidth: true
 
                 text: qsTr("Enable notifications")
                 descriptionText: qsTr("Enable notifications to show the VPN state in the status bar")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
-
-                parentFlickable: fl
 
                 clickedFunction: function() {
                     SettingsController.requestNotificationPermission()
@@ -93,6 +93,7 @@ PageType {
 
             SwitcherType {
                 id: switcherAutoStart
+
                 visible: !GC.isMobile()
 
                 Layout.fillWidth: true
@@ -100,8 +101,6 @@ PageType {
 
                 text: qsTr("Auto start")
                 descriptionText: qsTr("Launch the application every time the device is starts")
-
-                parentFlickable: fl
 
                 checked: SettingsController.isAutoStartEnabled()
                 onCheckedChanged: {
@@ -117,6 +116,7 @@ PageType {
 
             SwitcherType {
                 id: switcherAutoConnect
+
                 visible: !GC.isMobile()
 
                 Layout.fillWidth: true
@@ -124,8 +124,6 @@ PageType {
 
                 text: qsTr("Auto connect")
                 descriptionText: qsTr("Connect to VPN on app start")
-
-                parentFlickable: fl
 
                 checked: SettingsController.isAutoConnectEnabled()
                 onCheckedChanged: {
@@ -141,6 +139,7 @@ PageType {
 
             SwitcherType {
                 id: switcherStartMinimized
+
                 visible: !GC.isMobile()
 
                 Layout.fillWidth: true
@@ -148,8 +147,6 @@ PageType {
 
                 text: qsTr("Start minimized")
                 descriptionText: qsTr("Launch application minimized")
-
-                parentFlickable: fl
 
                 checked: SettingsController.isStartMinimizedEnabled()
                 onCheckedChanged: {
@@ -162,16 +159,20 @@ PageType {
             DividerType {
                 visible: !GC.isMobile()
             }
+        }
+
+        footer: ColumnLayout {
+
+            width: listView.width
 
             LabelWithButtonType {
                 id: labelWithButtonLanguage
+
                 Layout.fillWidth: true
 
                 text: qsTr("Language")
                 descriptionText: LanguageModel.currentLanguageName
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
-
-                parentFlickable: fl
 
                 clickedFunction: function() {
                     selectLanguageDrawer.openTriggered()
@@ -182,13 +183,12 @@ PageType {
 
             LabelWithButtonType {
                 id: labelWithButtonLogging
+
                 Layout.fillWidth: true
 
                 text: qsTr("Logging")
                 descriptionText: SettingsController.isLoggingEnabled ? qsTr("Enabled") : qsTr("Disabled")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
-
-                parentFlickable: fl
 
                 clickedFunction: function() {
                     PageController.goToPage(PageEnum.PageSettingsLogging)
@@ -199,13 +199,12 @@ PageType {
 
             LabelWithButtonType {
                 id: labelWithButtonReset
+                
                 Layout.fillWidth: true
 
                 text: qsTr("Reset settings and remove all data from the application")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
                 textColor: AmneziaStyle.color.vibrantRed
-
-                parentFlickable: fl
 
                 clickedFunction: function() {
                     var headerText = qsTr("Reset settings and remove all data from the application?")

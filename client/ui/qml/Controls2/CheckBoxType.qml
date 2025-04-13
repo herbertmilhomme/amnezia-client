@@ -34,15 +34,6 @@ CheckBox {
 
     property string imageSource: "qrc:/images/controls/check.svg"
 
-    property var parentFlickable
-    onFocusChanged: {
-        if (root.activeFocus) {
-            if (root.parentFlickable) {
-                root.parentFlickable.ensureVisible(root)
-            }
-        }
-    }
-
     hoverEnabled: enabled ? true : false
     focusPolicy: Qt.NoFocus
 

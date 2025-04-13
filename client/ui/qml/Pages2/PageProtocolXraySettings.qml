@@ -17,141 +17,112 @@ import "../Components"
 PageType {
     id: root
 
-    ColumnLayout {
-        id: backButtonLayout
+    BackButtonType {
+        id: backButton
 
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-
         anchors.topMargin: 20
-
-        BackButtonType {
-            id: backButton
-        }
     }
 
-    FlickableType {
-        id: fl
-        anchors.top: backButtonLayout.bottom
+    ListViewType {
+        id: listView
+
+        anchors.top: backButton.bottom
         anchors.bottom: parent.bottom
-        contentHeight: content.implicitHeight
+        anchors.left: parent.left
+        anchors.right: parent.right
 
-        Column {
-            id: content
+        enabled: ServersModel.isProcessedServerHasWriteAccess()
+        model: XrayConfigModel
 
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
+        delegate: ColumnLayout {
 
-            enabled: ServersModel.isProcessedServerHasWriteAccess()
+            width: listView.width
 
-            ListView {
-                id: listview
+            property alias focusItemId: textFieldWithHeaderType.textField
 
-                width: parent.width
-                height: listview.contentItem.height
+            spacing: 0
 
-                clip: true
-                interactive: false
+            BaseHeaderType {
+                Layout.fillWidth: true
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+                headerText: qsTr("XRay settings")
+            }
 
-                model: XrayConfigModel
+            TextFieldWithHeaderType {
+                id: textFieldWithHeaderType
 
-                delegate: Item {
-                    property alias focusItemId: textFieldWithHeaderType.textField
+                Layout.fillWidth: true
+                Layout.topMargin: 32
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
 
-                    implicitWidth: listview.width
-                    implicitHeight: col.implicitHeight
+                headerText: qsTr("Disguised as traffic from")
+                textField.text: site
 
-                    ColumnLayout {
-                        id: col
+                textField.onEditingFinished: {
+                    if (textField.text !== site) {
+                        var tmpText = textField.text
+                        tmpText = tmpText.toLocaleLowerCase()
 
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-
-                        anchors.leftMargin: 16
-                        anchors.rightMargin: 16
-
-                        spacing: 0
-
-                        BaseHeaderType {
-                            Layout.fillWidth: true
-                            headerText: qsTr("XRay settings")
-                        }
-
-                        TextFieldWithHeaderType {
-                            id: textFieldWithHeaderType
-                            Layout.fillWidth: true
-                            Layout.topMargin: 32
-
-                            headerText: qsTr("Disguised as traffic from")
-                            textField.text: site
-
-                            textField.onEditingFinished: {
-                                if (textField.text !== site) {
-                                    var tmpText = textField.text
-                                    tmpText = tmpText.toLocaleLowerCase()
-
-                                    if (tmpText.startsWith("https://")) {
-                                        tmpText = textField.text.substring(8)
-                                        site = tmpText
-                                    } else {
-                                        site = textField.text
-                                    }
-                                }
-                            }
-                        }
-
-                        TextFieldWithHeaderType {
-                            id: portTextField
-                            Layout.fillWidth: true
-                            Layout.topMargin: 16
-
-                            enabled: delegateItem.isEnabled
-
-                            headerText: qsTr("Port")
-                            textField.text: port
-                            textField.maximumLength: 5
-                            textField.validator: IntValidator { bottom: 1; top: 65535 }
-
-                            textField.onEditingFinished: {
-                                if (textField.text !== port) {
-                                    port = textField.text
-                                }
-                            }
-
-                            checkEmptyText: true
-                        }
-
-                        BasicButtonType {
-                            id: saveButton
-                            Layout.fillWidth: true
-                            Layout.topMargin: 24
-                            Layout.bottomMargin: 24
-
-                            text: qsTr("Save")
-
-                            onClicked: {
-                                forceActiveFocus()
-
-                                if (ConnectionController.isConnected && ServersModel.getDefaultServerData("defaultContainer") === ContainersModel.getProcessedContainerIndex()) {
-                                    PageController.showNotificationMessage(qsTr("Unable change settings while there is an active connection"))
-                                    return
-                                }
-
-                                PageController.goToPage(PageEnum.PageSetupWizardInstalling);
-                                InstallController.updateContainer(XrayConfigModel.getConfig())
-                                focusItem.forceActiveFocus()
-                            }
-
-                            Keys.onEnterPressed: basicButton.clicked()
-                            Keys.onReturnPressed: basicButton.clicked()
+                        if (tmpText.startsWith("https://")) {
+                            tmpText = textField.text.substring(8)
+                            site = tmpText
+                        } else {
+                            site = textField.text
                         }
                     }
                 }
             }
+
+            TextFieldWithHeaderType {
+                id: portTextField
+                Layout.fillWidth: true
+                Layout.topMargin: 16
+
+                enabled: delegateItem.isEnabled
+
+                headerText: qsTr("Port")
+                textField.text: port
+                textField.maximumLength: 5
+                textField.validator: IntValidator { bottom: 1; top: 65535 }
+
+                textField.onEditingFinished: {
+                    if (textField.text !== port) {
+                        port = textField.text
+                    }
+                }
+
+                checkEmptyText: true
+            }
+
+            BasicButtonType {
+                id: saveButton
+
+                Layout.fillWidth: true
+                Layout.topMargin: 24
+                Layout.bottomMargin: 24
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+
+                text: qsTr("Save")
+
+                onClicked: {
+                    if (ConnectionController.isConnected && ServersModel.getDefaultServerData("defaultContainer") === ContainersModel.getProcessedContainerIndex()) {
+                        PageController.showNotificationMessage(qsTr("Unable change settings while there is an active connection"))
+                        return
+                    }
+
+                    PageController.goToPage(PageEnum.PageSetupWizardInstalling);
+                    InstallController.updateContainer(XrayConfigModel.getConfig())
+                }
+
+                Keys.onEnterPressed: saveButton.clicked()
+                Keys.onReturnPressed: saveButton.clicked()
+            }
         }
     }
-
 }

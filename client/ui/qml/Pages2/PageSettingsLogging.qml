@@ -25,17 +25,13 @@ PageType {
         anchors.topMargin: 20
     }
 
-    ListView {
+    ListViewType {
         id: listView
 
         anchors.top: backButton.bottom
         anchors.bottom: parent.bottom
         anchors.right: parent.right
         anchors.left: parent.left
-
-        property bool isFocusable: true
-
-        ScrollBar.vertical: ScrollBarType {}
 
         header: ColumnLayout {
             width: listView.width
@@ -101,8 +97,7 @@ PageType {
         }
 
         model: logTypes
-        clip: true
-        reuseItems: true
+
         snapMode: ListView.SnapOneItem
 
         delegate: ColumnLayout {
