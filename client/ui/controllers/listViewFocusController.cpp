@@ -239,7 +239,7 @@ void ListViewFocusController::resetFocusChain()
     m_focusChain.clear();
     m_focusedItem = nullptr;
     m_focusedItemIndex = -1;
-    qDebug() << "Focus chain was resetted";
+    qDebug() << "Focus chain was reset";
 }
 
 void ListViewFocusController::reloadFocusChain()
