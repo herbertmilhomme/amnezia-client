@@ -269,7 +269,8 @@ bool WireguardUtilsWindows::updateRoutePrefix(const IPAddress& prefix) {
   }
 
   // Case for ipv6 route with disabled ipv6
-  if (result == ERROR_NOT_FOUND) {
+  if (prefix.address().protocol() == QAbstractSocket::IPv6Protocol
+      && result == ERROR_NOT_FOUND) {
     return true;
   }
 
