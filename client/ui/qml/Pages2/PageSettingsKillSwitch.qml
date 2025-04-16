@@ -68,7 +68,7 @@ PageType {
                 text: qsTr("Soft KillSwitch")
                 descriptionText: qsTr("Internet connection is blocked if VPN connection drops accidentally")
 
-                onClicked: {
+                onClicked: function() {
                     SettingsController.strictKillSwitchEnabled = false
                 }
             }
@@ -87,8 +87,19 @@ PageType {
                 text: qsTr("Strict KillSwitch")
                 descriptionText: qsTr("Internet connection is blocked even if VPN was turned off manually or not started")
 
-                onClicked: {
-                    SettingsController.strictKillSwitchEnabled = true
+                onClicked: function() {
+                    var headerText = qsTr("Just a little heads-up")
+                    var descriptionText = qsTr("If you disconnect from VPN or the VPN connection drops while the Strict Kill Switch is turned on, your internet access will be disabled. To restore it, connect to VPN, change the Kill Switch mode or turn the Kill Switch off.")
+                    var yesButtonText = qsTr("Continue")
+                    var noButtonText = qsTr("Cancel")
+
+                    var yesButtonFunction = function() {
+                        SettingsController.strictKillSwitchEnabled = true
+                    }
+                    var noButtonFunction = function() {
+                    }
+
+                    showQuestionDrawer(headerText, descriptionText, yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
                 }
             }
 
