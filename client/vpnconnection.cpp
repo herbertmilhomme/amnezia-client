@@ -374,8 +374,10 @@ void VpnConnection::appendSplitTunnelingConfig()
                 sitesJsonArray.append(site);
             }
 
-            // Allow traffic to Amnezia DNS
-            if (sitesRouteMode == Settings::VpnOnlyForwardSites) {
+            if (sitesJsonArray.isEmpty()) {
+                sitesRouteMode = Settings::RouteMode::VpnAllSites;
+            } else if (sitesRouteMode == Settings::VpnOnlyForwardSites) {
+                // Allow traffic to Amnezia DNS
                 sitesJsonArray.append(m_vpnConfiguration.value(config_key::dns1).toString());
                 sitesJsonArray.append(m_vpnConfiguration.value(config_key::dns2).toString());
             }
@@ -393,6 +395,10 @@ void VpnConnection::appendSplitTunnelingConfig()
         auto apps = m_settings->getVpnApps(appsRouteMode);
         for (const auto &app : apps) {
             appsJsonArray.append(app.appPath.isEmpty() ? app.packageName : app.appPath);
+        }
+
+        if (appsJsonArray.isEmpty()) {
+            appsRouteMode = Settings::AppsRouteMode::VpnAllApps;
         }
     }
 
