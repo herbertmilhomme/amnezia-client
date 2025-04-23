@@ -7,6 +7,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QNetworkReply>
+#include <QUrl>
 
 #include "QBlockCipher.h"
 #include "QRsa.h"
@@ -14,6 +15,8 @@
 #include "amnezia_application.h"
 #include "core/api/apiUtils.h"
 #include "utilities.h"
+#include "core/ipcclient.h"
+#include "core/networkUtilities.h"
 
 namespace
 {
@@ -49,6 +52,17 @@ ErrorCode GatewayController::get(const QString &endpoint, QByteArray &responseBo
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
     request.setUrl(QString(endpoint).arg(m_gatewayEndpoint));
+
+    // bypass killSwitch exceptions for API-gateway
+#if defined(Q_OS_LINUX) || defined(Q_OS_MACOS) || defined(Q_OS_WIN)
+    {
+        QString host = QUrl(request.url()).host();
+        QString ip = NetworkUtilities::getIPAddress(host);
+        if (!ip.isEmpty()) {
+            IpcClient::Interface()->addKillSwitchExceptions(QStringList{ip});
+        }
+    }
+#endif
 
     QNetworkReply *reply;
     reply = amnApp->networkManager()->get(request);
@@ -100,6 +114,17 @@ ErrorCode GatewayController::post(const QString &endpoint, const QJsonObject api
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
     request.setUrl(endpoint.arg(m_gatewayEndpoint));
+
+    // bypass killSwitch exceptions for API-gateway
+#if defined(Q_OS_LINUX) || defined(Q_OS_MACOS) || defined(Q_OS_WIN)
+    {
+        QString host = QUrl(request.url()).host();
+        QString ip = NetworkUtilities::getIPAddress(host);
+        if (!ip.isEmpty()) {
+            IpcClient::Interface()->addKillSwitchExceptions(QStringList{ip});
+        }
+    }
+#endif
 
     QSimpleCrypto::QBlockCipher blockCipher;
     QByteArray key = blockCipher.generatePrivateSalt(32);
