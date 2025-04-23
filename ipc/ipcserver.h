@@ -41,6 +41,7 @@ public:
     virtual bool disableKillSwitch() override;
     virtual bool refreshKillSwitch( bool enabled ) override;
     virtual bool updateResolvers(const QString& ifname, const QList<QHostAddress>& resolvers) override;
+    virtual bool addKillSwitchExceptions(QStringList ranges) override;
 
 private:
     int m_localpid = 0;

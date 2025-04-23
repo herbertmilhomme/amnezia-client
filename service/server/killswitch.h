@@ -18,10 +18,12 @@ public:
     bool enablePeerTraffic(const QJsonObject &configStr);
     bool enableKillSwitch(const QJsonObject &configStr, int vpnAdapterIndex);
     bool allowTrafficTo(const QStringList &ranges);
+    bool addAllowedRange(const QStringList &ranges);
     bool isStrictKillSwitchEnabled();
 
 private:
     KillSwitch(QObject* parent) {};
+    QStringList m_allowedRanges;
     QSharedPointer<SecureQSettings> m_appSettigns;
 
 };

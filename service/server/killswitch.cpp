@@ -125,6 +125,7 @@ bool KillSwitch::disableKillSwitch() {
     return WindowsFirewall::create(this)->allowAllTraffic();
 #endif
 
+    m_allowedRanges.clear();
     return true;
 }
 
@@ -150,26 +151,47 @@ bool KillSwitch::disableAllTraffic() {
     MacOSFirewall::setAnchorEnabled(QStringLiteral("000.allowLoopback"), true);
     MacOSFirewall::setAnchorEnabled(QStringLiteral("250.blockIPv6"), true);
 #endif
+    m_allowedRanges.clear();
     return true;
 }
 
 bool KillSwitch::allowTrafficTo(const QStringList &ranges) {
 
+    m_allowedRanges = ranges;
+
 #ifdef Q_OS_LINUX
     LinuxFirewall::setAnchorEnabled(LinuxFirewall::IPv4, QStringLiteral("110.allowNets"), true);
-    LinuxFirewall::updateAllowNets(ranges);
+    LinuxFirewall::updateAllowNets(m_allowedRanges);
 #endif
 
 #ifdef Q_OS_MACOS
     MacOSFirewall::setAnchorEnabled(QStringLiteral("110.allowNets"), true);
-    MacOSFirewall::setAnchorTable(QStringLiteral("110.allowNets"), true, QStringLiteral("allownets"), ranges);
+    MacOSFirewall::setAnchorTable(QStringLiteral("110.allowNets"), true, QStringLiteral("allownets"), m_allowedRanges);
 #endif
 
 #ifdef Q_OS_WIN
-    WindowsFirewall::create(this)->allowTrafficRange(ranges);
+    if (isStrictKillSwitchEnabled()) {
+        WindowsFirewall::create(this)->enableInterface(-1);
+    }
+    WindowsFirewall::create(this)->allowTrafficRange(m_allowedRanges);
 #endif
 
     return true;
+}
+
+bool KillSwitch::addAllowedRange(const QStringList &ranges) {
+    for (const QString &range : ranges) {
+        if (!range.isEmpty() && !m_allowedRanges.contains(range)) {
+            m_allowedRanges.append(range);
+        }
+    }
+
+#ifdef Q_OS_WIN
+    WindowsFirewall::create(this)->allowTrafficRange(ranges);
+    return true;
+#else
+    return allowTrafficTo(m_allowedRanges);
+#endif
 }
 
 bool KillSwitch::enablePeerTraffic(const QJsonObject &configStr) {

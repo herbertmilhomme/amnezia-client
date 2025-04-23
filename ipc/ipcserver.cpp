@@ -184,6 +184,11 @@ bool IpcServer::allowTrafficTo(QStringList ranges)
     return KillSwitch::instance()->allowTrafficTo(ranges);
 }
 
+bool IpcServer::addKillSwitchExceptions(QStringList ranges)
+{
+    return KillSwitch::instance()->addAllowedRange(ranges);
+}
+
 bool IpcServer::disableAllTraffic()
 {
     return KillSwitch::instance()->disableAllTraffic();
