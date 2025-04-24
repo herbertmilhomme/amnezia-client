@@ -172,7 +172,7 @@ ErrorCode OpenVpnProtocol::start()
     }
 
 #if defined(Q_OS_LINUX) || defined(Q_OS_MACOS)
-    IpcClient::Interface()->addKillSwitchExceptions(QStringList(NetworkUtilities::getIPAddress(
+    IpcClient::Interface()->addKillSwitchAllowedRange(QStringList(NetworkUtilities::getIPAddress(
             m_configData.value(amnezia::config_key::hostName).toString())));
 #endif
 

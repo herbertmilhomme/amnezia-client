@@ -15,8 +15,11 @@
 #include "amnezia_application.h"
 #include "core/api/apiUtils.h"
 #include "utilities.h"
-#include "core/ipcclient.h"
 #include "core/networkUtilities.h"
+
+#ifdef AMNEZIA_DESKTOP
+    #include "core/ipcclient.h"
+#endif
 
 namespace
 {
@@ -54,12 +57,12 @@ ErrorCode GatewayController::get(const QString &endpoint, QByteArray &responseBo
     request.setUrl(QString(endpoint).arg(m_gatewayEndpoint));
 
     // bypass killSwitch exceptions for API-gateway
-#if defined(Q_OS_LINUX) || defined(Q_OS_MACOS) || defined(Q_OS_WIN)
+#ifdef AMNEZIA_DESKTOP
     {
         QString host = QUrl(request.url()).host();
         QString ip = NetworkUtilities::getIPAddress(host);
         if (!ip.isEmpty()) {
-            IpcClient::Interface()->addKillSwitchExceptions(QStringList{ip});
+            IpcClient::Interface()->addKillSwitchAllowedRange(QStringList{ip});
         }
     }
 #endif
@@ -116,12 +119,12 @@ ErrorCode GatewayController::post(const QString &endpoint, const QJsonObject api
     request.setUrl(endpoint.arg(m_gatewayEndpoint));
 
     // bypass killSwitch exceptions for API-gateway
-#if defined(Q_OS_LINUX) || defined(Q_OS_MACOS) || defined(Q_OS_WIN)
+#ifdef AMNEZIA_DESKTOP
     {
         QString host = QUrl(request.url()).host();
         QString ip = NetworkUtilities::getIPAddress(host);
         if (!ip.isEmpty()) {
-            IpcClient::Interface()->addKillSwitchExceptions(QStringList{ip});
+            IpcClient::Interface()->addKillSwitchAllowedRange(QStringList{ip});
         }
     }
 #endif

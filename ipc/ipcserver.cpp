@@ -179,12 +179,12 @@ void IpcServer::setLogsEnabled(bool enabled)
     }
 }
 
-bool IpcServer::allowTrafficTo(QStringList ranges)
+bool IpcServer::resetKillSwitchAllowedRange(QStringList ranges)
 {
     return KillSwitch::instance()->resetAllowedRange(ranges);
 }
 
-bool IpcServer::addKillSwitchExceptions(QStringList ranges)
+bool IpcServer::addKillSwitchAllowedRange(QStringList ranges)
 {
     return KillSwitch::instance()->addAllowedRange(ranges);
 }
