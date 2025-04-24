@@ -155,7 +155,7 @@ bool KillSwitch::disableAllTraffic() {
     return true;
 }
 
-bool KillSwitch::allowTrafficTo(const QStringList &ranges) {
+bool KillSwitch::resetAllowedRange(const QStringList &ranges) {
 
     m_allowedRanges = ranges;
 
@@ -186,12 +186,7 @@ bool KillSwitch::addAllowedRange(const QStringList &ranges) {
         }
     }
 
-#ifdef Q_OS_WIN
-    WindowsFirewall::create(this)->allowTrafficRange(ranges);
-    return true;
-#else
-    return allowTrafficTo(m_allowedRanges);
-#endif
+    return resetAllowedRange(m_allowedRanges);
 }
 
 bool KillSwitch::enablePeerTraffic(const QJsonObject &configStr) {

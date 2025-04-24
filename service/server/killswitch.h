@@ -17,7 +17,7 @@ public:
     bool disableAllTraffic();
     bool enablePeerTraffic(const QJsonObject &configStr);
     bool enableKillSwitch(const QJsonObject &configStr, int vpnAdapterIndex);
-    bool allowTrafficTo(const QStringList &ranges);
+    bool resetAllowedRange(const QStringList &ranges);
     bool addAllowedRange(const QStringList &ranges);
     bool isStrictKillSwitchEnabled();
 
