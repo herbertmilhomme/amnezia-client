@@ -391,6 +391,7 @@ PageType {
                                     RoleSorter { roleName: "isInstalled"; sortOrder: Qt.DescendingOrder }
                                 ]
                             }
+                            highlightFollowsCurrentItem: false
 
                             Component.onCompleted: updateContainersModelFilters()
                         }

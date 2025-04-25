@@ -26,6 +26,7 @@ ListView {
     ScrollBar.vertical: ScrollBarType {}
 
     property bool isFocusable: true
+    highlightFollowsCurrentItem: false
 
     ButtonGroup {
         id: containersRadioButtonGroup
