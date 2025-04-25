@@ -51,7 +51,13 @@ PageType {
 
         model: ApiCountryModel
 
-        currentIndex: 0
+        // Commented out the binding to prevent constant reset to 0
+        // currentIndex: 0
+
+        Component.onCompleted: {
+            // One-time initialization to 0, allowing free scrolling afterward
+            currentIndex = 0
+        }
 
         ButtonGroup {
             id: containersRadioButtonGroup
