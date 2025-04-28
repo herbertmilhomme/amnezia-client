@@ -18,7 +18,7 @@ ListView {
     property var selectedText
 
     width: rootWidth
-    height: contentItem.height
+    anchors.fill: parent
 
     clip: true
     snapMode: ListView.SnapToItem
@@ -26,7 +26,6 @@ ListView {
     ScrollBar.vertical: ScrollBarType {}
 
     property bool isFocusable: true
-    highlightFollowsCurrentItem: false
 
     ButtonGroup {
         id: containersRadioButtonGroup
