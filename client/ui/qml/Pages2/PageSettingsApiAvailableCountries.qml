@@ -51,10 +51,7 @@ PageType {
 
         model: ApiCountryModel
 
-        Component.onCompleted: {
-            currentIndex = 0
-        }
-        highlightFollowsCurrentItem: false
+        currentIndex: 0
 
         ButtonGroup {
             id: containersRadioButtonGroup
