@@ -135,12 +135,6 @@ PageType {
                         }
                     }
 
-                    MouseArea {
-                        anchors.fill: containerRadioButton
-                        cursorShape: Qt.PointingHandCursor
-                        enabled: false
-                    }
-
                     Keys.onEnterPressed: {
                         if (checkable) {
                             checked = true
