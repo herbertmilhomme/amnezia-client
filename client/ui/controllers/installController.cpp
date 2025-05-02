@@ -363,13 +363,14 @@ ErrorCode InstallController::getAlreadyInstalledContainers(const ServerCredentia
 
             QJsonObject config;
             Proto mainProto = ContainerProps::defaultProtocol(container);
-            for (auto protocol : ContainerProps::protocolsForContainer(container)) {
+            const auto &protocols = ContainerProps::protocolsForContainer(container);
+            for (const auto &protocol : protocols) {
                 QJsonObject containerConfig;
                 if (protocol == mainProto) {
                     containerConfig.insert(config_key::port, port);
                     containerConfig.insert(config_key::transport_proto, transportProto);
 
-                    if (protocol == Proto::Awg || protocol == Proto::WireGuard) {
+                    if (protocol == Proto::Awg) {
                         QString serverConfig = serverController->getTextFileFromContainer(container, credentials,
                                                                                           protocols::awg::serverConfigPath, errorCode);
 
@@ -387,22 +388,37 @@ ErrorCode InstallController::getAlreadyInstalledContainers(const ServerCredentia
                             }
                         }
 
-                        containerConfig[config_key::subnet_address] = serverConfigMap.value("Address");
+                        containerConfig[config_key::subnet_address] = serverConfigMap.value("Address").remove("/24");
+                        containerConfig[config_key::junkPacketCount] = serverConfigMap.value(config_key::junkPacketCount);
+                        containerConfig[config_key::junkPacketMinSize] = serverConfigMap.value(config_key::junkPacketMinSize);
+                        containerConfig[config_key::junkPacketMaxSize] = serverConfigMap.value(config_key::junkPacketMaxSize);
+                        containerConfig[config_key::initPacketJunkSize] = serverConfigMap.value(config_key::initPacketJunkSize);
+                        containerConfig[config_key::responsePacketJunkSize] = serverConfigMap.value(config_key::responsePacketJunkSize);
+                        containerConfig[config_key::initPacketMagicHeader] = serverConfigMap.value(config_key::initPacketMagicHeader);
+                        containerConfig[config_key::responsePacketMagicHeader] = serverConfigMap.value(config_key::responsePacketMagicHeader);
+                        containerConfig[config_key::underloadPacketMagicHeader] =
+                                serverConfigMap.value(config_key::underloadPacketMagicHeader);
+                        containerConfig[config_key::transportPacketMagicHeader] =
+                                serverConfigMap.value(config_key::transportPacketMagicHeader);
 
-                        if (protocol == Proto::Awg) {
-                            containerConfig[config_key::junkPacketCount] = serverConfigMap.value(config_key::junkPacketCount);
-                            containerConfig[config_key::junkPacketMinSize] = serverConfigMap.value(config_key::junkPacketMinSize);
-                            containerConfig[config_key::junkPacketMaxSize] = serverConfigMap.value(config_key::junkPacketMaxSize);
-                            containerConfig[config_key::initPacketJunkSize] = serverConfigMap.value(config_key::initPacketJunkSize);
-                            containerConfig[config_key::responsePacketJunkSize] = serverConfigMap.value(config_key::responsePacketJunkSize);
-                            containerConfig[config_key::initPacketMagicHeader] = serverConfigMap.value(config_key::initPacketMagicHeader);
-                            containerConfig[config_key::responsePacketMagicHeader] = serverConfigMap.value(config_key::responsePacketMagicHeader);
-                            containerConfig[config_key::underloadPacketMagicHeader] =
-                                    serverConfigMap.value(config_key::underloadPacketMagicHeader);
-                            containerConfig[config_key::transportPacketMagicHeader] =
-                                    serverConfigMap.value(config_key::transportPacketMagicHeader);
+                    } else if (protocol == Proto::WireGuard) {
+                        QString serverConfig = serverController->getTextFileFromContainer(container, credentials,
+                                                                                          protocols::wireguard::serverConfigPath, errorCode);
+
+                        QMap<QString, QString> serverConfigMap;
+                        auto serverConfigLines = serverConfig.split("\n");
+                        for (auto &line : serverConfigLines) {
+                            auto trimmedLine = line.trimmed();
+                            if (trimmedLine.startsWith("[") && trimmedLine.endsWith("]")) {
+                                continue;
+                            } else {
+                                QStringList parts = trimmedLine.split(" = ");
+                                if (parts.count() == 2) {
+                                    serverConfigMap.insert(parts[0].trimmed(), parts[1].trimmed());
+                                }
+                            }
                         }
-
+                        containerConfig[config_key::subnet_address] = serverConfigMap.value("Address").remove("/24");
                     } else if (protocol == Proto::Sftp) {
                         stdOut.clear();
                         script = QString("sudo docker inspect --format '{{.Config.Cmd}}' %1").arg(name);
