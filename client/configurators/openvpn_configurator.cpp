@@ -135,7 +135,9 @@ QString OpenVpnConfigurator::processConfigWithLocalSettings(const QPair<QString,
 #if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
             config.append("\nredirect-gateway ipv6 !ipv4 bypass-dhcp\n");
             // Prevent ipv6 leak
-            config.append("ifconfig-ipv6 fd15:53b6:dead::2/64  fd15:53b6:dead::1\n");
+            if (NetworkUtilities::checkIpv6Enabled()) {
+                config.append("ifconfig-ipv6 fd15:53b6:dead::2/64  fd15:53b6:dead::1\n");
+            }
 #endif
             config.append("block-ipv6\n");
         }
