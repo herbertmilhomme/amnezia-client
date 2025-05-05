@@ -35,7 +35,7 @@ QVariant XrayConfigModel::data(const QModelIndex &index, int role) const
 
     switch (role) {
     case Roles::SiteRole: return m_protocolConfig.value(config_key::site).toString(protocols::xray::defaultSite);
-    case Roles::PortRole: return m_protocolConfig.value(config_key::port).toString();
+    case Roles::PortRole: return m_protocolConfig.value(config_key::port).toString(protocols::xray::defaultPort);
     }
 
     return QVariant();
