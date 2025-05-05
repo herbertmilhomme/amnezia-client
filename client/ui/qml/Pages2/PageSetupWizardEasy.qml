@@ -74,6 +74,7 @@ PageType {
                 Layout.fillWidth: true
                 Layout.rightMargin: 16
                 Layout.leftMargin: 16
+                Layout.bottomMargin: 16
 
                 headerTextMaximumLineCount: 10
 
@@ -82,7 +83,7 @@ PageType {
         }
 
         model: proxyContainersModel
-        currentIndex: 1
+        currentIndex: 0
 
         delegate: ColumnLayout {
 
@@ -94,6 +95,7 @@ PageType {
                 Layout.fillWidth: true
                 Layout.rightMargin: 16
                 Layout.leftMargin: 16
+                Layout.bottomMargin: 16
 
                 headerText: easySetupHeader
                 bodyText: easySetupDescription
@@ -114,6 +116,7 @@ PageType {
         footer: ColumnLayout {
 
             width: listView.width
+            spacing: 16
 
             DividerType {
                 Layout.fillWidth: true
@@ -195,7 +198,7 @@ PageType {
         Component.onCompleted: {
             var item = listView.itemAtIndex(listView.currentIndex)
             if (item !== null) {
-                var button = item.children[0].children[0]
+                var button = item.children[0]
                 button.checked = true
                 button.clicked()
             }
