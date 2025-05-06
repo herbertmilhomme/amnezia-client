@@ -49,8 +49,8 @@ apiDefs::ConfigType apiUtils::getConfigType(const QJsonObject &serverConfigObjec
         constexpr QLatin1String serviceFree("amnezia-free");
         constexpr QLatin1String serviceExternalPremium("external-premium");
 
-        constexpr QLatin1String freeV2Endpoint("13.248.139.44");
-        constexpr QLatin1String premiumV1Endpoint("52.223.54.40");
+        constexpr QLatin1String freeV2Endpoint(FREE_V2_ENDPOINT);
+        constexpr QLatin1String premiumV1Endpoint(PREM_V1_ENDPOINT);
 
         auto apiConfigObject = serverConfigObject.value(apiDefs::key::apiConfig).toObject();
         auto serviceType = apiConfigObject.value(apiDefs::key::serviceType).toString();
