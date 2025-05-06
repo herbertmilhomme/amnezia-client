@@ -656,39 +656,47 @@ void ImportController::checkForMaliciousStrings(const QJsonObject &serverConfig)
     const QJsonArray &containers = serverConfig[config_key::containers].toArray();
     for (const QJsonValue &container : containers) {
         auto containerConfig = container.toObject();
-        auto containerName = containerConfig[config_key::container].toString();
-        if ((containerName == ContainerProps::containerToString(DockerContainer::OpenVpn))
-            || (containerName == ContainerProps::containerToString(DockerContainer::Cloak))
-            || (containerName == ContainerProps::containerToString(DockerContainer::ShadowSocks))) {
+        QString containerName = containerConfig[config_key::container].toString();
 
-            QString protocolConfig =
-                    containerConfig[ProtocolProps::protoToString(Proto::OpenVpn)].toObject()[config_key::last_config].toString();
-            QString protocolConfigJson = QJsonDocument::fromJson(protocolConfig.toUtf8()).object()[config_key::config].toString();
+        if (containerName == ContainerProps::containerToString(DockerContainer::OpenVpn)
+            || containerName == ContainerProps::containerToString(DockerContainer::Cloak)
+            || containerName == ContainerProps::containerToString(DockerContainer::ShadowSocks))
+        {
+            QString protoCfgB64 = containerConfig[ProtocolProps::protoToString(Proto::OpenVpn)]
+                                          .toObject()[config_key::last_config].toString();
+            QString cfgJson = QJsonDocument::fromJson(protoCfgB64.toUtf8())
+                                      .object()[config_key::config].toString();
 
-            const QRegularExpression regExp { "(\\w+-\\w+|\\w+)" };
-            const size_t dangerousTagsMaxCount = 3;
+            QStringList lines = cfgJson.replace("\r", "").split('\n');
+
+            const size_t dangerousTagsMaxCount = 1;
 
             // https://github.com/OpenVPN/openvpn/blob/master/doc/man-sections/script-options.rst
-            QStringList dangerousTags {
-                "up", "tls-verify", "ipchange", "client-connect", "route-up", "route-pre-down", "client-disconnect", "down", "learn-address", "auth-user-pass-verify"
+            const QStringList dangerousTags {
+                "up", "tls-verify", "ipchange", "client-connect",
+                "route-up", "route-pre-down", "client-disconnect",
+                "down", "learn-address", "auth-user-pass-verify"
             };
+            const QStringList allowedTags { "up", "down" };
 
-            QStringList maliciousStrings;
-            QStringList lines = protocolConfigJson.replace("\r", "").split("\n");
-            for (const QString &l : lines) {
-                QRegularExpressionMatch match = regExp.match(l);
-                if (dangerousTags.contains(match.captured(0))) {
-                    maliciousStrings << l;
+            QStringList found;
+            for (QString line : lines) {
+                line = line.trimmed();
+                if (line.isEmpty() || line.startsWith('#') || line.startsWith(';'))
+                    continue;
+                QString tag = line.section(QRegularExpression("\\s+"), 0, 0);
+                if (dangerousTags.contains(tag) && !allowedTags.contains(tag)) {
+                    found << line;
                 }
             }
 
             m_maliciousWarningText = tr("This configuration contains an OpenVPN setup. OpenVPN configurations can include malicious "
                                         "scripts, so only add it if you fully trust the provider of this config. ");
 
-            if (maliciousStrings.size() >= dangerousTagsMaxCount) {
-                m_maliciousWarningText.push_back(tr("<br>In the imported configuration, potentially dangerous lines were found:"));
-                for (const auto &string : maliciousStrings) {
-                    m_maliciousWarningText.push_back(QString("<br><i>%1</i>").arg(string));
+            if (found.size() >= dangerousTagsMaxCount) {
+                m_maliciousWarningText += tr("<br>Potentially dangerous directives found:");
+                for (auto &l : found) {
+                    m_maliciousWarningText += QString("<br><i>%1</i>").arg(l);
                 }
             }
         }
