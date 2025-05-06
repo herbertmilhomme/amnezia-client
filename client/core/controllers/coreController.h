@@ -7,6 +7,7 @@
 
 #include "ui/controllers/api/apiConfigsController.h"
 #include "ui/controllers/api/apiSettingsController.h"
+#include "ui/controllers/api/apiPremV1MigrationController.h"
 #include "ui/controllers/appSplitTunnelingController.h"
 #include "ui/controllers/connectionController.h"
 #include "ui/controllers/exportController.h"
@@ -80,6 +81,8 @@ private:
     void initAutoConnectHandler();
     void initAmneziaDnsToggledHandler();
     void initPrepareConfigHandler();
+    void initImportPremiumV2VpnKeyHandler();
+    void initShowMigrationDrawerHandler();
 
     QQmlApplicationEngine *m_engine {}; // TODO use parent child system here?
     std::shared_ptr<Settings> m_settings;
@@ -105,6 +108,7 @@ private:
 
     QScopedPointer<ApiSettingsController> m_apiSettingsController;
     QScopedPointer<ApiConfigsController> m_apiConfigsController;
+    QScopedPointer<ApiPremV1MigrationController> m_apiPremV1MigrationController;
 
     QSharedPointer<ContainersModel> m_containersModel;
     QSharedPointer<ContainersModel> m_defaultServerContainersModel;

@@ -225,6 +225,9 @@ public:
     bool isHomeAdLabelVisible();
     void disableHomeAdLabel();
 
+    bool isPremV1MigrationReminderActive();
+    void disablePremV1MigrationReminder();
+
 signals:
     void saveLogsChanged(bool enabled);
     void screenshotsEnabledChanged(bool enabled);
