@@ -52,25 +52,23 @@ PageType {
         anchors.right: parent.right
         anchors.left: parent.left
 
-        header: ColumnLayout {
-            width: listView.width
-
-            BaseHeaderType {
-                id: header
-
-                Layout.fillWidth: true
-
-                headerText: qsTr("Installing %1").arg(name)
-                descriptionText: description
-            }
-        }
-
         currentIndex: -1
 
         model: proxyContainersModel
 
         delegate: ColumnLayout {
             width: listView.width
+
+            BaseHeaderType {
+                id: header
+
+                Layout.fillWidth: true
+                Layout.rightMargin: 16
+                Layout.leftMargin: 16
+
+                headerText: qsTr("Installing %1").arg(name)
+                descriptionText: description
+            }
 
             BasicButtonType {
                 id: showDetailsButton
