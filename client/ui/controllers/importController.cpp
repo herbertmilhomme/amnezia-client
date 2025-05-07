@@ -666,7 +666,6 @@ void ImportController::checkForMaliciousStrings(const QJsonObject &serverConfig)
             QString protocolConfigJson = QJsonDocument::fromJson(protocolConfig.toUtf8()).object()[config_key::config].toString();
 
             const QRegularExpression regExp { "(\\w+-\\w+|\\w+)" };
-            const size_t dangerousTagsMaxCount = 1;
 
             // https://github.com/OpenVPN/openvpn/blob/master/doc/man-sections/script-options.rst
             QStringList dangerousTags {
@@ -675,7 +674,6 @@ void ImportController::checkForMaliciousStrings(const QJsonObject &serverConfig)
 
             QStringList maliciousStrings;
             QStringList lines = protocolConfigJson.split('\n', Qt::SkipEmptyParts);
-
 
             for (const QString &rawLine : lines) {
                 QString line = rawLine.trimmed();
