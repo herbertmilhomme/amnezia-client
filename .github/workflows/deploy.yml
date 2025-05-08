@@ -325,7 +325,7 @@ jobs:
 
     env:
       QT_VERSION: 6.8.0
-      QIF_VERSION: 4.9
+      QIF_VERSION: 4.8.1
       PROD_AGW_PUBLIC_KEY: ${{ secrets.PROD_AGW_PUBLIC_KEY }}
       PROD_S3_ENDPOINT: ${{ secrets.PROD_S3_ENDPOINT }}
       DEV_AGW_PUBLIC_KEY: ${{ secrets.DEV_AGW_PUBLIC_KEY }}
