@@ -67,6 +67,7 @@ PageType {
 
             DropDownType {
                 id: serverSelector
+                objectName: "serverSelector"
 
                 signal severSelectorIndexChanged
                 property int currentIndex: 0
@@ -152,8 +153,22 @@ PageType {
                         ExportController.generateFullAccessConfig()
                     }
 
-                    shareConnectionDrawer.headerText = qsTr("Connection to ") + serverSelector.text
-                    shareConnectionDrawer.configContentHeaderText = qsTr("File with connection settings to ") + serverSelector.text
+                    const headerItem = listView.headerItem;
+                    if (!headerItem) {
+                        PageController.showBusyIndicator(false)
+                        console.error("Failed to share: header item not found in ListView")
+                        return
+                    }
+
+                    const serverSelectorItem = headerItem.children.find(c => c.objectName === "serverSelector");
+                    if (!serverSelectorItem) {
+                        PageController.showBusyIndicator(false)
+                        console.error("Failed to share: serverSelector item not found in ListView")
+                        return
+                    }
+
+                    shareConnectionDrawer.headerText = qsTr("Connection to ") + serverSelectorItem.text
+                    shareConnectionDrawer.configContentHeaderText = qsTr("File with connection settings to ") + serverSelectorItem.text
 
                     shareConnectionDrawer.openTriggered()
 
