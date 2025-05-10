@@ -178,9 +178,21 @@ DrawerType2 {
                         Connections {
                             target: copyNativeConfigStringButton
                             function onClicked() {
-                                nativeConfigString.selectAll()
-                                nativeConfigString.copy()
-                                nativeConfigString.select(0, 0)
+                                const headerItem = configListView.headerItem;
+                                if (!headerItem) {
+                                    console.error("Failed to copy: header item not found in ListView")
+                                    return
+                                }
+
+                                const nativeConfigStringItem = headerItem.children.find(c => c.objectName === "nativeConfigString");
+                                if (!nativeConfigStringItem) {
+                                    console.error("Failed to copy: nativeConfigString item not found in ListView")
+                                    return
+                                }
+
+                                nativeConfigStringItem.selectAll()
+                                nativeConfigStringItem.copy()
+                                nativeConfigStringItem.select(0, 0)
                                 PageController.showNotificationMessage(qsTr("Copied"))
                             }
                         }
@@ -188,11 +200,22 @@ DrawerType2 {
                         Connections {
                             target: copyConfigTextButton
                             function onClicked() {
-                                configText.selectAll()
-                                configText.copy()
-                                configText.select(0, 0)
+                                const headerItem = configListView.headerItem;
+                                if (!headerItem) {
+                                    console.error("Failed to copy: header item not found in ListView")
+                                    return
+                                }
+
+                                const configTextItem = headerItem.children.find(c => c.objectName === "configText");
+                                if (!configTextItem) {
+                                    console.error("Failed to copy: configText item not found in ListView")
+                                    return
+                                }
+
+                                configTextItem.selectAll()
+                                configTextItem.copy()
+                                configTextItem.select(0, 0)
                                 PageController.showNotificationMessage(qsTr("Copied"))
-                                header.forceActiveFocus()
                             }
                         }
 
@@ -232,6 +255,8 @@ DrawerType2 {
 
                                 TextField {
                                     id: nativeConfigString
+                                    objectName: "nativeConfigString"
+
                                     visible: false
                                     text: ExportController.nativeConfigString
 
@@ -242,6 +267,7 @@ DrawerType2 {
 
                                 TextArea {
                                     id: configText
+                                    objectName: "configText"
 
                                     Layout.fillWidth: true
                                     Layout.topMargin: 16
