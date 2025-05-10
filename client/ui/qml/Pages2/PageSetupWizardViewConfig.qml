@@ -110,6 +110,7 @@ PageType {
 
             CheckBoxType {
                 id: cloakingCheckBox
+                objectName: "cloakingCheckBox"
 
                 visible: ImportController.isNativeWireGuardConfig()
 
@@ -192,7 +193,19 @@ PageType {
 
                 text: qsTr("Connect")
                 clickedFunc: function() {
-                    if (cloakingCheckBox.checked) {
+                    const headerItem = listView.headerItem;
+                    if (!headerItem) {
+                        console.error("Header item not found in ListView")
+                        return
+                    }
+
+                    const cloakingCheckBoxItem = headerItem.children.find(c => c.objectName === "cloakingCheckBox");
+                    if (!cloakingCheckBoxItem) {
+                        console.error("cloakingCheckBox not found")
+                        return
+                    }
+
+                    if (cloakingCheckBoxItem.checked) {
                         ImportController.processNativeWireGuardConfig()
                     }
                     ImportController.importConfig()
