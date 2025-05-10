@@ -137,8 +137,6 @@ PageType {
                 descriptionText: qsTr("Blocks network connections without VPN")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
 
-                parentFlickable: fl
-
                 clickedFunction: function() {
                     PageController.goToPage(PageEnum.PageSettingsKillSwitch)
                 }
