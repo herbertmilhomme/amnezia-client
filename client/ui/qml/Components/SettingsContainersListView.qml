@@ -14,12 +14,12 @@ import "../Controls2/TextTypes"
 
 
 ListViewType {
-    id: listView
+    id: root
 
     anchors.fill: parent
 
     delegate: ColumnLayout {
-        width: listView.width
+        width: root.width
 
         LabelWithButtonType {
             Layout.fillWidth: true
