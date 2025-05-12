@@ -38,14 +38,43 @@ void debugMessageHandler(QtMsgType type, const QMessageLogContext &context, cons
         return;
     }
 
-    if (msg.startsWith("Unknown property") || msg.startsWith("Could not create pixmap") || msg.startsWith("Populating font")
-        || msg.startsWith("stale focus object")) {
+    if (msg.startsWith("Unknown property") || msg.startsWith("Could not create pixmap")
+        || msg.startsWith("Populating font") || msg.startsWith("stale focus object")) {
         return;
     }
 
     Logger::m_textStream << qFormatLogMessage(type, context, msg) << Qt::endl << Qt::flush;
+}
 
-    std::cout << qFormatLogMessage(type, context, msg).toStdString() << std::endl << std::flush;
+void timestampMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+{
+    QString timestamp = QDateTime::currentDateTimeUtc().toString("[yyyy-MM-dd hh:mm:ss.zzzZ]");
+
+    // Handle different message types
+    switch (type) {
+    case QtDebugMsg: {
+        qDebug("%s", qPrintable(timestamp + " " + msg));
+        break;
+    }
+    case QtInfoMsg: {
+        qInfo("%s", qPrintable(timestamp + " " + msg));
+        break;
+    }
+    case QtWarningMsg: {
+        qWarning("%s", qPrintable(timestamp + " " + msg));
+        break;
+    }
+    case QtCriticalMsg: {
+        qCritical("%s", qPrintable(timestamp + " " + msg));
+        break;
+    }
+    case QtFatalMsg: {
+        qFatal("%s", qPrintable(timestamp + " " + msg));
+        abort();
+        break;
+    }
+    default: break;
+    }
 }
 
 Logger &Logger::Instance()
@@ -57,7 +86,7 @@ Logger &Logger::Instance()
 bool Logger::init(bool isServiceLogger)
 {
     QString path = isServiceLogger ? systemLogDir() : userLogsDir();
-    QString logFileName = isServiceLogger ? m_serviceLogFileName : m_logFileName ;
+    QString logFileName = isServiceLogger ? m_serviceLogFileName : m_logFileName;
     QDir appDir(path);
     if (!appDir.mkpath(path)) {
         return false;
@@ -71,8 +100,8 @@ bool Logger::init(bool isServiceLogger)
 
     m_file.setTextModeEnabled(true);
     m_textStream.setDevice(&m_file);
-    qSetMessagePattern("%{time yyyy-MM-dd hh:mm:ss} %{type} %{message}");
 
+    qInstallMessageHandler(timestampMessageHandler);
 #if !defined(QT_DEBUG) || defined(Q_OS_IOS)
     qInstallMessageHandler(debugMessageHandler);
 #endif
@@ -270,11 +299,11 @@ QString Logger::sensitive(const QString &input)
 #endif
 }
 
-#define CREATE_LOG_OP_REF(x)                                                                                                               \
-    Logger::Log &Logger::Log::operator<<(x t)                                                                                              \
-    {                                                                                                                                      \
-        m_data->m_ts << t << ' ';                                                                                                          \
-        return *this;                                                                                                                      \
+#define CREATE_LOG_OP_REF(x)                                                                                           \
+    Logger::Log &Logger::Log::operator<<(x t)                                                                          \
+    {                                                                                                                  \
+        m_data->m_ts << t << ' ';                                                                                      \
+        return *this;                                                                                                  \
     }
 
 CREATE_LOG_OP_REF(uint64_t);

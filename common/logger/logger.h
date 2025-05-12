@@ -94,7 +94,7 @@ public:
     QString sensitive(const QString &input);
 
 private:
-    Logger() {};
+    Logger() { };
     Logger(Logger const &) = delete;
     Logger &operator=(Logger const &) = delete;
 
@@ -106,6 +106,7 @@ private:
     static QString m_serviceLogFileName;
 
     friend void debugMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg);
+    friend void timestampMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg);
 
     // compat with Mozilla logger
     QString m_className;
