@@ -58,7 +58,80 @@ QString Autostart::appPath() {
     return QCoreApplication::applicationFilePath() + " --autostart";
 }
 
-#elif defined Q_OS_MACX
+#elif defined(Q_OS_MACOS)
+
+#if defined(MACOS_NE)
+#include <QFile>
+
+static QString bundleIdentifier()
+{
+    return QCoreApplication::applicationName();
+}
+
+QString Autostart::launchAgentPlistPath()
+{
+    // ~/Library/LaunchAgents
+    const QString agentsDir = QDir::homePath() + "/Library/LaunchAgents";
+    return agentsDir + "/" + bundleIdentifier() + ".plist";
+}
+
+static QByteArray buildPlist()
+{
+    QString plist;
+    QTextStream ts(&plist);
+    ts << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+    ts << "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n";
+    ts << "<plist version=\"1.0\">\n";
+    ts << "<dict>\n";
+    ts << "  <key>Label</key>\n";
+    ts << "  <string>" << bundleIdentifier() << "</string>\n";
+    ts << "  <key>ProgramArguments</key>\n";
+    ts << "  <array>\n";
+    ts << "    <string>" << Autostart::appPath() << "</string>\n";
+    ts << "  </array>\n";
+    ts << "  <key>RunAtLoad</key>\n";
+    ts << "  <true/>\n";
+    ts << "</dict>\n";
+    ts << "</plist>\n";
+
+    return plist.toUtf8();
+}
+
+bool Autostart::isAutostart()
+{
+    return QFile::exists(launchAgentPlistPath());
+}
+
+void Autostart::setAutostart(bool autostart)
+{
+    const QString plistPath = launchAgentPlistPath();
+
+    if (!autostart)
+    {
+        QFile::remove(plistPath);
+        return;
+    }
+
+    QDir().mkpath(QFileInfo(plistPath).absolutePath());
+
+    QFile f(plistPath);
+    if (f.open(QIODevice::WriteOnly | QIODevice::Truncate))
+    {
+        f.write(buildPlist());
+        f.close();
+    }
+}
+
+QString Autostart::appPath()
+{
+    // launchd expects the path to the .app bundle, not the executable.
+    QDir appDir = QDir(QCoreApplication::applicationDirPath());
+    appDir.cdUp();
+    appDir.cdUp();
+    return appDir.absolutePath();
+}
+
+#else // !MACOS_NE
 
 bool Autostart::isAutostart() {
     QProcess process;
@@ -96,6 +169,8 @@ QString Autostart::appPath() {
 
     return absolutePath;
 }
+
+#endif // MACOS_NE
 
 #elif defined (Q_OS_LINUX)
 bool Autostart::isAutostart() {
