@@ -38,6 +38,7 @@ DrawerType2 {
             anchors.fill: parent
 
             model: 1 // fake model to force the ListView to be created without a model
+            snapMode: ListView.NoSnap
 
             header: ColumnLayout {
                 width: listView.width
@@ -69,7 +70,7 @@ DrawerType2 {
                     horizontalAlignment: Text.AlignLeft
                     textFormat: Text.RichText
                     text: {
-                        var str = qsTr("We'll preserve all remaining days of your current subscription and give you an extra month as a thank you.")
+                        var str = qsTr("We'll preserve all remaining days of your current subscription and give you an extra month as a thank you. ")
                         str += qsTr("This new subscription type will be actively developed with more locations and features added regularly. Currently available:")
                         str += "<ul style='margin-left: -16px;'>"
                         str += qsTr("<li>9 locations (with more coming soon)</li>")
@@ -170,7 +171,7 @@ DrawerType2 {
                     pressedColor: AmneziaStyle.color.sheerWhite
                     textColor: AmneziaStyle.color.vibrantRed
 
-                    text: qsTr("No more reminding me")
+                    text: qsTr("Don't remind me again")
 
                     clickedFunc: function() {
                         var headerText = qsTr("No more reminders? You can always switch to the new format in the server settings")
