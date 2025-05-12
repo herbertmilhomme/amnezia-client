@@ -818,7 +818,7 @@ ErrorCode ServerController::isServerDpkgBusy(const ServerCredentials &credential
 
             if (stdOut.contains("Packet manager not found"))
                 return ErrorCode::ServerPacketManagerError;
-            if (stdOut.contains("fuser not installed") || stdOut.contains("cat not installed"))
+            if (stdOut.contains("fuser not installed"))
                 return ErrorCode::NoError;
 
             if (stdOut.isEmpty()) {
