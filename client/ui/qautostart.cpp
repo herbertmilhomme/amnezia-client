@@ -30,6 +30,8 @@
 #include <QString>
 #include <QFile>
 #include <QDir>
+#include <QDebug>
+
 
 #if defined (Q_OS_WIN)
 #define REG_KEY "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
@@ -58,7 +60,7 @@ QString Autostart::appPath() {
     return QCoreApplication::applicationFilePath() + " --autostart";
 }
 
-#elif defined(Q_OS_MACOS)
+#elif defined(Q_OS_MACX) || defined(Q_OS_MACOS)
 
 #if defined(MACOS_NE)
 #include <QFile>
@@ -99,7 +101,9 @@ static QByteArray buildPlist()
 
 bool Autostart::isAutostart()
 {
-    return QFile::exists(launchAgentPlistPath());
+    const bool exists = QFile::exists(launchAgentPlistPath());
+    qDebug() << "isAutostart?" << exists << "plistPath=" << launchAgentPlistPath();
+    return exists;
 }
 
 void Autostart::setAutostart(bool autostart)
@@ -108,16 +112,20 @@ void Autostart::setAutostart(bool autostart)
 
     if (!autostart)
     {
+        qDebug() << "Removing LaunchAgent plist" << plistPath;
         QFile::remove(plistPath);
         return;
     }
 
+    qDebug() << "Creating LaunchAgent plist" << plistPath;
     QDir().mkpath(QFileInfo(plistPath).absolutePath());
 
     QFile f(plistPath);
     if (f.open(QIODevice::WriteOnly | QIODevice::Truncate))
     {
-        f.write(buildPlist());
+        QByteArray data = buildPlist();
+        f.write(data);
+        qDebug() << "Written plist bytes=" << data.size();
         f.close();
     }
 }
@@ -140,21 +148,23 @@ bool Autostart::isAutostart() {
     });
     process.waitForFinished(3000);
     const auto output = QString::fromLocal8Bit(process.readAllStandardOutput());
-    return output.contains(appPath());
+    const bool contains = output.contains(appPath());
+    qDebug() << "AppleScript isAutostart?" << contains;
+    return contains;
 }
 
 void Autostart::setAutostart(bool autostart) {
     // Remove any existing login entry for this app first, in case there was one
     // from a previous installation, that may be under a different launch path.
-    {
-        QProcess::execute("osascript", {
-            "-e tell application \"System Events\" to delete every login item whose name is \"" + appName() + "\""
-        });
-    }
+    qDebug() << "Removing existing login items (non-sandbox)";
+    QProcess::execute("osascript", {
+        "-e tell application \"System Events\" to delete every login item whose name is \"" + appName() + "\""
+    });
 
     // Now install the login item, if needed.
     if ( autostart )
     {
+        qDebug() << "Creating login item (non-sandbox)";
         QProcess::execute("osascript", {
             "-e tell application \"System Events\" to make login item at end with properties {path:\"" + appPath() + "\", hidden:true, name: \"" + appName() + "\"}"
         });
