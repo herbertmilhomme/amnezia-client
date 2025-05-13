@@ -30,14 +30,10 @@ class Autostart
 public:
     static bool isAutostart();
     static void setAutostart(bool autostart);
+
+protected:
     static QString appPath();
     static QString appName();
-
-#if defined(Q_OS_MACOS) && defined(MACOS_NE)
-    // Full path to the per-user LaunchAgent plist for sandboxed App Store builds
-    // (~ /Library/LaunchAgents/<bundleIdentifier>.plist)
-    static QString launchAgentPlistPath();
-#endif
-};
+ };
 
 #endif // AUTOSTART_H
