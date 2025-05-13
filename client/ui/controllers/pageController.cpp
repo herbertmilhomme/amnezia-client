@@ -1,6 +1,9 @@
 #include "pageController.h"
 #include "utils/converter.h"
 #include "core/errorstrings.h"
+#if defined(MACOS_NE)
+#include "platforms/ios/ios_controller.h"
+#endif
 
 #if defined(Q_OS_ANDROID) || defined(Q_OS_IOS) || defined(MACOS_NE)
     #include <QGuiApplication>
@@ -58,6 +61,21 @@ void PageController::closeWindow()
 {
 #ifdef Q_OS_ANDROID
     qApp->quit();
+
+#elif defined(MACOS_NE)
+    // macOS App Store build with Network Extension: hide UI, then gracefully disconnect NE and quit
+    emit hideMainWindow();
+    {
+        auto ctrl = IosController::Instance();
+        // when NE state changes to Disconnected, quit app
+        connect(ctrl, &IosController::connectionStateChanged, this, [=](Vpn::ConnectionState s) {
+            if (s == Vpn::ConnectionState::Disconnected) {
+                qApp->quit();
+            }
+        });
+        ctrl->disconnectVpn();
+    }
+
 #else
     if (m_serversModel->getServersCount() == 0) {
         qApp->quit();
