@@ -69,7 +69,11 @@ Window  {
         }
 
         function onHideMainWindow() {
-            root.hide()
+            if (Qt.platform.os === "osx") {
+                root.showMinimized();
+            } else {
+                root.hide();
+            }
         }
 
         function onShowErrorMessage(errorMessage) {
