@@ -62,12 +62,10 @@ bool ApiSettingsController::getAccountInfo(bool reload)
 
     QByteArray responseBody;
 
-    if (apiUtils::isPremiumServer(serverConfig)) {
-        ErrorCode errorCode = gatewayController.post(QString("%1v1/account_info"), apiPayload, responseBody);
-        if (errorCode != ErrorCode::NoError) {
-            emit errorOccurred(errorCode);
-            return false;
-        }
+    ErrorCode errorCode = gatewayController.post(QString("%1v1/account_info"), apiPayload, responseBody);
+    if (errorCode != ErrorCode::NoError) {
+        emit errorOccurred(errorCode);
+        return false;
     }
 
     QJsonObject accountInfo = QJsonDocument::fromJson(responseBody).object();
