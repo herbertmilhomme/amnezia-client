@@ -48,7 +48,8 @@ bool ApiSettingsController::getAccountInfo(bool reload)
         wait.exec();
     }
 
-    GatewayController gatewayController(m_settings->getGatewayEndpoint(), m_settings->isDevGatewayEnv(), requestTimeoutMsecs);
+    GatewayController gatewayController(m_settings->getGatewayEndpoint(), m_settings->isDevGatewayEnv(), requestTimeoutMsecs,
+                                        m_settings->isStrictKillSwitchEnabled());
 
     auto processedIndex = m_serversModel->getProcessedServerIndex();
     auto serverConfig = m_serversModel->getServerConfig(processedIndex);
