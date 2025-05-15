@@ -150,10 +150,11 @@ void SettingsController::restoreAppConfigFromData(const QByteArray &data)
         bool appSplittunnelingEnabled = newConfigData.value("Conf/appsSplitTunnelingEnabled").toBool();
         m_appSplitTunnelingModel->setRouteMode(Settings::AppsRouteMode::VpnAllExceptApps);
         m_appSplitTunnelingModel->toggleSplitTunneling(appSplittunnelingEnabled);
+#endif
         bool siteSplittunnelingEnabled = newConfigData.value("Conf/sitesSplitTunnelingEnabled").toBool();
         m_sitesModel->setRouteMode(Settings::RouteMode::VpnOnlyForwardSites);
         m_sitesModel->toggleSplitTunneling(siteSplittunnelingEnabled);
-#endif
+
         emit restoreBackupFinished();
     } else {
         emit changeSettingsErrorOccurred(tr("Backup file is corrupted"));
