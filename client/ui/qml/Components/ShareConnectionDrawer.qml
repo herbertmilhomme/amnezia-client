@@ -245,6 +245,7 @@ DrawerType2 {
 
                                 Header2Type {
                                     id: configContentHeader
+
                                     Layout.fillWidth: true
                                     Layout.topMargin: 16
                                     Layout.leftMargin: 16
@@ -256,6 +257,9 @@ DrawerType2 {
                                 TextField {
                                     id: nativeConfigString
                                     objectName: "nativeConfigString"
+
+                                    Layout.leftMargin: 16
+                                    Layout.rightMargin: 16
 
                                     visible: false
                                     text: ExportController.nativeConfigString
@@ -272,6 +276,8 @@ DrawerType2 {
                                     Layout.fillWidth: true
                                     Layout.topMargin: 16
                                     Layout.bottomMargin: 16
+                                    Layout.leftMargin: 16
+                                    Layout.rightMargin: 16
 
                                     padding: 0
                                     leftPadding: 0
