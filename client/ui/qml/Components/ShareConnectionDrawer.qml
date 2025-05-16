@@ -184,7 +184,7 @@ DrawerType2 {
                                     return
                                 }
 
-                                const nativeConfigStringItem = headerItem.children.find(c => c.objectName === "nativeConfigString");
+                                const nativeConfigStringItem = configListView.findChildWithObjectName(headerItem.children, "nativeConfigString");
                                 if (!nativeConfigStringItem) {
                                     console.error("Failed to copy: nativeConfigString item not found in ListView")
                                     return
@@ -206,7 +206,7 @@ DrawerType2 {
                                     return
                                 }
 
-                                const configTextItem = headerItem.children.find(c => c.objectName === "configText");
+                                const configTextItem = configListView.findChildWithObjectName(headerItem.children, "configText");
                                 if (!configTextItem) {
                                     console.error("Failed to copy: configText item not found in ListView")
                                     return

@@ -160,7 +160,7 @@ PageType {
                         return
                     }
 
-                    const serverSelectorItem = headerItem.children.find(c => c.objectName === "serverSelector");
+                    const serverSelectorItem = listView.findChildWithObjectName(headerItem.children, "serverSelector");
                     if (!serverSelectorItem) {
                         PageController.showBusyIndicator(false)
                         console.error("Failed to share: serverSelector item not found in ListView")

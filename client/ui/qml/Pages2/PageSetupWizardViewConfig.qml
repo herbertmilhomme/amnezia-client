@@ -199,7 +199,7 @@ PageType {
                         return
                     }
 
-                    const cloakingCheckBoxItem = headerItem.children.find(c => c.objectName === "cloakingCheckBox");
+                    const cloakingCheckBoxItem = listView.findChildWithObjectName(headerItem.children, "cloakingCheckBox");
                     if (!cloakingCheckBoxItem) {
                         console.error("cloakingCheckBox not found")
                         return
