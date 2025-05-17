@@ -422,7 +422,7 @@ PageType {
             var fileName = SystemController.getFileName(qsTr("Open sites file"),
                                                         qsTr("Sites files (*.json)"))
             if (fileName !== "") {
-                importSitesDrawerContent.importSites(fileName, true)
+                root.importSites(fileName, true)
             }
         }
     }
@@ -435,7 +435,7 @@ PageType {
             var fileName = SystemController.getFileName(qsTr("Open sites file"),
                                                         qsTr("Sites files (*.json)"))
             if (fileName !== "") {
-                importSitesDrawerContent.importSites(fileName, false)
+                root.importSites(fileName, false)
             }
         }
     }

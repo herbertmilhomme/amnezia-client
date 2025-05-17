@@ -59,7 +59,7 @@ PageType {
         target: ServersModel
 
         function onProcessedServerIndexChanged() {
-            content.isServerWithWriteAccess = ServersModel.isProcessedServerHasWriteAccess()
+            listView.isServerWithWriteAccess = ServersModel.isProcessedServerHasWriteAccess()
         }
     }
 
