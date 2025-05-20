@@ -77,8 +77,6 @@ PageType {
 
             LabelWithButtonType {
                 Layout.fillWidth: true
-                Layout.leftMargin: 16
-                Layout.rightMargin: 16
 
                 visible: isVisible
 
