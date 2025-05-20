@@ -1,5 +1,6 @@
 #include "coreController.h"
 
+#include <QDirIterator>
 #include <QTranslator>
 
 #if defined(Q_OS_ANDROID)
@@ -46,6 +47,9 @@ void CoreController::initModels()
 
     m_sitesModel.reset(new SitesModel(m_settings, this));
     m_engine->rootContext()->setContextProperty("SitesModel", m_sitesModel.get());
+
+    m_allowedDnsModel.reset(new AllowedDnsModel(m_settings, this));
+    m_engine->rootContext()->setContextProperty("AllowedDnsModel", m_allowedDnsModel.get());
 
     m_appSplitTunnelingModel.reset(new AppSplitTunnelingModel(m_settings, this));
     m_engine->rootContext()->setContextProperty("AppSplitTunnelingModel", m_appSplitTunnelingModel.get());
@@ -129,6 +133,9 @@ void CoreController::initControllers()
     m_sitesController.reset(new SitesController(m_settings, m_vpnConnection, m_sitesModel));
     m_engine->rootContext()->setContextProperty("SitesController", m_sitesController.get());
 
+    m_allowedDnsController.reset(new AllowedDnsController(m_settings, m_allowedDnsModel));
+    m_engine->rootContext()->setContextProperty("AllowedDnsController", m_allowedDnsController.get());
+
     m_appSplitTunnelingController.reset(new AppSplitTunnelingController(m_settings, m_appSplitTunnelingModel));
     m_engine->rootContext()->setContextProperty("AppSplitTunnelingController", m_appSplitTunnelingController.get());
 
@@ -141,6 +148,9 @@ void CoreController::initControllers()
 
     m_apiConfigsController.reset(new ApiConfigsController(m_serversModel, m_apiServicesModel, m_settings));
     m_engine->rootContext()->setContextProperty("ApiConfigsController", m_apiConfigsController.get());
+
+    m_apiPremV1MigrationController.reset(new ApiPremV1MigrationController(m_serversModel, m_settings, this));
+    m_engine->rootContext()->setContextProperty("ApiPremV1MigrationController", m_apiPremV1MigrationController.get());
 }
 
 void CoreController::initAndroidController()
@@ -213,6 +223,9 @@ void CoreController::initSignalHandlers()
     initAutoConnectHandler();
     initAmneziaDnsToggledHandler();
     initPrepareConfigHandler();
+    initImportPremiumV2VpnKeyHandler();
+    initShowMigrationDrawerHandler();
+    initStrictKillSwitchHandler();
 }
 
 void CoreController::initNotificationHandler()
@@ -238,7 +251,23 @@ void CoreController::updateTranslator(const QLocale &locale)
         QCoreApplication::removeTranslator(m_translator.get());
     }
 
-    QString strFileName = QString(":/translations/amneziavpn") + QLatin1String("_") + locale.name() + ".qm";
+    QStringList availableTranslations;
+    QDirIterator it(":/translations", QStringList("amneziavpn_*.qm"), QDir::Files);
+    while (it.hasNext()) {
+        availableTranslations << it.next();
+    }
+
+    // This code allow to load translation for the language only, without country code
+    const QString lang = locale.name().split("_").first();
+    const QString translationFilePrefix = QString(":/translations/amneziavpn_") + lang;
+    QString strFileName = QString(":/translations/amneziavpn_%1.qm").arg(locale.name());
+    for (const QString &translation : availableTranslations) {
+        if (translation.contains(translationFilePrefix)) {
+            strFileName = translation;
+            break;
+        }
+    }
+
     if (m_translator->load(strFileName)) {
         if (QCoreApplication::installTranslator(m_translator.get())) {
             m_settings->setAppLanguage(locale);
@@ -337,6 +366,31 @@ void CoreController::initPrepareConfigHandler()
 
         m_connectionController->openConnection();
     });
+}
+
+void CoreController::initImportPremiumV2VpnKeyHandler()
+{
+    connect(m_apiPremV1MigrationController.get(), &ApiPremV1MigrationController::importPremiumV2VpnKey, this, [this](const QString &vpnKey) {
+        m_importController->extractConfigFromData(vpnKey);
+        m_importController->importConfig();
+
+        emit m_apiPremV1MigrationController->migrationFinished();
+    });
+}
+
+void CoreController::initShowMigrationDrawerHandler()
+{
+    QTimer::singleShot(1000, this, [this]() {
+        if (m_apiPremV1MigrationController->isPremV1MigrationReminderActive() && m_apiPremV1MigrationController->hasConfigsToMigration()) {
+            m_apiPremV1MigrationController->showMigrationDrawer();
+        }
+    });
+}
+
+void CoreController::initStrictKillSwitchHandler()
+{
+    connect(m_settingsController.get(), &SettingsController::strictKillSwitchEnabledChanged, m_vpnConnection.get(),
+            &VpnConnection::onKillSwitchModeChanged);
 }
 
 QSharedPointer<PageController> CoreController::pageController() const

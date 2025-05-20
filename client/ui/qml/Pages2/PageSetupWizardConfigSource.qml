@@ -3,6 +3,8 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
 
+import QtCore
+
 import PageEnum 1.0
 import Style 1.0
 
@@ -43,7 +45,7 @@ PageType {
         header: ColumnLayout {
             width: listView.width
 
-            HeaderType {
+            HeaderTypeWithButton {
                 id: moreButton
 
                 property bool isVisible: SettingsController.getInstallationUuid() !== "" || PageController.isStartPageVisible()
@@ -74,7 +76,7 @@ PageType {
                         anchors.right: parent.right
                         spacing: 0
 
-                        HeaderType {
+                        BaseHeaderType {
                             Layout.fillWidth: true
                             Layout.topMargin: 32
                             Layout.leftMargin: 16
@@ -97,6 +99,34 @@ PageType {
                             onCheckedChanged: {
                                 if (checked !== SettingsController.isLoggingEnabled) {
                                     SettingsController.isLoggingEnabled = checked
+                                }
+                            }
+                        }
+
+                        LabelWithButtonType {
+                            Layout.fillWidth: true
+
+                            text: qsTr("Export client logs")
+                            rightImageSource: "qrc:/images/controls/chevron-right.svg"
+
+                            visible: PageController.isStartPageVisible()
+
+                            clickedFunction: function() {
+                                var fileName = ""
+                                if (GC.isMobile()) {
+                                    fileName = "AmneziaVPN.log"
+                                } else {
+                                    fileName = SystemController.getFileName(qsTr("Save"),
+                                                                            qsTr("Logs files (*.log)"),
+                                                                            StandardPaths.standardLocations(StandardPaths.DocumentsLocation) + "/AmneziaVPN",
+                                                                            true,
+                                                                            ".log")
+                                }
+                                if (fileName !== "") {
+                                    PageController.showBusyIndicator(true)
+                                    SettingsController.exportLogsFile(fileName)
+                                    PageController.showBusyIndicator(false)
+                                    PageController.showNotificationMessage(qsTr("Logs file saved"))
                                 }
                             }
                         }

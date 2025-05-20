@@ -52,6 +52,28 @@ void VpnConnection::onBytesChanged(quint64 receivedBytes, quint64 sentBytes)
     emit bytesChanged(receivedBytes, sentBytes);
 }
 
+void VpnConnection::onKillSwitchModeChanged(bool enabled)
+{
+#ifdef AMNEZIA_DESKTOP
+    if (!m_IpcClient) {
+        m_IpcClient = new IpcClient(this);
+    }
+
+    if (!m_IpcClient->isSocketConnected()) {
+        if (!IpcClient::init(m_IpcClient)) {
+            qWarning() << "Error occurred when init IPC client";
+            emit serviceIsNotReady();
+            return;
+        }
+    }
+
+    if (IpcClient::Interface()) {
+        qDebug() << "Set KillSwitch Strict mode enabled " << enabled;
+        IpcClient::Interface()->refreshKillSwitch(enabled);
+    }
+#endif
+}
+
 void VpnConnection::onConnectionStateChanged(Vpn::ConnectionState state)
 {
 
@@ -286,6 +308,7 @@ void VpnConnection::createProtocolConnections()
 void VpnConnection::appendKillSwitchConfig()
 {
     m_vpnConfiguration.insert(config_key::killSwitchOption, QVariant(m_settings->isKillSwitchEnabled()).toString());
+    m_vpnConfiguration.insert(config_key::allowedDnsServers, QVariant(m_settings->allowedDnsServers()).toJsonValue());
 }
 
 void VpnConnection::appendSplitTunnelingConfig()
@@ -351,8 +374,10 @@ void VpnConnection::appendSplitTunnelingConfig()
                 sitesJsonArray.append(site);
             }
 
-            // Allow traffic to Amnezia DNS
-            if (sitesRouteMode == Settings::VpnOnlyForwardSites) {
+            if (sitesJsonArray.isEmpty()) {
+                sitesRouteMode = Settings::RouteMode::VpnAllSites;
+            } else if (sitesRouteMode == Settings::VpnOnlyForwardSites) {
+                // Allow traffic to Amnezia DNS
                 sitesJsonArray.append(m_vpnConfiguration.value(config_key::dns1).toString());
                 sitesJsonArray.append(m_vpnConfiguration.value(config_key::dns2).toString());
             }
@@ -370,6 +395,10 @@ void VpnConnection::appendSplitTunnelingConfig()
         auto apps = m_settings->getVpnApps(appsRouteMode);
         for (const auto &app : apps) {
             appsJsonArray.append(app.appPath.isEmpty() ? app.packageName : app.appPath);
+        }
+
+        if (appsJsonArray.isEmpty()) {
+            appsRouteMode = Settings::AppsRouteMode::VpnAllApps;
         }
     }
 

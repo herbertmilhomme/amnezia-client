@@ -56,7 +56,7 @@ namespace
         } else if ((config.contains(xrayConfigPatternInbound)) && (config.contains(xrayConfigPatternOutbound))) {
             return ConfigTypes::Xray;
         } else if (config.contains(openVpnConfigPatternCli)
-            && (config.contains(openVpnConfigPatternDriver1) || config.contains(openVpnConfigPatternDriver2))) {
+                   && (config.contains(openVpnConfigPatternDriver1) || config.contains(openVpnConfigPatternDriver2))) {
             return ConfigTypes::OpenVpn;
         }
         return ConfigTypes::Invalid;
@@ -94,6 +94,8 @@ bool ImportController::extractConfigFromFile(const QString &fileName)
 
 bool ImportController::extractConfigFromData(QString data)
 {
+    m_maliciousWarningText.clear();
+
     QString config = data;
     QString prefix;
     QString errormsg;
@@ -658,12 +660,10 @@ void ImportController::checkForMaliciousStrings(const QJsonObject &serverConfig)
         if ((containerName == ContainerProps::containerToString(DockerContainer::OpenVpn))
             || (containerName == ContainerProps::containerToString(DockerContainer::Cloak))
             || (containerName == ContainerProps::containerToString(DockerContainer::ShadowSocks))) {
+
             QString protocolConfig =
                     containerConfig[ProtocolProps::protoToString(Proto::OpenVpn)].toObject()[config_key::last_config].toString();
             QString protocolConfigJson = QJsonDocument::fromJson(protocolConfig.toUtf8()).object()[config_key::config].toString();
-
-            const QRegularExpression regExp { "(\\w+-\\w+|\\w+)" };
-            const size_t dangerousTagsMaxCount = 3;
 
             // https://github.com/OpenVPN/openvpn/blob/master/doc/man-sections/script-options.rst
             QStringList dangerousTags {
@@ -671,16 +671,22 @@ void ImportController::checkForMaliciousStrings(const QJsonObject &serverConfig)
             };
 
             QStringList maliciousStrings;
-            QStringList lines = protocolConfigJson.replace("\r", "").split("\n");
-            for (const QString &l : lines) {
-                QRegularExpressionMatch match = regExp.match(l);
-                if (dangerousTags.contains(match.captured(0))) {
-                    maliciousStrings << l;
+            QStringList lines = protocolConfigJson.split('\n', Qt::SkipEmptyParts);
+
+            for (const QString &rawLine : lines) {
+                QString line = rawLine.trimmed();
+
+                QString command = line.section(' ', 0, 0, QString::SectionSkipEmpty);
+                if (dangerousTags.contains(command, Qt::CaseInsensitive)) {
+                    maliciousStrings << rawLine;
                 }
             }
 
-            if (maliciousStrings.size() >= dangerousTagsMaxCount) {
-                m_maliciousWarningText = tr("In the imported configuration, potentially dangerous lines were found:");
+            m_maliciousWarningText = tr("This configuration contains an OpenVPN setup. OpenVPN configurations can include malicious "
+                                        "scripts, so only add it if you fully trust the provider of this config. ");
+
+            if (!maliciousStrings.isEmpty()) {
+                m_maliciousWarningText.push_back(tr("<br>In the imported configuration, potentially dangerous lines were found:"));
                 for (const auto &string : maliciousStrings) {
                     m_maliciousWarningText.push_back(QString("<br><i>%1</i>").arg(string));
                 }

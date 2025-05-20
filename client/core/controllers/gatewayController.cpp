@@ -7,13 +7,19 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QNetworkReply>
+#include <QUrl>
 
 #include "QBlockCipher.h"
 #include "QRsa.h"
 
 #include "amnezia_application.h"
 #include "core/api/apiUtils.h"
+#include "core/networkUtilities.h"
 #include "utilities.h"
+
+#ifdef AMNEZIA_DESKTOP
+    #include "core/ipcclient.h"
+#endif
 
 namespace
 {
@@ -32,8 +38,13 @@ namespace
     constexpr QLatin1String errorResponsePattern3("Account not found.");
 }
 
-GatewayController::GatewayController(const QString &gatewayEndpoint, bool isDevEnvironment, int requestTimeoutMsecs, QObject *parent)
-    : QObject(parent), m_gatewayEndpoint(gatewayEndpoint), m_isDevEnvironment(isDevEnvironment), m_requestTimeoutMsecs(requestTimeoutMsecs)
+GatewayController::GatewayController(const QString &gatewayEndpoint, const bool isDevEnvironment, const int requestTimeoutMsecs,
+                                     const bool isStrictKillSwitchEnabled, QObject *parent)
+    : QObject(parent),
+      m_gatewayEndpoint(gatewayEndpoint),
+      m_isDevEnvironment(isDevEnvironment),
+      m_requestTimeoutMsecs(requestTimeoutMsecs),
+      m_isStrictKillSwitchEnabled(isStrictKillSwitchEnabled)
 {
 }
 
@@ -49,6 +60,17 @@ ErrorCode GatewayController::get(const QString &endpoint, QByteArray &responseBo
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
     request.setUrl(QString(endpoint).arg(m_gatewayEndpoint));
+
+    // bypass killSwitch exceptions for API-gateway
+#ifdef AMNEZIA_DESKTOP
+    if (m_isStrictKillSwitchEnabled) {
+        QString host = QUrl(request.url()).host();
+        QString ip = NetworkUtilities::getIPAddress(host);
+        if (!ip.isEmpty()) {
+            IpcClient::Interface()->addKillSwitchAllowedRange(QStringList { ip });
+        }
+    }
+#endif
 
     QNetworkReply *reply;
     reply = amnApp->networkManager()->get(request);
@@ -100,6 +122,17 @@ ErrorCode GatewayController::post(const QString &endpoint, const QJsonObject api
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
     request.setUrl(endpoint.arg(m_gatewayEndpoint));
+
+    // bypass killSwitch exceptions for API-gateway
+#ifdef AMNEZIA_DESKTOP
+    if (m_isStrictKillSwitchEnabled) {
+        QString host = QUrl(request.url()).host();
+        QString ip = NetworkUtilities::getIPAddress(host);
+        if (!ip.isEmpty()) {
+            IpcClient::Interface()->addKillSwitchAllowedRange(QStringList { ip });
+        }
+    }
+#endif
 
     QSimpleCrypto::QBlockCipher blockCipher;
     QByteArray key = blockCipher.generatePrivateSalt(32);
@@ -251,6 +284,9 @@ QStringList GatewayController::getProxyUrls()
             }
             return endpoints;
         } else {
+            apiUtils::checkNetworkReplyErrors(sslErrors, reply);
+            qDebug() << "go to the next storage endpoint";
+
             reply->deleteLater();
         }
     }
@@ -261,26 +297,29 @@ bool GatewayController::shouldBypassProxy(QNetworkReply *reply, const QByteArray
                                           const QByteArray &iv, const QByteArray &salt)
 {
     if (reply->error() == QNetworkReply::NetworkError::OperationCanceledError || reply->error() == QNetworkReply::NetworkError::TimeoutError) {
-        qDebug() << "Timeout occurred";
+        qDebug() << "timeout occurred";
+        qDebug() << reply->error();
         return true;
     } else if (responseBody.contains("html")) {
-        qDebug() << "The response contains an html tag";
+        qDebug() << "the response contains an html tag";
         return true;
     } else if (reply->error() == QNetworkReply::NetworkError::ContentNotFoundError) {
         if (responseBody.contains(errorResponsePattern1) || responseBody.contains(errorResponsePattern2)
             || responseBody.contains(errorResponsePattern3)) {
             return false;
         } else {
+            qDebug() << reply->error();
             return true;
         }
     } else if (reply->error() != QNetworkReply::NetworkError::NoError) {
+        qDebug() << reply->error();
         return true;
     } else if (checkEncryption) {
         try {
             QSimpleCrypto::QBlockCipher blockCipher;
             static_cast<void>(blockCipher.decryptAesBlockCipher(responseBody, key, iv, "", salt));
         } catch (...) {
-            qDebug() << "Failed to decrypt the data";
+            qDebug() << "failed to decrypt the data";
             return true;
         }
     }
@@ -301,7 +340,7 @@ void GatewayController::bypassProxy(const QString &endpoint, QNetworkReply *repl
     QByteArray responseBody;
 
     for (const QString &proxyUrl : proxyUrls) {
-        qDebug() << "Go to the next endpoint";
+        qDebug() << "go to the next proxy endpoint";
         reply->deleteLater(); // delete the previous reply
         reply = requestFunction(endpoint.arg(proxyUrl));
 
