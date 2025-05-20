@@ -153,13 +153,10 @@ PageType {
 
                 iconPath: "qrc:/images/controls/alert-circle.svg"
             }
-        }
-
-        footer: ColumnLayout {
-            width: listView.width
 
             Rectangle {
                 Layout.fillWidth: true
+                Layout.topMargin: 16
                 Layout.bottomMargin: 48
                 Layout.rightMargin: 16
                 Layout.leftMargin: 16
@@ -175,12 +172,17 @@ PageType {
                     id: configContent
 
                     anchors.fill: parent
+                    anchors.margins: 16
 
                     wrapMode: Text.Wrap
 
                     text: ImportController.getConfig()
                 }
             }
+        }
+
+        footer: ColumnLayout {
+            width: listView.width
 
             BasicButtonType {
                 id: connectButton

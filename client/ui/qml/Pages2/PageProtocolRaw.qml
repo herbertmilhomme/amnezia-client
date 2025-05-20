@@ -137,6 +137,8 @@ PageType {
 
                                 Layout.fillWidth: true
                                 Layout.topMargin: 16
+                                Layout.leftMargin: 16
+                                Layout.rightMargin: 16
 
                                 padding: 0
                                 height: 24

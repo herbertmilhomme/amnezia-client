@@ -65,8 +65,6 @@ PageType {
                 id: clientSettings
 
                 Layout.fillWidth: true
-                Layout.leftMargin: 16
-                Layout.rightMargin: 16
 
                 text: protocolName + qsTr(" connection settings")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
@@ -99,8 +97,6 @@ PageType {
                 id: serverSettings
 
                 Layout.fillWidth: true
-                Layout.leftMargin: 16
-                Layout.rightMargin: 16
 
                 text: protocolName + qsTr(" server settings")
                 rightImageSource: "qrc:/images/controls/chevron-right.svg"
@@ -141,8 +137,6 @@ PageType {
                 id: clearCacheButton
 
                 Layout.fillWidth: true
-                Layout.leftMargin: 16
-                Layout.rightMargin: 16
 
                 visible: root.isClearCacheVisible
 
@@ -187,8 +181,6 @@ PageType {
                 id: removeButton
 
                 Layout.fillWidth: true
-                Layout.leftMargin: 16
-                Layout.rightMargin: 16
 
                 visible: ServersModel.isProcessedServerHasWriteAccess()
 
