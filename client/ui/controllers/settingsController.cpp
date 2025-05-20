@@ -147,12 +147,14 @@ void SettingsController::restoreAppConfigFromData(const QByteArray &data)
                 static_cast<LanguageSettings::AvailableLanguageEnum>(m_languageModel->getCurrentLanguageIndex()));
 
 #if defined(Q_OS_WINDOWS) || defined(Q_OS_ANDROID)
+        int appSplitTunnelingRouteMode = newConfigData.value("Conf/appsRouteMode").toInt();
         bool appSplittunnelingEnabled = newConfigData.value("Conf/appsSplitTunnelingEnabled").toBool();
-        m_appSplitTunnelingModel->setRouteMode(Settings::AppsRouteMode::VpnAllExceptApps);
+        m_appSplitTunnelingModel->setRouteMode(appSplitTunnelingRouteMode);
         m_appSplitTunnelingModel->toggleSplitTunneling(appSplittunnelingEnabled);
 #endif
+        int siteSplitTunnelingRouteMode = newConfigData.value("Conf/routeMode").toInt();
         bool siteSplittunnelingEnabled = newConfigData.value("Conf/sitesSplitTunnelingEnabled").toBool();
-        m_sitesModel->setRouteMode(Settings::RouteMode::VpnOnlyForwardSites);
+        m_sitesModel->setRouteMode(siteSplitTunnelingRouteMode);
         m_sitesModel->toggleSplitTunneling(siteSplittunnelingEnabled);
 
         emit restoreBackupFinished();
