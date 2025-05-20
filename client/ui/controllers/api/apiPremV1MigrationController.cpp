@@ -29,18 +29,20 @@ bool ApiPremV1MigrationController::hasConfigsToMigration()
         vpnKeys.append(vpnKey);
     }
 
-    GatewayController gatewayController(m_settings->getGatewayEndpoint(), m_settings->isDevGatewayEnv(), apiDefs::requestTimeoutMsecs,
-                                        m_settings->isStrictKillSwitchEnabled());
-    QJsonObject apiPayload;
+    if (!vpnKeys.isEmpty()) {
+        GatewayController gatewayController(m_settings->getGatewayEndpoint(), m_settings->isDevGatewayEnv(), apiDefs::requestTimeoutMsecs,
+                                            m_settings->isStrictKillSwitchEnabled());
+        QJsonObject apiPayload;
 
-    apiPayload["configs"] = vpnKeys;
-    QByteArray responseBody;
-    ErrorCode errorCode = gatewayController.post(QString("%1v1/prem-v1/is-active-subscription"), apiPayload, responseBody);
+        apiPayload["configs"] = vpnKeys;
+        QByteArray responseBody;
+        ErrorCode errorCode = gatewayController.post(QString("%1v1/prem-v1/is-active-subscription"), apiPayload, responseBody);
 
-    auto migrationsStatus = QJsonDocument::fromJson(responseBody).object();
-    for (const auto &migrationStatus : migrationsStatus) {
-        if (migrationStatus == "not_found") {
-            return true;
+        auto migrationsStatus = QJsonDocument::fromJson(responseBody).object();
+        for (const auto &migrationStatus : migrationsStatus) {
+            if (migrationStatus == "not_found") {
+                return true;
+            }
         }
     }
 
