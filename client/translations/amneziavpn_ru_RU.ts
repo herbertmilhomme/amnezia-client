@@ -134,7 +134,7 @@
     <message>
         <location filename="../ui/qml/Components/ApiPremV1MigrationDrawer.qml" line="78"/>
         <source>&lt;li&gt;Personal dashboard to manage your subscription&lt;/li&gt;</source>
-        <translation>Личный кабинет для управления подпиской</translation>
+        <translation>&lt;li&gt;Личный кабинет для управления подпиской&lt;/li&gt;</translation>
     </message>
     <message>
         <location filename="../ui/qml/Components/ApiPremV1MigrationDrawer.qml" line="80"/>
@@ -2013,12 +2013,12 @@ Thank you for staying with us!</source>
         <translation>Наши специалисты технической поддержки всегда готовы помочь вам.</translation>
     </message>
     <message>
-        <location filename="../ui/qml/Pages2/PageSettingsApiSupport.qml" line="109"/>
+        <location filename="../ui/qml/Pages2/PageSettingsApiSupport.qml" line="110"/>
         <source>Support tag</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../ui/qml/Pages2/PageSettingsApiSupport.qml" line="119"/>
+        <location filename="../ui/qml/Pages2/PageSettingsApiSupport.qml" line="120"/>
         <source>Copied</source>
         <translation>Скопировано</translation>
     </message>
