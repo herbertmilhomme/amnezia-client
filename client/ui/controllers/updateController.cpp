@@ -4,12 +4,14 @@
 #include <QNetworkReply>
 #include <QVersionNumber>
 #include <QtConcurrent>
+#include <QUrl>
 
 #include "amnezia_application.h"
 #include "core/errorstrings.h"
 #include "core/scripts_registry.h"
 #include "logger.h"
 #include "version.h"
+#include "core/controllers/gatewayController.h"
 
 namespace
 {
@@ -67,76 +69,110 @@ QString UpdateController::getChangelogText()
 
 void UpdateController::checkForUpdates()
 {
-    QNetworkRequest request;
-    request.setTransferTimeout(7000);
-    QString endpoint = "https://api.github.com/repos/amnezia-vpn/amnezia-client/releases/latest";
-    request.setUrl(endpoint);
+    qDebug() << "checkForUpdates";
+    GatewayController gatewayController(m_settings->getGatewayEndpoint(),
+                                        m_settings->isDevGatewayEnv(),
+                                        7000,
+                                        m_settings->isStrictKillSwitchEnabled());
 
-    QNetworkReply *reply = amnApp->networkManager()->get(request);
+    QByteArray gatewayResponse;
+    auto err = gatewayController.get(QStringLiteral("%1v1/updater_endpoint"), gatewayResponse);
+    if (err != ErrorCode::NoError) {
+        logger.error() << errorString(err);
+        return;
+    }
+    QJsonObject gatewayData = QJsonDocument::fromJson(gatewayResponse).object();
+    qDebug() << "gatewayData:" << gatewayData;
+    QString baseUrl = gatewayData.value("url").toString();
+    if (baseUrl.endsWith('/')) {
+        baseUrl.chop(1);
+    }
 
-    QObject::connect(reply, &QNetworkReply::finished, [this, reply]() {
-        if (reply->error() == QNetworkReply::NoError) {
-            QString contents = QString::fromUtf8(reply->readAll());
-            QJsonObject data = QJsonDocument::fromJson(contents.toUtf8()).object();
-            m_version = data.value("tag_name").toString();
-
+    // Fetch version file
+    QNetworkRequest versionReq;
+    versionReq.setTransferTimeout(7000);
+    versionReq.setUrl(QUrl(baseUrl + "/VERSION"));
+    QNetworkReply* versionReply = amnApp->networkManager()->get(versionReq);
+    // Handle network and SSL errors for VERSION fetch
+    QObject::connect(versionReply, &QNetworkReply::errorOccurred, [this, versionReply](QNetworkReply::NetworkError error) {
+        logger.error() << "Network error occurred while fetching VERSION:" << versionReply->errorString() << error;
+    });
+    QObject::connect(versionReply, &QNetworkReply::sslErrors, [this, versionReply](const QList<QSslError> &errors) {
+        QStringList errorStrings;
+        for (const QSslError &err : errors) errorStrings << err.errorString();
+        logger.error() << "SSL errors while fetching VERSION:" << errorStrings;
+    });
+    QObject::connect(versionReply, &QNetworkReply::finished, [this, versionReply, baseUrl]() {
+        if (versionReply->error() == QNetworkReply::NoError) {
+            QByteArray versionData = versionReply->readAll();
+            qDebug() << "versionReply data:" << QString::fromUtf8(versionData);
+            m_version = QString::fromUtf8(versionData).trimmed();
             auto currentVersion = QVersionNumber::fromString(QString(APP_VERSION));
             auto newVersion = QVersionNumber::fromString(m_version);
             if (newVersion > currentVersion) {
-                m_changelogText = data.value("body").toString();
-
-                QString dateString = data.value("published_at").toString();
-                QDateTime dateTime = QDateTime::fromString(dateString, "yyyy-MM-ddTHH:mm:ssZ");
-                m_releaseDate = dateTime.toString("MMM dd yyyy");
-
-                QJsonArray assets = data.value("assets").toArray();
-
-                for (auto asset : assets) {
-                    QJsonObject assetObject = asset.toObject();
-#ifdef Q_OS_WINDOWS
-                    if (assetObject.value("name").toString().endsWith(".exe")) {
-                        m_downloadUrl = assetObject.value("browser_download_url").toString();
+                // Fetch changelog file
+                QNetworkRequest changelogReq;
+                changelogReq.setTransferTimeout(7000);
+                changelogReq.setUrl(QUrl(baseUrl + "/CHANGELOG"));
+                QNetworkReply* changelogReply = amnApp->networkManager()->get(changelogReq);
+                // Handle network and SSL errors for CHANGELOG fetch
+                QObject::connect(changelogReply, &QNetworkReply::errorOccurred, [this, changelogReply](QNetworkReply::NetworkError error) {
+                    logger.error() << "Network error occurred while fetching CHANGELOG:" << changelogReply->errorString() << error;
+                });
+                QObject::connect(changelogReply, &QNetworkReply::sslErrors, [this, changelogReply](const QList<QSslError> &errors) {
+                    QStringList errorStrings;
+                    for (const QSslError &err : errors) errorStrings << err.errorString();
+                    logger.error() << "SSL errors while fetching CHANGELOG:" << errorStrings;
+                });
+                QObject::connect(changelogReply, &QNetworkReply::finished, [this, changelogReply, baseUrl]() {
+                    if (changelogReply->error() == QNetworkReply::NoError) {
+                        m_changelogText = QString::fromUtf8(changelogReply->readAll());
+                    } else {
+                        if (changelogReply->error() == QNetworkReply::NetworkError::OperationCanceledError
+                            || changelogReply->error() == QNetworkReply::NetworkError::TimeoutError) {
+                            logger.error() << errorString(ErrorCode::ApiConfigTimeoutError);
+                        } else {
+                            QString err = changelogReply->errorString();
+                            logger.error() << QString::fromUtf8(changelogReply->readAll());
+                            logger.error() << "Network error code:" << QString::number(static_cast<int>(changelogReply->error()));
+                            logger.error() << "Error message:" << err;
+                            logger.error() << "HTTP status:" << changelogReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+                            logger.error() << errorString(ErrorCode::ApiConfigDownloadError);
+                        }
+                        m_changelogText = tr("Failed to load changelog text");
                     }
+                    changelogReply->deleteLater();
+                    m_releaseDate = QStringLiteral("TBD");
+
+                    QString fileName;
+#if defined(Q_OS_WINDOWS)
+                    fileName = QString("AmneziaVPN_%1_x64.exe").arg(m_version);
 #elif defined(Q_OS_MACOS)
-                    if (assetObject.value("name").toString().endsWith(".dmg")) {
-                        m_downloadUrl = assetObject.value("browser_download_url").toString();
-                    }
+                    fileName = QString("AmneziaVPN_%1_macos.dmg").arg(m_version);
 #elif defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
-                    if (assetObject.value("name").toString().contains(".tar.zip")) {
-                        m_downloadUrl = assetObject.value("browser_download_url").toString();
-                    }
+                    fileName = QString("AmneziaVPN_%1_linux.tar.zip").arg(m_version);
 #endif
-                }
+                    m_downloadUrl = baseUrl + "/" + fileName;
+                    qDebug() << "m_downloadUrl:" << m_downloadUrl;
 
-                emit updateFound();
+                    emit updateFound();
+                });
             }
         } else {
-            if (reply->error() == QNetworkReply::NetworkError::OperationCanceledError
-                || reply->error() == QNetworkReply::NetworkError::TimeoutError) {
+            // Detailed error logging for VERSION fetch
+            if (versionReply->error() == QNetworkReply::NetworkError::OperationCanceledError
+                || versionReply->error() == QNetworkReply::NetworkError::TimeoutError) {
                 logger.error() << errorString(ErrorCode::ApiConfigTimeoutError);
             } else {
-                QString err = reply->errorString();
-                logger.error() << QString::fromUtf8(reply->readAll());
-                logger.error() << "Network error code:" << QString::number(static_cast<int>(reply->error()));
+                QString err = versionReply->errorString();
+                logger.error() << QString::fromUtf8(versionReply->readAll());
+                logger.error() << "Network error code:" << QString::number(static_cast<int>(versionReply->error()));
                 logger.error() << "Error message:" << err;
-                logger.error() << "HTTP status:" << reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+                logger.error() << "HTTP status:" << versionReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
                 logger.error() << errorString(ErrorCode::ApiConfigDownloadError);
             }
         }
-
-        reply->deleteLater();
-    });
-
-    QObject::connect(reply, &QNetworkReply::errorOccurred, [this, reply](QNetworkReply::NetworkError error) {
-        logger.error() << "Network error occurred:" << reply->errorString() << error;
-    });
-    connect(reply, &QNetworkReply::sslErrors, [this, reply](const QList<QSslError> &errors) {
-        QStringList errorStrings;
-        for (const QSslError &error : errors) {
-            errorStrings << error.errorString();
-        }
-        logger.error() << "SSL errors:" << errorStrings;
-        logger.error() << errorString(ErrorCode::ApiConfigSslError);
+        versionReply->deleteLater();
     });
 }
 
