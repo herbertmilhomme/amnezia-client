@@ -19,7 +19,7 @@ namespace
         constexpr char cloak[] = "cloak";
         constexpr char awg[] = "awg";
 
-        constexpr char apiEdnpoint[] = "api_endpoint";
+        constexpr char apiEndpoint[] = "api_endpoint";
         constexpr char accessToken[] = "api_key";
         constexpr char certificate[] = "certificate";
         constexpr char publicKey[] = "public_key";
@@ -63,7 +63,8 @@ bool ApiConfigsController::exportNativeConfig(const QString &serverCountryCode, 
         return false;
     }
 
-    GatewayController gatewayController(m_settings->getGatewayEndpoint(), m_settings->isDevGatewayEnv(), apiDefs::requestTimeoutMsecs);
+    GatewayController gatewayController(m_settings->getGatewayEndpoint(), m_settings->isDevGatewayEnv(), apiDefs::requestTimeoutMsecs,
+                                        m_settings->isStrictKillSwitchEnabled());
 
     auto serverConfigObject = m_serversModel->getServerConfig(m_serversModel->getProcessedServerIndex());
     auto apiConfigObject = serverConfigObject.value(configKey::apiConfig).toObject();
@@ -94,7 +95,8 @@ bool ApiConfigsController::exportNativeConfig(const QString &serverCountryCode, 
 
 bool ApiConfigsController::revokeNativeConfig(const QString &serverCountryCode)
 {
-    GatewayController gatewayController(m_settings->getGatewayEndpoint(), m_settings->isDevGatewayEnv(), apiDefs::requestTimeoutMsecs);
+    GatewayController gatewayController(m_settings->getGatewayEndpoint(), m_settings->isDevGatewayEnv(), apiDefs::requestTimeoutMsecs,
+                                        m_settings->isStrictKillSwitchEnabled());
 
     auto serverConfigObject = m_serversModel->getServerConfig(m_serversModel->getProcessedServerIndex());
     auto apiConfigObject = serverConfigObject.value(configKey::apiConfig).toObject();
@@ -140,7 +142,8 @@ void ApiConfigsController::copyVpnKeyToClipboard()
 
 bool ApiConfigsController::fillAvailableServices()
 {
-    GatewayController gatewayController(m_settings->getGatewayEndpoint(), m_settings->isDevGatewayEnv(), apiDefs::requestTimeoutMsecs);
+    GatewayController gatewayController(m_settings->getGatewayEndpoint(), m_settings->isDevGatewayEnv(), apiDefs::requestTimeoutMsecs,
+                                        m_settings->isStrictKillSwitchEnabled());
 
     QJsonObject apiPayload;
     apiPayload[configKey::osVersion] = QSysInfo::productType();
@@ -171,7 +174,8 @@ bool ApiConfigsController::importServiceFromGateway()
         return false;
     }
 
-    GatewayController gatewayController(m_settings->getGatewayEndpoint(), m_settings->isDevGatewayEnv(), apiDefs::requestTimeoutMsecs);
+    GatewayController gatewayController(m_settings->getGatewayEndpoint(), m_settings->isDevGatewayEnv(), apiDefs::requestTimeoutMsecs,
+                                        m_settings->isStrictKillSwitchEnabled());
 
     auto installationUuid = m_settings->getInstallationUuid(true);
     auto userCountryCode = m_apiServicesModel->getCountryCode();
@@ -211,7 +215,8 @@ bool ApiConfigsController::importServiceFromGateway()
 bool ApiConfigsController::updateServiceFromGateway(const int serverIndex, const QString &newCountryCode, const QString &newCountryName,
                                                     bool reloadServiceConfig)
 {
-    GatewayController gatewayController(m_settings->getGatewayEndpoint(), m_settings->isDevGatewayEnv(), apiDefs::requestTimeoutMsecs);
+    GatewayController gatewayController(m_settings->getGatewayEndpoint(), m_settings->isDevGatewayEnv(), apiDefs::requestTimeoutMsecs,
+                                        m_settings->isStrictKillSwitchEnabled());
 
     auto serverConfig = m_serversModel->getServerConfig(serverIndex);
     auto apiConfig = serverConfig.value(configKey::apiConfig).toObject();
@@ -251,7 +256,6 @@ bool ApiConfigsController::updateServiceFromGateway(const int serverIndex, const
 
         newServerConfig.insert(configKey::apiConfig, newApiConfig);
         newServerConfig.insert(configKey::authData, authData);
-        // newServerConfig.insert(
 
         m_serversModel->editServer(newServerConfig, serverIndex);
         if (reloadServiceConfig) {
@@ -270,65 +274,50 @@ bool ApiConfigsController::updateServiceFromGateway(const int serverIndex, const
 
 bool ApiConfigsController::updateServiceFromTelegram(const int serverIndex)
 {
-    auto serverConfig = m_serversModel->getServerConfig(serverIndex);
-    auto installationUuid = m_settings->getInstallationUuid(true);
-
 #ifdef Q_OS_IOS
     IosController::Instance()->requestInetAccess();
     QThread::msleep(10);
 #endif
 
-    if (serverConfig.value(config_key::configVersion).toInt()) {
-        QNetworkRequest request;
-        request.setTransferTimeout(apiDefs::requestTimeoutMsecs);
-        request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-        request.setRawHeader("Authorization", "Api-Key " + serverConfig.value(configKey::accessToken).toString().toUtf8());
-        QString endpoint = serverConfig.value(configKey::apiEdnpoint).toString();
-        request.setUrl(endpoint);
+    GatewayController gatewayController(m_settings->getGatewayEndpoint(), m_settings->isDevGatewayEnv(), apiDefs::requestTimeoutMsecs,
+                                        m_settings->isStrictKillSwitchEnabled());
 
-        QString protocol = serverConfig.value(configKey::protocol).toString();
+    auto serverConfig = m_serversModel->getServerConfig(serverIndex);
+    auto installationUuid = m_settings->getInstallationUuid(true);
 
-        ApiPayloadData apiPayloadData = generateApiPayloadData(protocol);
+    QString serviceProtocol = serverConfig.value(configKey::protocol).toString();
+    ApiPayloadData apiPayloadData = generateApiPayloadData(serviceProtocol);
 
-        QJsonObject apiPayload = fillApiPayload(protocol, apiPayloadData);
-        apiPayload[configKey::uuid] = installationUuid;
+    QJsonObject apiPayload = fillApiPayload(serviceProtocol, apiPayloadData);
+    apiPayload[configKey::uuid] = installationUuid;
+    apiPayload[configKey::accessToken] = serverConfig.value(configKey::accessToken).toString();
+    apiPayload[configKey::apiEndpoint] = serverConfig.value(configKey::apiEndpoint).toString();
 
-        QByteArray requestBody = QJsonDocument(apiPayload).toJson();
+    QByteArray responseBody;
+    ErrorCode errorCode = gatewayController.post(QString("%1v1/proxy_config"), apiPayload, responseBody);
 
-        QNetworkReply *reply = amnApp->networkManager()->post(request, requestBody);
+    if (errorCode == ErrorCode::NoError) {
+        fillServerConfig(serviceProtocol, apiPayloadData, responseBody, serverConfig);
 
-        QEventLoop wait;
-        connect(reply, &QNetworkReply::finished, &wait, &QEventLoop::quit);
-
-        QList<QSslError> sslErrors;
-        connect(reply, &QNetworkReply::sslErrors, [this, &sslErrors](const QList<QSslError> &errors) { sslErrors = errors; });
-        wait.exec();
-
-        auto errorCode = apiUtils::checkNetworkReplyErrors(sslErrors, reply);
-        if (errorCode != ErrorCode::NoError) {
-            reply->deleteLater();
-            emit errorOccurred(errorCode);
-            return false;
-        }
-
-        auto apiResponseBody = reply->readAll();
-        reply->deleteLater();
-        fillServerConfig(protocol, apiPayloadData, apiResponseBody, serverConfig);
         m_serversModel->editServer(serverConfig, serverIndex);
         emit updateServerFromApiFinished();
+        return true;
+    } else {
+        emit errorOccurred(errorCode);
+        return false;
     }
-    return true;
 }
 
 bool ApiConfigsController::deactivateDevice()
 {
-    GatewayController gatewayController(m_settings->getGatewayEndpoint(), m_settings->isDevGatewayEnv(), apiDefs::requestTimeoutMsecs);
+    GatewayController gatewayController(m_settings->getGatewayEndpoint(), m_settings->isDevGatewayEnv(), apiDefs::requestTimeoutMsecs,
+                                        m_settings->isStrictKillSwitchEnabled());
 
     auto serverIndex = m_serversModel->getProcessedServerIndex();
     auto serverConfigObject = m_serversModel->getServerConfig(serverIndex);
     auto apiConfigObject = serverConfigObject.value(configKey::apiConfig).toObject();
 
-    if (apiUtils::getConfigType(serverConfigObject) != apiDefs::ConfigType::AmneziaPremiumV2) {
+    if (!apiUtils::isPremiumServer(serverConfigObject)) {
         return true;
     }
 
@@ -357,13 +346,14 @@ bool ApiConfigsController::deactivateDevice()
 
 bool ApiConfigsController::deactivateExternalDevice(const QString &uuid, const QString &serverCountryCode)
 {
-    GatewayController gatewayController(m_settings->getGatewayEndpoint(), m_settings->isDevGatewayEnv(), apiDefs::requestTimeoutMsecs);
+    GatewayController gatewayController(m_settings->getGatewayEndpoint(), m_settings->isDevGatewayEnv(), apiDefs::requestTimeoutMsecs,
+                                        m_settings->isStrictKillSwitchEnabled());
 
     auto serverIndex = m_serversModel->getProcessedServerIndex();
     auto serverConfigObject = m_serversModel->getServerConfig(serverIndex);
     auto apiConfigObject = serverConfigObject.value(configKey::apiConfig).toObject();
 
-    if (apiUtils::getConfigType(serverConfigObject) != apiDefs::ConfigType::AmneziaPremiumV2) {
+    if (!apiUtils::isPremiumServer(serverConfigObject)) {
         return true;
     }
 

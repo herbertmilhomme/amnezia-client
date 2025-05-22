@@ -54,6 +54,12 @@ namespace amnezia
         ServerCancelInstallation = 204,
         ServerUserNotInSudo = 205,
         ServerPacketManagerError = 206,
+        ServerSudoPackageIsNotPreinstalled = 207,
+        ServerUserDirectoryNotAccessible = 208,
+        ServerUserNotAllowedInSudoers = 209,
+        ServerUserPasswordRequired = 210,
+        ServerDockerOnCgroupsV2 = 211,
+        ServerCgroupMountpoint = 212,
 
         // Ssh connection errors
         SshRequestDeniedError = 300,
@@ -111,6 +117,7 @@ namespace amnezia
         ApiServicesMissingError = 1107,
         ApiConfigLimitError = 1108,
         ApiNotFoundError = 1109,
+        ApiMigrationError = 1110,
 
         // QFile errors
         OpenError = 1200,

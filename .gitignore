@@ -135,3 +135,7 @@ out/
 
 # CMake files
 CMakeFiles/
+
+ios-ne-build.sh
+macos-ne-build.sh
+macos-signed-build.sh

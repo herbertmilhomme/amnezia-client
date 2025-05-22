@@ -66,7 +66,7 @@ PageType {
         header: ColumnLayout {
             width: listView.width
 
-            HeaderType {
+            BaseHeaderType {
                 Layout.fillWidth: true
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
@@ -175,7 +175,7 @@ PageType {
                 leftImageSource: "qrc:/images/controls/help-circle.svg"
 
                 onClicked: {
-                    Qt.openUrlExternally(LanguageModel.getCurrentSiteUrl() + "/starter-guide")
+                    Qt.openUrlExternally(LanguageModel.getCurrentSiteUrl("starter-guide"))
                 }
             }
         }
