@@ -142,20 +142,55 @@ void UpdateController::checkForUpdates()
                         m_changelogText = tr("Failed to load changelog text");
                     }
                     changelogReply->deleteLater();
-                    m_releaseDate = QStringLiteral("TBD");
 
-                    QString fileName;
+                    QNetworkRequest dateReq;
+                    dateReq.setTransferTimeout(7000);
+                    dateReq.setUrl(QUrl(baseUrl + "/RELEASE_DATE"));
+                    QNetworkReply* dateReply = amnApp->networkManager()->get(dateReq);
+
+                    QObject::connect(dateReply, &QNetworkReply::errorOccurred, [this, dateReply](QNetworkReply::NetworkError error) {
+                        logger.error() << "Network error occurred while fetching RELEASE_DATE:" << dateReply->errorString() << error;
+                    });
+                    QObject::connect(dateReply, &QNetworkReply::sslErrors, [this, dateReply](const QList<QSslError> &errors) {
+                        QStringList errorStrings;
+                        for (const QSslError &err : errors) errorStrings << err.errorString();
+                        logger.error() << "SSL errors while fetching RELEASE_DATE:" << errorStrings;
+                    });
+
+                    QObject::connect(dateReply, &QNetworkReply::finished, [this, dateReply, baseUrl]() {
+                        if (dateReply->error() == QNetworkReply::NoError) {
+                            m_releaseDate = QString::fromUtf8(dateReply->readAll()).trimmed();
+                        } else {
+                            // Detailed error logging for RELEASE_DATE fetch
+                            if (dateReply->error() == QNetworkReply::NetworkError::OperationCanceledError
+                                || dateReply->error() == QNetworkReply::NetworkError::TimeoutError) {
+                                logger.error() << errorString(ErrorCode::ApiConfigTimeoutError);
+                            } else {
+                                QString err = dateReply->errorString();
+                                logger.error() << QString::fromUtf8(dateReply->readAll());
+                                logger.error() << "Network error code:" << QString::number(static_cast<int>(dateReply->error()));
+                                logger.error() << "Error message:" << err;
+                                logger.error() << "HTTP status:" << dateReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+                                logger.error() << errorString(ErrorCode::ApiConfigDownloadError);
+                            }
+                            m_releaseDate = QStringLiteral("Failed to load release date");
+                        }
+                        dateReply->deleteLater();
+
+                        // Compose installer link and notify
+                        QString fileName;
 #if defined(Q_OS_WINDOWS)
-                    fileName = QString("AmneziaVPN_%1_x64.exe").arg(m_version);
+                        fileName = QString("AmneziaVPN_%1_x64.exe").arg(m_version);
 #elif defined(Q_OS_MACOS)
-                    fileName = QString("AmneziaVPN_%1_macos.dmg").arg(m_version);
+                        fileName = QString("AmneziaVPN_%1_macos.dmg").arg(m_version);
 #elif defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
-                    fileName = QString("AmneziaVPN_%1_linux.tar.zip").arg(m_version);
+                        fileName = QString("AmneziaVPN_%1_linux.tar.zip").arg(m_version);
 #endif
-                    m_downloadUrl = baseUrl + "/" + fileName;
-                    qDebug() << "m_downloadUrl:" << m_downloadUrl;
+                        m_downloadUrl = baseUrl + "/" + fileName;
+                        qDebug() << "m_downloadUrl:" << m_downloadUrl;
 
-                    emit updateFound();
+                        emit updateFound();
+                    });
                 });
             }
         } else {
