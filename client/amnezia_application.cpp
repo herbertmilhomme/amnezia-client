@@ -21,6 +21,8 @@
 #include "platforms/ios/QRCodeReaderBase.h"
 
 #include "protocols/qml_register_protocols.h"
+#include <QtQuick/QQuickWindow>  // for QQuickWindow
+#include <QWindow>              // for qobject_cast<QWindow*>
 
 AmneziaApplication::AmneziaApplication(int &argc, char *argv[]) : AMNEZIA_BASE_CLASS(argc, argv)
 {
@@ -63,12 +65,19 @@ void AmneziaApplication::init()
 
     const QUrl url(QStringLiteral("qrc:/ui/qml/main2.qml"));
     QObject::connect(
-            m_engine, &QQmlApplicationEngine::objectCreated, this,
-            [url](QObject *obj, const QUrl &objUrl) {
-                if (!obj && url == objUrl)
-                    QCoreApplication::exit(-1);
-            },
-            Qt::QueuedConnection);
+        m_engine, &QQmlApplicationEngine::objectCreated, this,
+        [this, url](QObject *obj, const QUrl &objUrl) {
+            if (!obj && url == objUrl) {
+                QCoreApplication::exit(-1);
+                return;
+            }
+            // install filter on main window
+            if (auto win = qobject_cast<QQuickWindow*>(obj)) {
+                win->installEventFilter(this);
+                win->show();
+            }
+        },
+        Qt::QueuedConnection);
 
     m_engine->rootContext()->setContextProperty("Debug", &Logger::Instance());
 

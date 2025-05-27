@@ -8,8 +8,9 @@ set(APPLE_PROJECT_VERSION ${CMAKE_PROJECT_VERSION_MAJOR}.${CMAKE_PROJECT_VERSION
 enable_language(OBJC)
 enable_language(Swift)
 
-find_package(Qt6 REQUIRED COMPONENTS ShaderTools)
-set(LIBS ${LIBS} Qt6::ShaderTools)
+find_package(Qt6 REQUIRED COMPONENTS ShaderTools Widgets)
+# Link Qt Widgets for QWidget, QMenu, QAction etc.
+set(LIBS ${LIBS} Qt6::ShaderTools Qt6::Widgets)
 
 find_library(FW_AUTHENTICATIONSERVICES AuthenticationServices)
 find_library(FW_AVFOUNDATION AVFoundation)
@@ -55,7 +56,10 @@ set_source_files_properties(${ICON_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION Reso
 set(SOURCES ${SOURCES} ${ICON_FILE})
 
 
-target_include_directories(${PROJECT} PRIVATE ${Qt6Gui_PRIVATE_INCLUDE_DIRS})
+target_include_directories(${PROJECT} PRIVATE
+    ${Qt6Gui_PRIVATE_INCLUDE_DIRS}
+    ${Qt6Widgets_PRIVATE_INCLUDE_DIRS}
+)
 
 
 set_target_properties(${PROJECT} PROPERTIES
