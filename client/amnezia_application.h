@@ -6,10 +6,10 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QThread>
-#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS) || defined(MACOS_NE)
-    #include <QGuiApplication>
+#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
+  #include <QGuiApplication>
 #else
-    #include <QApplication>
+  #include <QApplication>
 #endif
 #include <QClipboard>
 
@@ -19,10 +19,10 @@
 
 #define amnApp (static_cast<AmneziaApplication *>(QCoreApplication::instance()))
 
-#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS) || defined(MACOS_NE)
-    #define AMNEZIA_BASE_CLASS QGuiApplication
+#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
+  #define AMNEZIA_BASE_CLASS QGuiApplication
 #else
-    #define AMNEZIA_BASE_CLASS QApplication
+  #define AMNEZIA_BASE_CLASS QApplication
 #endif
 
 class AmneziaApplication : public AMNEZIA_BASE_CLASS

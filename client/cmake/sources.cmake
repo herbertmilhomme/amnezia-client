@@ -95,6 +95,18 @@ if(NOT IOS AND NOT MACOS_NE)
     )
 endif()
 
+# Include native macOS platform helpers (dock/status-item)
+if(APPLE AND NOT IOS)
+    list(APPEND HEADERS
+        ${CLIENT_ROOT_DIR}/platforms/macos/macosutils.h
+        ${CLIENT_ROOT_DIR}/platforms/macos/macosstatusicon.h
+    )
+    list(APPEND SOURCES
+        ${CLIENT_ROOT_DIR}/platforms/macos/macosutils.mm
+        ${CLIENT_ROOT_DIR}/platforms/macos/macosstatusicon.mm
+    )
+endif()
+
 if(NOT ANDROID)
     set(SOURCES ${SOURCES}
         ${CLIENT_ROOT_DIR}/ui/notificationhandler.cpp
@@ -161,7 +173,7 @@ if(WIN32)
     )
 endif()
 
-if(WIN32 OR (APPLE AND NOT IOS AND NOT MACOS_NE) OR (LINUX AND NOT ANDROID))
+if(WIN32 OR (APPLE AND NOT IOS) OR (LINUX AND NOT ANDROID))
     message("Client desktop build")
     add_compile_definitions(AMNEZIA_DESKTOP)
 

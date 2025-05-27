@@ -11,7 +11,7 @@
     #include "Windows.h"
 #endif
 
-#if defined(Q_OS_IOS) || defined(MACOS_NE)
+#if defined(Q_OS_IOS)
     #include "platforms/ios/QtAppDelegate-C-Interface.h"
 #endif
 
